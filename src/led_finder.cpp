@@ -17,11 +17,7 @@
 // Author: Michael Ferguson
 
 #include <robot_calibration/capture/led_finder.h>
-
-// Indigo adds iterator
-#if ROS_VERSION_MINIMUM(1, 11, 0)
 #include <sensor_msgs/point_cloud2_iterator.h>
-#endif
 
 namespace robot_calibration
 {
@@ -320,12 +316,10 @@ bool LedFinder::find(robot_calibration::CalibrationData * msg)
   cloud.height = 0;
   cloud.header.stamp = ros::Time::now();
   cloud.header.frame_id = cloud_ptr_->header.frame_id;
-#if ROS_VERSION_MINIMUM(1, 11, 0)
   sensor_msgs::PointCloud2Modifier cloud_mod(cloud);
   cloud_mod.setPointCloud2FieldsByString(1, "xyz");
   cloud_mod.resize(4);
   sensor_msgs::PointCloud2Iterator<float> iter_cloud(cloud, "x");
-#endif
 
   // Export results
   for (size_t t = 0; t < trackers.size(); ++t)
@@ -361,12 +355,10 @@ bool LedFinder::find(robot_calibration::CalibrationData * msg)
     msg->rgbd_observations.push_back(rgbd_pt);
 
     // Visualize
-#if ROS_VERSION_MINIMUM(1, 11, 0)
     iter_cloud[0] = rgbd_pt.point.x;
     iter_cloud[1] = rgbd_pt.point.y;
     iter_cloud[2] = rgbd_pt.point.z;
     ++iter_cloud;
-#endif
 
     // Push back expected location of point on robot
     std::stringstream ss;

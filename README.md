@@ -20,4 +20,3 @@ There are also some minor items:
 
  * Add test and backup options to robot_calibration tool.
  * Remove PCL dependency by refactoring to use sensor_msgs::PointCloud2Iterator.
- * Remove version checks around current PointCloud2Iterator usage when we are completely on Indigo.
