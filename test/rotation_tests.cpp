@@ -4,7 +4,7 @@
 using robot_calibration::rotation_from_axis_magnitude;
 using robot_calibration::axis_magnitude_from_rotation;
 
-TEST(AngleTest, rotationsOK)
+TEST(RotationTests, rotationsOK)
 {
   KDL::Rotation one_radian_axis_x1 = KDL::Rotation::RPY(1.0, 0.0, 0.0);
   KDL::Rotation one_radian_axis_x2 = rotation_from_axis_magnitude(1.0, 0.0, 0.0);

@@ -1,25 +1,25 @@
 find_package(rostest REQUIRED)
 
-catkin_add_gtest(test_error_blocks test_error_blocks.cpp
+catkin_add_gtest(error_block_tests error_block_tests.cpp
                                    ../src/calibration_offset_parser.cpp
                                    ../src/models.cpp)
-target_link_libraries(test_error_blocks ${Boost_LIBRARIES}
+target_link_libraries(error_block_tests ${Boost_LIBRARIES}
                                         ${catkin_LIBRARIES}
                                         ${CERES_LIBRARIES}
                                         ${orocos_kdl_LIBRARIES})
 
-catkin_add_gtest(test_calibration_offset_parser test_calibration_offset_parser.cpp
+catkin_add_gtest(calibration_offset_parser_tests calibration_offset_parser_tests.cpp
                                   ../src/calibration_offset_parser.cpp
                                   ../src/models.cpp)
-target_link_libraries(test_calibration_offset_parser ${Boost_LIBRARIES}
-                                                     ${catkin_LIBRARIES}
-                                                     ${orocos_kdl_LIBRARIES}
-                                                     ${tinyxml_LIBRARIES})
+target_link_libraries(calibration_offset_parser_tests ${Boost_LIBRARIES}
+                                                      ${catkin_LIBRARIES}
+                                                      ${orocos_kdl_LIBRARIES}
+                                                      ${tinyxml_LIBRARIES})
 
-catkin_add_gtest(test_rotations test_rotations.cpp
+catkin_add_gtest(rotation_tests rotation_tests.cpp
                                 ../src/calibration_offset_parser.cpp
                                 ../src/models.cpp)
-target_link_libraries(test_rotations ${Boost_LIBRARIES}
+target_link_libraries(rotation_tests ${Boost_LIBRARIES}
                                      ${catkin_LIBRARIES}
                                      ${CERES_LIBRARIES}
                                      ${orocos_kdl_LIBRARIES})

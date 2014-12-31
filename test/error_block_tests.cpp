@@ -183,7 +183,7 @@ std::string robot_description =
 "  <link name='head_camera_rgb_optical_frame'/>"
 "</robot>";
 
-TEST(OptimizerTest, error_blocks_maxwell)
+TEST(ErrorBlockTests, error_blocks_maxwell)
 {
   robot_calibration::Optimizer opt(robot_description, "base_link", "gripper_led_frame");
 

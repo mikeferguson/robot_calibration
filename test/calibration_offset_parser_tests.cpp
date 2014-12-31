@@ -56,7 +56,7 @@ std::string robot_description_updated =
 "  <link name=\"link_3\" />\n"
 "</robot>";
 
-TEST(CalibrationOffsetParserTest, test_urdf_update)
+TEST(CalibrationOffsetParserTests, test_urdf_update)
 {
   robot_calibration::CalibrationOffsetParser p;
 
