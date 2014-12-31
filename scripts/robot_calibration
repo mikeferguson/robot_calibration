@@ -1,0 +1,237 @@
+#!/usr/bin/env python
+
+# Copyright (C) 2014 Unbounded Robotics Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Author: Michael Ferguson
+
+import argparse
+import os
+import rospkg
+import subprocess
+import time
+import yaml
+from lxml import etree
+from time import strftime
+
+def stop_drivers(rosdistro):
+    return (subprocess.call(["sudo", "service", "ubr1-%s" % rosdistro, "stop"]) == 0)
+
+
+def start_drivers(rosdistro):
+    return (subprocess.call(["sudo", "service", "ubr1-%s" % rosdistro, "start"]) == 0)
+
+
+def restart_drivers(rosdistro):
+    ok = stop_drivers(rosdistro)
+    time.sleep(1.0)  # nodelet unload/load needs time
+    return (ok and start_drivers(rosdistro))
+
+
+def copy_file(current, new, filename):
+    a = os.path.join(current, filename)
+    b = os.path.join(new, filename)
+    if b.startswith("/etc"):
+        return (subprocess.call(["sudo", "cp", a, b]) == 0)
+    else:
+        return (subprocess.call(["cp", a, b]) == 0)
+
+
+## @brief Updates the robot launch file
+## @param launch The current robot launch file
+## @param calibration The calibration data (a dictionary)
+## @param install_dir The directory to install to
+def update_robot_launch(launch, calibration, install_dir):
+    # backup robot.launch
+    if subprocess.call(["sudo", "cp", launch, "%s.bk" % launch]) != 0:
+        print("Failed to backup robot.launch")
+
+    launch_xml = etree.parse(launch)
+    for child in launch_xml.getroot():
+        try:
+            if child.tag == "param":
+                if child.get("name") == "calibration_date":
+                    child.set("value", strftime("%Y-%m-%d %H:%M:%S"))
+
+                elif child.get("name") == "robot_description":
+                    child.set("command", "cat %s" % os.path.join(install_dir, calibration["robot_description"]))
+
+                elif child.get("name") in calibration.keys():
+                    child.set("value", calibration[child.get("name")])
+
+            if child.tag == "arg":
+                if child.get("name") == "rgb_camera_info_url":
+                    child.set("default", "file://%s" % os.path.join(install_dir, calibration["depth_camera_info_url"]))
+
+                elif child.get("name") == "depth_camera_info_url":
+                    child.set("default", "file://%s" % os.path.join(install_dir, calibration["depth_camera_info_url"]))
+
+        except KeyError:
+            pass
+
+    launch_xml.write("/tmp/robot.launch")
+    copy_file("/tmp", install_dir, "robot.launch")
+
+
+def get_calibration_dict(directory, calibration = None):
+    if calibration == None:
+        calibration = dict()
+    # Load file
+    try:
+        calfile = open(os.path.join(directory, "calibration.yaml"))
+    except IOError:
+        print("Cannot open calibration.yaml")
+        return calibration
+    # Parse YAML
+    try:
+        calyaml = yaml.load(calfile)
+    except:
+        print("Cannot parse calibration.yaml")
+        return calibration
+    # Get dictionary data
+    try:
+        calibration["/head_camera/driver/z_offset_mm"] = str(int(calyaml["camera_z_offset"]*1000.0))
+    except KeyError:
+        calibration["/head_camera/driver/z_offset_mm"] = "0"
+    try:
+        calibration["/head_camera/driver/z_scaling"] = str(1.0 + calyaml["camera_z_scaling"])
+    except KeyError:
+        calibration["/head_camera/driver/z_scaling"] = "1.0"
+    calibration["depth_camera_info_url"] = calyaml["depth_info"]
+    calibration["rgb_camera_info_url"] = calyaml["rgb_info"]
+    calibration["robot_description"] = calyaml["urdf"]
+    return calibration
+
+
+def get_base_calibration_dict(directory, calibration = None):
+    if calibration == None:
+        calibration = dict()
+    # Load file
+    try:
+        calfile = open(os.path.join(directory, "base_calibration.yaml"))
+    except IOError:
+        print("Cannot open base_calibration.yaml")
+        return calibration
+    # Parse YAML
+    try:
+        calyaml = yaml.load(calfile)
+    except:
+        print("Cannot parse base_calibration.yaml")
+        return calibration
+    # Get dictionary data
+    calibration["/base_controller/track_width"] = str(calyaml["odom"])
+    calibration["/imu/gyro_scale"] = str(calyaml["imu"])
+    return calibration
+
+
+def move_calibration(current_directory, new_directory, rosdistro):
+    calibration = get_calibration_dict(current_directory)
+    calibration = get_base_calibration_dict(current_directory, calibration)
+
+    # install urdf, depth, rgb files
+    for name in ["depth_camera_info_url", "rgb_camera_info_url", "robot_description"]:
+        try:
+            copy_file(current_directory, new_directory, calibration[name])
+        except:
+            print("Unable to copy %s" % name)
+
+    # update the robot.launch
+    update_robot_launch("/etc/ros/%s/robot.launch" % rosdistro, calibration, new_directory)
+
+
+def get_calibration_date(rosdistro):
+    launch_xml = etree.parse("/etc/ros/%s/robot.launch" % rosdistro)
+    for child in launch_xml.getroot():
+        if child.tag == "param" and child.get("name") == "calibration_date":
+            return child.get("value")
+    return "Calibration date not found in robot.launch"
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Tool for manipulating robot calibration settings")
+    parser.add_argument("--calibrate", help="Generate a new calibration", action="store_true")
+    parser.add_argument("--base", help="Generate a new calibration for the base", action="store_true")
+    parser.add_argument("--install", help="Load new calibration (restarts drivers)", action="store_true")
+    parser.add_argument("--reset", help="Reset the calibration back to factory defaults (restarts drivers)", action="store_true")
+    parser.add_argument("--restore", help="Restore the previous calibration", action="store_true")
+    parser.add_argument("--date", help="Get the timestamp of the current calibration", action="store_true")
+    parser.add_argument("--directory", help="Directory to load calibration from or backup to", default="/tmp")
+    args = parser.parse_args()
+
+    # Get rosdistro without using any ROS tools (which are not available as sudo)
+    path = os.path.realpath(__file__).split('/')
+    if "indigo" in path:
+        rosdistro = "indigo"
+    elif "hydro" in path:
+        rosdistro = "hydro"
+    else:
+        print("Unable to detect rosdistro")
+        exit(-1)
+
+    restart = False
+
+    if args.date:
+        print(get_calibration_date(rosdistro))
+        exit(0)
+
+    if args.restore:
+        backup = "/etc/ros/%s/robot.launch.bk" % rosdistro
+        launch = "/etc/ros/%s/robot.launch" % rosdistro
+        print("Calibration date: %s" % get_calibration_date(rosdistro))
+        if subprocess.call(["sudo", "cp", backup, launch]) != 0:
+            print("Failed to restore calibration")
+            exit(-1)
+        print("Restored calibration to %s" % get_calibration_date(rosdistro))
+        restart = True
+
+    if args.reset:
+        # Can we get to ubr1_bringup?
+        try:
+            rp = rospkg.RosPack()
+            bringup = rp.get_path("ubr1_bringup")
+        except:
+            print("\nCould not find ubr1_bringup package, is your ROS path correct?\n")
+            exit(-1)
+        # Reset the robot.launch to factory defaults
+        copy_file(os.path.join(bringup, "launch"), "/etc/ros/%s" % rosdistro, "robot.launch")
+        restart = True
+
+    if args.base:
+        if subprocess.call(["rosrun", "ubr_calibration", "calibrate_base"]) != 0:
+            print("Failed to run calibrate_Base")
+            exit(-1)
+
+    if args.calibrate:
+        try:
+            rp = rospkg.RosPack()
+            cal_pkg = rp.get_path("ubr_calibration")
+        except:
+            print("\nCould not find ubr_calibration package, is your ROS path correct?")
+            exit(-1)
+        pose_bag = os.path.join(cal_pkg, "launch", "calibration_poses.bag")
+        if subprocess.call(["rosrun", "ubr_calibration", "calibrate", pose_bag]) != 0:
+            print("Failed to run calibrate")
+            exit(-1)
+
+    if args.install or args.calibrate or args.base:
+        move_calibration(args.directory, "/etc/ros/%s" % rosdistro, rosdistro)
+        restart = True
+
+    if restart:
+        print("Restarting drivers so that calibration will take effect...")
+        if not restart_drivers(rosdistro):
+            print("\nWARNING: drivers may not have restarted\n")
+        exit(0)
+
+    parser.print_help()

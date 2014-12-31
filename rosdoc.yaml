@@ -1,0 +1,4 @@
+ - builder: doxygen
+   name: Unbounded Robotics Calibration
+   exclude_patterns: 'test_* setup.py'
+   file_patterns: '*.h *.cpp'
