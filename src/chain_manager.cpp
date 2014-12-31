@@ -16,9 +16,9 @@
 
 // Author: Michael Ferguson
 
-#include <ubr_calibration/capture/chain_manager.h>
+#include <robot_calibration/capture/chain_manager.h>
 
-namespace ubr_calibration
+namespace robot_calibration
 {
 
 // TODO: need mutex here?
@@ -140,4 +140,4 @@ bool ChainManager::waitToSettle()
   return true;
 }
 
-}  // namespace ubr_calibration
+}  // namespace robot_calibration

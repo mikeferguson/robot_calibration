@@ -16,10 +16,10 @@
 
 // Author: Michael Ferguson
 
-#include <ubr_calibration/models/chain.h>
-#include <ubr_calibration/models/camera3d.h>
+#include <robot_calibration/models/chain.h>
+#include <robot_calibration/models/camera3d.h>
 
-namespace ubr_calibration
+namespace robot_calibration
 {
 
 double positionFromMsg(const std::string& name,
@@ -45,7 +45,7 @@ ChainModel::ChainModel(KDL::Tree model, std::string root, std::string tip) :
 }
 
 std::vector<geometry_msgs::PointStamped> ChainModel::project(
-    const ubr_calibration::CalibrationData& data,
+    const robot_calibration::CalibrationData& data,
     const CalibrationOffsetParser& offsets)
 {
   std::vector<geometry_msgs::PointStamped> points;
@@ -118,7 +118,7 @@ Camera3dModel::Camera3dModel(KDL::Tree model, std::string root, std::string tip)
 }
 
 std::vector<geometry_msgs::PointStamped> Camera3dModel::project(
-    const ubr_calibration::CalibrationData& data,
+    const robot_calibration::CalibrationData& data,
     const CalibrationOffsetParser& offsets)
 {
   // Get existing camera info
@@ -215,4 +215,4 @@ void axis_magnitude_from_rotation(const KDL::Rotation& r, double& x, double& y, 
   z = (qz / k) * magnitude;
 }
 
-}  // namespace ubr_calibration
+}  // namespace robot_calibration

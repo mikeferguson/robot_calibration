@@ -16,9 +16,9 @@
 
 // Author: Michael Ferguson
 
-#include <ubr_calibration/capture/checkerboard_finder.h>
+#include <robot_calibration/capture/checkerboard_finder.h>
 
-namespace ubr_calibration
+namespace robot_calibration
 {
 
 CheckerboardFinder::CheckerboardFinder(ros::NodeHandle & n) : 
@@ -55,7 +55,7 @@ bool CheckerboardFinder::waitForCloud()
   return !waiting_;
 }
 
-bool CheckerboardFinder::find(ubr_calibration::CalibrationData * msg)
+bool CheckerboardFinder::find(robot_calibration::CalibrationData * msg)
 {
   // Try up to 50 frames
   for (int i = 0; i < 50; ++i)
@@ -66,7 +66,7 @@ bool CheckerboardFinder::find(ubr_calibration::CalibrationData * msg)
   return false;
 }
 
-bool CheckerboardFinder::findInternal(ubr_calibration::CalibrationData * msg)
+bool CheckerboardFinder::findInternal(robot_calibration::CalibrationData * msg)
 {
   geometry_msgs::PointStamped rgbd;
   geometry_msgs::PointStamped world;
@@ -147,4 +147,4 @@ bool CheckerboardFinder::findInternal(ubr_calibration::CalibrationData * msg)
   return false;
 }
 
-}  // namespace ubr_calibration
+}  // namespace robot_calibration

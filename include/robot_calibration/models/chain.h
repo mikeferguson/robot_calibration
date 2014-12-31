@@ -16,20 +16,20 @@
 
 // Author: Michael Ferguson
 
-#ifndef UBR_CALIBRATION_MODELS_CHAIN_H_
-#define UBR_CALIBRATION_MODELS_CHAIN_H_
+#ifndef ROBOT_CALIBRATION_MODELS_CHAIN_H
+#define ROBOT_CALIBRATION_MODELS_CHAIN_H
 
 #include <string>
 #include <kdl/chain.hpp>
 #include <kdl/tree.hpp>
-#include <ubr_calibration/calibration_offset_parser.h>
+#include <robot_calibration/calibration_offset_parser.h>
 
 #include <geometry_msgs/PointStamped.h>
 #include <sensor_msgs/JointState.h>
-#include <ubr_calibration/CalibrationData.h>
+#include <robot_calibration/CalibrationData.h>
 
 /** \brief Calibration code lives under this namespace */
-namespace ubr_calibration
+namespace robot_calibration
 {
 
 /**
@@ -122,7 +122,7 @@ public:
    *  \param offsets The offsets that the solver wants to examine.
    */
   virtual std::vector<geometry_msgs::PointStamped> project(
-    const ubr_calibration::CalibrationData& data,
+    const robot_calibration::CalibrationData& data,
     const CalibrationOffsetParser& offsets);
 
   /**
@@ -146,6 +146,6 @@ KDL::Rotation rotation_from_axis_magnitude(const double x, const double y, const
 /** \brief Converts from KDL::Rotation to angle-axis-with-integrated-magnitude */
 void axis_magnitude_from_rotation(const KDL::Rotation& r, double& x, double& y, double& z);
 
-}  // namespace ubr_calibration
+}  // namespace robot_calibration
 
-#endif  // UBR_CALIBRATION_MODELS_CHAIN_H_
+#endif  // ROBOT_CALIBRATION_MODELS_CHAIN_H

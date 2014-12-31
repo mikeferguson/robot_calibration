@@ -16,12 +16,12 @@
 
 // Author: Michael Ferguson
 
-#ifndef UBR_CALIBRATION_CALIBRATION_OFFSET_PARSER_H_
-#define UBR_CALIBRATION_CALIBRATION_OFFSET_PARSER_H_
+#ifndef ROBOT_CALIBRATION_CALIBRATION_OFFSET_PARSER_H
+#define ROBOT_CALIBRATION_CALIBRATION_OFFSET_PARSER_H
 
 #include <kdl/chain.hpp>
 
-namespace ubr_calibration
+namespace robot_calibration
 {
 
 /**
@@ -89,6 +89,6 @@ private:
   CalibrationOffsetParser& operator=(const CalibrationOffsetParser&);
 };
 
-}  // namespace ubr_calibration
+}  // namespace robot_calibration
 
-#endif  // UBR_CALIBRATION_CALIBRATION_OFFSET_PARSER_H_
+#endif  // ROBOT_CALIBRATION_CALIBRATION_OFFSET_PARSER_H

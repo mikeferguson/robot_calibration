@@ -16,13 +16,13 @@
 
 // Author: Michael Ferguson
 
-#ifndef UBR_CALIBRATION_CAPTURE_FEATURE_FINDER_H_
-#define UBR_CALIBRATION_CAPTURE_FEATURE_FINDER_H_
+#ifndef ROBOT_CALIBRATION_CAPTURE_FEATURE_FINDER_H
+#define ROBOT_CALIBRATION_CAPTURE_FEATURE_FINDER_H
 
 #include <ros/ros.h>
-#include <ubr_calibration/CalibrationData.h>
+#include <robot_calibration/CalibrationData.h>
 
-namespace ubr_calibration
+namespace robot_calibration
 {
 
 /**
@@ -34,9 +34,9 @@ public:
   FeatureFinder(ros::NodeHandle & n) {};
   virtual ~FeatureFinder() {};
 
-  virtual bool find(ubr_calibration::CalibrationData * msg) = 0;
+  virtual bool find(robot_calibration::CalibrationData * msg) = 0;
 };
 
-}  // namespace ubr_calibration
+}  // namespace robot_calibration
 
-#endif  // UBR_CALIBRATION_CAPTURE_FEATURE_FINDER_H_
+#endif  // ROBOT_CALIBRATION_CAPTURE_FEATURE_FINDER_H

@@ -1,6 +1,6 @@
 #include <urdf/model.h>
-#include <ubr_calibration/calibration_offset_parser.h>
-#include <ubr_calibration/models/chain.h>  // for rotation functions
+#include <robot_calibration/calibration_offset_parser.h>
+#include <robot_calibration/models/chain.h>  // for rotation functions
 #include <gtest/gtest.h>
 
 std::string robot_description =
@@ -58,7 +58,7 @@ std::string robot_description_updated =
 
 TEST(CalibrationOffsetParserTest, test_urdf_update)
 {
-  ubr_calibration::CalibrationOffsetParser p;
+  robot_calibration::CalibrationOffsetParser p;
 
   p.add("second_joint");
   p.addFrame("third_joint", true, true, true, true, true, true);
@@ -67,7 +67,7 @@ TEST(CalibrationOffsetParserTest, test_urdf_update)
 
   // set angles
   KDL::Rotation r = KDL::Rotation::RPY(0.1, 0.2, 0.3);
-  ubr_calibration::axis_magnitude_from_rotation(r, params[4], params[5], params[6]);
+  robot_calibration::axis_magnitude_from_rotation(r, params[4], params[5], params[6]);
 
   p.update(params);
 

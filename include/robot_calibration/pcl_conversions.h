@@ -34,16 +34,15 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef UBR_CALIBRATION_PCL_CONVERSIONS_H_
-#define UBR_CALIBRATION_PCL_CONVERSIONS_H_
+#ifndef ROBOT_CALIBRATION_PCL_CONVERSIONS_H
+#define ROBOT_CALIBRATION_PCL_CONVERSIONS_H
 
-/** \brief PCL never works. Try to fix a bit of that. */
+/** @brief PCL never works. Try to fix a bit of that. */
 namespace pcl_broke_again
 {
 
 /*
- * Some code copied in from the old pcl package to make this still compile,
- * should probably be upstreamed to pcl_conversions package at some point.
+ * This has already been submitted to pcl_conversions, but not released.
  */
 
 template<typename CloudT> void
@@ -76,4 +75,4 @@ toROSMsg (const CloudT& cloud, sensor_msgs::Image& msg)
 
 }
 
-#endif
+#endif  // ROBOT_CALIBRATION_PCL_CONVERSIONS_H

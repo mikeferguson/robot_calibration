@@ -16,27 +16,27 @@
 
 // Author: Michael Ferguson
 
-#ifndef UBR_CALIBRATION_CERES_OPTIMIZER_H_
-#define UBR_CALIBRATION_CERES_OPTIMIZER_H_
+#ifndef ROBOT_CALIBRATION_CERES_OPTIMIZER_H
+#define ROBOT_CALIBRATION_CERES_OPTIMIZER_H
 
 #include <ceres/ceres.h>
 
 #include <urdf/model.h>
 #include <kdl_parser/kdl_parser.hpp>
-#include <ubr_calibration/CalibrationData.h>
+#include <robot_calibration/CalibrationData.h>
 
-#include <ubr_calibration/calibration_offset_parser.h>
-#include <ubr_calibration/ceres/camera3d_to_arm_error.h>
-#include <ubr_calibration/ceres/data_functions.h>
-#include <ubr_calibration/ceres/outrageous_error.h>
-#include <ubr_calibration/models/camera3d.h>
-#include <ubr_calibration/models/chain.h>
+#include <robot_calibration/calibration_offset_parser.h>
+#include <robot_calibration/ceres/camera3d_to_arm_error.h>
+#include <robot_calibration/ceres/data_functions.h>
+#include <robot_calibration/ceres/outrageous_error.h>
+#include <robot_calibration/models/camera3d.h>
+#include <robot_calibration/models/chain.h>
 
 #include <boost/shared_ptr.hpp>
 #include <string>
 #include <map>
 
-namespace ubr_calibration
+namespace robot_calibration
 {
 
 /** \brief Class to do optimization. */
@@ -66,7 +66,7 @@ public:
    *  \param progress_to_stdout If true, Ceres optimizer will output info to
    *         stdout.
    */
-  int optimize(std::vector<ubr_calibration::CalibrationData> data,
+  int optimize(std::vector<robot_calibration::CalibrationData> data,
                bool progress_to_stdout = false)
   {
     // Load KDL from URDF
@@ -226,6 +226,6 @@ private:
   ceres::Solver::Summary* summary_;
 };
 
-}  // namespace ubr_calibration
+}  // namespace robot_calibration
 
-#endif  // UBR_CALIBRATION_CERES_OPTIMIZER_H_
+#endif  // ROBOT_CALIBRATION_CERES_OPTIMIZER_H

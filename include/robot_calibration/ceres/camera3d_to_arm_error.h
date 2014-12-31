@@ -16,17 +16,17 @@
 
 // Author: Michael Ferguson
 
-#ifndef UBR_CALIBRATION_CERES_CAMERA3D_TO_ARM_ERROR_H_
-#define UBR_CALIBRATION_CERES_CAMERA3D_TO_ARM_ERROR_H_
+#ifndef ROBOT_CALIBRATION_CERES_CAMERA3D_TO_ARM_ERROR_H
+#define ROBOT_CALIBRATION_CERES_CAMERA3D_TO_ARM_ERROR_H
 
 #include <string>
 #include <ceres/ceres.h>
-#include <ubr_calibration/calibration_offset_parser.h>
-#include <ubr_calibration/models/camera3d.h>
-#include <ubr_calibration/models/chain.h>
-#include <ubr_calibration/CalibrationData.h>
+#include <robot_calibration/calibration_offset_parser.h>
+#include <robot_calibration/models/camera3d.h>
+#include <robot_calibration/models/chain.h>
+#include <robot_calibration/CalibrationData.h>
 
-namespace ubr_calibration
+namespace robot_calibration
 {
 
 /**
@@ -123,6 +123,6 @@ struct Camera3dToArmError
   CalibrationData data_;
 };
 
-}  // namespace ubr_calibration
+}  // namespace robot_calibration
 
-#endif  // UBR_CALIBRATION_CERES_CAMERA3D_TO_ARM_ERROR_H_
+#endif  // ROBOT_CALIBRATION_CERES_CAMERA3D_TO_ARM_ERROR_H

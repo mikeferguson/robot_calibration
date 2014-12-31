@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(ubr_calibration)
+project(robot_calibration)
 
 find_package(Boost REQUIRED system thread)
 find_package(PCL REQUIRED)
@@ -16,8 +16,7 @@ if (NOT tinyxml_include_dirs)
 endif ()
 
 find_package(orocos_kdl)
-find_package(Ceres)
-
+find_package(Ceres REQUIRED)
 find_package(catkin REQUIRED
   COMPONENTS
     actionlib
@@ -32,7 +31,6 @@ find_package(catkin REQUIRED
     roscpp
     sensor_msgs
     std_msgs
-    ubr_msgs
 )
 
 catkin_python_setup()
@@ -58,8 +56,6 @@ add_executable(calibrate_base src/calibrate_base.cpp)
 target_link_libraries(calibrate_base ${Boost_LIBRARIES}
                                      ${catkin_LIBRARIES})
 
-if (${Ceres_FOUND})
-
 add_executable(calibrate src/calibrate.cpp
                          src/calibration_offset_parser.cpp
                          src/chain_manager.cpp
@@ -82,9 +78,3 @@ install(TARGETS calibrate calibrate_base
 
 install(DIRECTORY launch
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
-
-else (${Ceres_FOUND})
-
-  MESSAGE(WARNING "Could not locate Ceres. ubr_calibration will not be built.")
-
-endif(${Ceres_FOUND})

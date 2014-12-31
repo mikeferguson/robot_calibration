@@ -16,15 +16,15 @@
 
 // Author: Michael Ferguson
 
-#ifndef UBR_CALIBRATION_DEPTH_CAMERA_H_
-#define UBR_CALIBRATION_DEPTH_CAMERA_H_
+#ifndef ROBOT_CALIBRATION_DEPTH_CAMERA_H
+#define ROBOT_CALIBRATION_DEPTH_CAMERA_H
 
 #include <ros/ros.h>
 #include <sensor_msgs/CameraInfo.h>
-#include <ubr_calibration/CalibrationData.h>
-#include <ubr_calibration/DepthCameraInfo.h>
+#include <robot_calibration/CalibrationData.h>
+#include <robot_calibration/DepthCameraInfo.h>
 
-namespace ubr_calibration
+namespace robot_calibration
 {
 
 enum {CAMERA_INFO_P_FX_INDEX=0,
@@ -44,7 +44,7 @@ enum {CAMERA_PARAMS_CX_INDEX=0,
       CAMERA_PARAMS_Z_SCALE_INDEX=4,
       CAMERA_PARAMS_Z_OFFSET_INDEX=5};
 
-/** \brief Update the camera calibration with the new offsets */
+/** @brief Update the camera calibration with the new offsets */
 inline sensor_msgs::CameraInfo updateCameraInfo(double camera_fx, double camera_fy,
                                                 double camera_cx, double camera_cy,
                                                 const sensor_msgs::CameraInfo& info)
@@ -64,9 +64,7 @@ inline sensor_msgs::CameraInfo updateCameraInfo(double camera_fx, double camera_
   return new_info;
 }
 
-/**
- *  \brief Base class for a feature finder.
- */
+/** @brief Base class for a feature finder. */
 class DepthCameraInfoManager
 {
 public:
@@ -129,6 +127,6 @@ private:
   double z_scaling_;
 };
 
-}  // namespace ubr_calibration
+}  // namespace robot_calibration
 
-#endif  // UBR_CALIBRATION_DEPTH_CAMERA_H_
+#endif  // ROBOT_CALIBRATION_DEPTH_CAMERA_H

@@ -16,14 +16,14 @@
 
 // Author: Michael Ferguson
 
-#include <ubr_calibration/capture/led_finder.h>
+#include <robot_calibration/capture/led_finder.h>
 
 // Indigo adds iterator
 #if ROS_VERSION_MINIMUM(1, 11, 0)
 #include <sensor_msgs/point_cloud2_iterator.h>
 #endif
 
-namespace ubr_calibration
+namespace robot_calibration
 {
 
 /** \brief Internally used within LED finder to track each of several LEDs */
@@ -155,12 +155,12 @@ struct CloudDifferenceTracker
 
 LedFinder::LedFinder(ros::NodeHandle & n) :
   FeatureFinder(n),
-  client_("/gripper_led_action", true),
+  //client_("/gripper_led_action", true),
   waiting_(false)
 {
   subscriber_ = n.subscribe("/head_camera/depth_registered/points", 1, &LedFinder::cameraCallback, this);
   ROS_INFO("Waiting for gripper_led_action...");
-  client_.waitForServer();
+  //client_.waitForServer();
 
   publisher_ = n.advertise<sensor_msgs::PointCloud2>("led_points", 10);
 
@@ -200,7 +200,7 @@ bool LedFinder::waitForCloud()
   return !waiting_;
 }
 
-bool LedFinder::find(ubr_calibration::CalibrationData * msg)
+bool LedFinder::find(robot_calibration::CalibrationData * msg)
 {
   uint8_t commands[] = {1, 0, 8, 0, 2, 0, 4, 0};
   uint8_t command_idx = -1;
@@ -210,10 +210,10 @@ bool LedFinder::find(ubr_calibration::CalibrationData * msg)
 
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr prev_cloud(new pcl::PointCloud<pcl::PointXYZRGB>);
 
-  ubr_msgs::GripperLedCommandGoal command;
+/*  ubr_msgs::GripperLedCommandGoal command;
   command.led_code = 0;
   client_.sendGoal(command);
-  client_.waitForResult(ros::Duration(10.0));
+  client_.waitForResult(ros::Duration(10.0));*/
 
   // Get initial cloud
   if(!waitForCloud())
@@ -239,9 +239,9 @@ bool LedFinder::find(ubr_calibration::CalibrationData * msg)
   {
     // Toggle LED to next state
     command_idx = (command_idx + 1) % 8;
-    command.led_code = commands[command_idx];
+    /*command.led_code = commands[command_idx];
     client_.sendGoal(command);
-    client_.waitForResult(ros::Duration(10.0));
+    client_.waitForResult(ros::Duration(10.0));*/
 
     // Get a point cloud
     if(!waitForCloud())
@@ -388,4 +388,4 @@ bool LedFinder::find(ubr_calibration::CalibrationData * msg)
   return true;
 }
 
-}  // namespace ubr_calibration
+}  // namespace robot_calibration

@@ -1,13 +1,13 @@
 <launch>
 
-  <node pkg="ubr_calibration" type="calibrate" name="capture"
-        args="$(find ubr_calibration)/launch/calibration_poses.bag"
+  <node pkg="robot_calibration" type="calibrate" name="capture"
+        args="$(find robot_calibration)/launch/calibration_poses.bag"
         output="screen" required="true">
   </node>
 
   <node pkg="rosbag" type="record" name="calibration_bagger" output="screen"
-        args="--bz2 -o /tmp/ubr_calibration/calibration_data calibration_data robot_description" >
-    <param name="mkdir_tmp" command="mkdir -m 777 -p /tmp/ubr_calibration" />
+        args="--bz2 -o /tmp/robot_calibration/calibration_data calibration_data robot_description" >
+    <param name="mkdir_tmp" command="mkdir -m 777 -p /tmp/robot_calibration" />
   </node>
   
 </launch>

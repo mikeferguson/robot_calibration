@@ -16,15 +16,15 @@
 
 // Author: Michael Ferguson
 
-#ifndef UBR_CALIBRATION_CAPTURE_CHAIN_MANAGER_H_
-#define UBR_CALIBRATION_CAPTURE_CHAIN_MANAGER_H_
+#ifndef ROBOT_CALIBRATION_CAPTURE_CHAIN_MANAGER_H
+#define ROBOT_CALIBRATION_CAPTURE_CHAIN_MANAGER_H
 
 #include <ros/ros.h>
 #include <sensor_msgs/JointState.h>
 #include <control_msgs/FollowJointTrajectoryAction.h>
 #include <actionlib/client/simple_action_client.h>
 
-namespace ubr_calibration
+namespace robot_calibration
 {
 
 typedef actionlib::SimpleActionClient<control_msgs::FollowJointTrajectoryAction> TrajectoryClient;
@@ -93,6 +93,6 @@ private:
   std::vector<std::string> arm_joints_;
 };
 
-}  // namespace ubr_calibration
+}  // namespace robot_calibration
 
-#endif  // UBR_CALIBRATION_CAPTURE_CHAIN_MANAGER_H_
+#endif  // ROBOT_CALIBRATION_CAPTURE_CHAIN_MANAGER_H

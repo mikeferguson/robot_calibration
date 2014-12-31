@@ -21,10 +21,10 @@
 #include <tinyxml.h>
 #include <boost/algorithm/string.hpp>
 #include <boost/lexical_cast.hpp>
-#include <ubr_calibration/calibration_offset_parser.h>
-#include <ubr_calibration/models/chain.h>  // for rotation functions
+#include <robot_calibration/calibration_offset_parser.h>
+#include <robot_calibration/models/chain.h>  // for rotation functions
 
-namespace ubr_calibration
+namespace robot_calibration
 {
 
 CalibrationOffsetParser::CalibrationOffsetParser()
@@ -296,4 +296,4 @@ std::string CalibrationOffsetParser::updateURDF(const std::string &urdf)
   return new_urdf;
 }
 
-}  // namespace ubr_calibration
+}  // namespace robot_calibration

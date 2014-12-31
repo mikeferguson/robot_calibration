@@ -16,12 +16,12 @@
 
 // Author: Michael Ferguson
 
-#ifndef UBR_CALIBRATION_CERES_DATA_FUNCTIONS_H_
-#define UBR_CALIBRATION_CERES_DATA_FUNCTIONS_H_
+#ifndef ROBOT_CALIBRATION_CERES_DATA_FUNCTIONS_H
+#define ROBOT_CALIBRATION_CERES_DATA_FUNCTIONS_H
 
-#include <ubr_calibration/CalibrationData.h>
+#include <robot_calibration/CalibrationData.h>
 
-namespace ubr_calibration
+namespace robot_calibration
 {
 
 /** \brief Compute the average point based on a vector of points. */
@@ -196,6 +196,6 @@ void printComparePoints(ChainModel * chain1,
   std::cout << std::endl; 
 }
 
-}  // namespace ubr_calibration
+}  // namespace robot_calibration
 
-#endif  // UBR_CALIBRATION_CERES_DATA_FUNCTIONS_H_
+#endif  // ROBOT_CALIBRATION_CERES_DATA_FUNCTIONS_H

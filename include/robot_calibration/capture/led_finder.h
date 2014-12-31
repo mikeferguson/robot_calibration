@@ -16,28 +16,28 @@
 
 // Author: Michael Ferguson
 
-#ifndef UBR_CALIBRATION_CAPTURE_LED_FINDER_H_
-#define UBR_CALIBRATION_CAPTURE_LED_FINDER_H_
+#ifndef ROBOT_CALIBRATION_CAPTURE_LED_FINDER_H
+#define ROBOT_CALIBRATION_CAPTURE_LED_FINDER_H
 
 #include <ros/ros.h>
 #include <pcl/point_types.h>
 #include <pcl_ros/point_cloud.h>
-#include <ubr_calibration/capture/feature_finder.h>
+#include <robot_calibration/capture/feature_finder.h>
 
 #include <tf/transform_listener.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <geometry_msgs/PointStamped.h>
-#include <ubr_calibration/CalibrationData.h>
-#include <ubr_msgs/GripperLedCommandAction.h>
+#include <robot_calibration/CalibrationData.h>
+//#include <ubr_msgs/GripperLedCommandAction.h>
 #include <actionlib/client/simple_action_client.h>
 
 #include <opencv/cv.h>
 #include <opencv/highgui.h>
 
-namespace ubr_calibration
+namespace robot_calibration
 {
 
-typedef actionlib::SimpleActionClient<ubr_msgs::GripperLedCommandAction> LedClient;
+//typedef actionlib::SimpleActionClient<ubr_msgs::GripperLedCommandAction> LedClient;
 
 /**
  *  \brief This class processes the point cloud input to find the LED
@@ -52,7 +52,7 @@ public:
    * \param msg CalibrationData instance to fill in with led point information.
    * \returns True if point has been filled in.
    */
-  bool find(ubr_calibration::CalibrationData * msg);
+  bool find(robot_calibration::CalibrationData * msg);
 
 private:
   void cameraCallback(const pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud);
@@ -60,7 +60,7 @@ private:
 
   ros::Subscriber subscriber_;  /// Incoming sensor_msgs::Image
   ros::Publisher publisher_;  /// Outgoing sensor_msgs::PointCloud2
-  LedClient client_;
+  //LedClient client_;
 
   bool waiting_;
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_ptr_;
@@ -73,6 +73,6 @@ private:
   tf::TransformListener listener_;
 };
 
-}  // namespace ubr_calibration
+}  // namespace robot_calibration
 
-#endif  // UBR_CALIBRATION_CAPTURE_LED_FINDER_H_
+#endif  // ROBOT_CALIBRATION_CAPTURE_LED_FINDER_H

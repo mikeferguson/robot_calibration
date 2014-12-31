@@ -25,16 +25,16 @@
 #include <rosbag/query.h>
 
 #include <std_msgs/String.h>
-#include <ubr_calibration/CalibrationData.h>
+#include <robot_calibration/CalibrationData.h>
 
-#include <ubr_calibration/capture/chain_manager.h>
-#include <ubr_calibration/capture/checkerboard_finder.h>
-#include <ubr_calibration/capture/led_finder.h>
-#include <ubr_calibration/depth_camera.h>
+#include <robot_calibration/capture/chain_manager.h>
+#include <robot_calibration/capture/checkerboard_finder.h>
+#include <robot_calibration/capture/led_finder.h>
+#include <robot_calibration/depth_camera.h>
 
 #include <camera_calibration_parsers/parse.h>
-#include <ubr_calibration/ceres/optimizer.h>
-#include <ubr_calibration/depth_camera.h>
+#include <robot_calibration/ceres/optimizer.h>
+#include <robot_calibration/depth_camera.h>
 
 #include <boost/foreach.hpp>  // for rosbag iterator
 
@@ -80,7 +80,7 @@ int main(int argc, char** argv)
 
   // The calibration data
   std_msgs::String description_msg;
-  std::vector<ubr_calibration::CalibrationData> data;
+  std::vector<robot_calibration::CalibrationData> data;
 
   // What bag to use to load calibration poses out of (for capture)
   std::string pose_bag_name("calibration_poses.bag");
@@ -90,14 +90,14 @@ int main(int argc, char** argv)
   if (pose_bag_name.compare("--from-bag") != 0)
   {
     // no name provided for a calibration bag file, must do capture
-    ubr_calibration::ChainManager chain_manager_(nh);
-    ubr_calibration::FeatureFinder * finder_;
+    robot_calibration::ChainManager chain_manager_(nh);
+    robot_calibration::FeatureFinder * finder_;
     if (nh.hasParam("use_checkerboards"))
-      finder_ = new ubr_calibration::CheckerboardFinder(nh);
+      finder_ = new robot_calibration::CheckerboardFinder(nh);
     else
-      finder_ = new ubr_calibration::LedFinder(nh);
+      finder_ = new robot_calibration::LedFinder(nh);
 
-    ros::Publisher pub = nh.advertise<ubr_calibration::CalibrationData>("calibration_data", 10);
+    ros::Publisher pub = nh.advertise<robot_calibration::CalibrationData>("calibration_data", 10);
     ros::Publisher urdf_pub = nh.advertise<std_msgs::String>("robot_description", 1, true);  // latched
 
     // Get the robot_description and republish it
@@ -109,7 +109,7 @@ int main(int argc, char** argv)
     urdf_pub.publish(description_msg);
 
     // Get the camera parameters
-    ubr_calibration::DepthCameraInfoManager depth_camera_manager;
+    robot_calibration::DepthCameraInfoManager depth_camera_manager;
     if (!depth_camera_manager.init(nh))
       return -1;
 
@@ -145,7 +145,7 @@ int main(int argc, char** argv)
     // For each pose in the capture sequence.
     for (unsigned int pose_idx = 0; (pose_idx < poses.size()) || (poses.size() == 0); ++pose_idx)
     {
-      ubr_calibration::CalibrationData msg;
+      robot_calibration::CalibrationData msg;
 
       if (poses.size() == 0)
       {
@@ -226,13 +226,13 @@ int main(int argc, char** argv)
     rosbag::View data_view_(bag_, rosbag::TopicQuery("calibration_data"));
     BOOST_FOREACH (rosbag::MessageInstance const m, data_view_)
     {
-      ubr_calibration::CalibrationData::ConstPtr msg = m.instantiate<ubr_calibration::CalibrationData>();
+      robot_calibration::CalibrationData::ConstPtr msg = m.instantiate<robot_calibration::CalibrationData>();
       data.push_back(*msg);
     }
   }
 
   // Create instance of optimizer
-  ubr_calibration::Optimizer opt(description_msg.data, "base_link", "wrist_roll_link");
+  robot_calibration::Optimizer opt(description_msg.data, "base_link", "wrist_roll_link");
   opt.optimize(data, verbose);
   if (verbose)
   {
@@ -265,7 +265,7 @@ int main(int argc, char** argv)
     std::stringstream depth_name;
     depth_name << "/tmp/depth_" << datecode << ".yaml";
     camera_calibration_parsers::writeCalibration(depth_name.str(), "",
-        ubr_calibration::updateCameraInfo(
+        robot_calibration::updateCameraInfo(
                          opt.getOffsets().get("camera_fx"),
                          opt.getOffsets().get("camera_fy"),
                          opt.getOffsets().get("camera_cx"),
@@ -275,7 +275,7 @@ int main(int argc, char** argv)
     std::stringstream rgb_name;
     rgb_name << "/tmp/rgb_" << datecode << ".yaml";
     camera_calibration_parsers::writeCalibration(rgb_name.str(), "",
-        ubr_calibration::updateCameraInfo(
+        robot_calibration::updateCameraInfo(
                          opt.getOffsets().get("camera_fx"),
                          opt.getOffsets().get("camera_fy"),
                          opt.getOffsets().get("camera_cx"),

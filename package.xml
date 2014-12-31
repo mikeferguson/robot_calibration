@@ -1,13 +1,13 @@
 <package>
-  <name>ubr_calibration</name>
-  <version>0.4.0</version>
+  <name>robot_calibration</name>
+  <version>0.1.0</version>
   <description>
-    Calibrate the Robot
+    Calibrate a Robot
   </description>
   <author>Michael Ferguson</author>
-  <maintainer email="fergs@unboundedrobotics.com">Michael Ferguson</maintainer>
+  <maintainer email="mfergs7@gmail.com">Michael Ferguson</maintainer>
   <license>Apache2</license>
-  <url>http://ros.org/wiki/ubr_calibration</url>
+  <url>http://ros.org/wiki/robot_calibration</url>
   
   <buildtool_depend>catkin</buildtool_depend>
 
@@ -25,7 +25,6 @@
   <build_depend>nav_msgs</build_depend>
   <build_depend>sensor_msgs</build_depend>
   <build_depend>std_msgs</build_depend>
-  <build_depend>ubr_msgs</build_depend>
   <build_depend>libopencv-dev</build_depend>
   <build_depend>libceres-dev</build_depend>
   <build_depend>libgflags-dev</build_depend>
@@ -45,7 +44,6 @@
   <run_depend>nav_msgs</run_depend>
   <run_depend>sensor_msgs</run_depend>
   <run_depend>std_msgs</run_depend>
-  <run_depend>ubr_msgs</run_depend>
   <run_depend>libopencv-dev</run_depend>
   <run_depend>libceres-dev</run_depend>
   <run_depend>suitesparse</run_depend>

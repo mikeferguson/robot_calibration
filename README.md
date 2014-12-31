@@ -1,5 +1,5 @@
-# UBR-1 Calibration
-See UBR-1 wiki for usage. See doxygen documentation for source details.
+# Robot Calibration
+See ROS wiki for usage. See doxygen documentation for source details.
 
 # Future improvements:
 The two major possible improvements are improving the led finder, and testing and possibly
