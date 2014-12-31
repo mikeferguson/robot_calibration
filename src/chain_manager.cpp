@@ -1,4 +1,5 @@
 /*
+ * Copyright (C) 2014 Fetch Robotics Inc.
  * Copyright (C) 2013-2014 Unbounded Robotics Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,6 +22,41 @@
 namespace robot_calibration
 {
 
+ChainManager::ChainManager(ros::NodeHandle& nh)
+{
+  // We cannot do much without some kinematic chains
+  if (!nh.hasParam("chains"))
+  {
+    // TODO raise error
+  }
+
+  // Get chains
+  XmlRpc::XmlRpcValue chains;
+  nh.getParam("chains", chains);
+  ROS_ASSERT(chains.getType() == XmlRpc::XmlRpcValue::TypeArray);
+
+  // Construct each chain to manage
+  for (size_t i = 0; i < chains.size(); ++i)
+  {
+    std::string topic;
+    topic = static_cast<std::string>(chains[i]["topic"]);
+
+    boost::shared_ptr<ChainController> controller(new ChainController(topic));
+
+    for (size_t j = 0; j < chains[i]["joints"].size(); ++j)
+    {
+      controller->joint_names.push_back(static_cast<std::string>(chains[i]["joints"][j]));
+    }
+
+    ROS_INFO("Waiting for %s...", topic.c_str());
+    controller->client.waitForServer();
+
+    controllers_.push_back(controller);
+  }
+
+  subscriber_ = nh.subscribe("/joint_states", 1, &ChainManager::stateCallback, this);
+}
+
 // TODO: need mutex here?
 void ChainManager::stateCallback(const sensor_msgs::JointStateConstPtr& msg)
 {
@@ -33,7 +69,7 @@ bool ChainManager::getState(sensor_msgs::JointState* state)
 }
 
 trajectory_msgs::JointTrajectoryPoint
-ChainManager::makePoint(const sensor_msgs::JointState& state, const std::vector<std::string> joints)
+ChainManager::makePoint(const sensor_msgs::JointState& state, const std::vector<std::string>& joints)
 {
   trajectory_msgs::JointTrajectoryPoint p;
   for (size_t i = 0; i < joints.size(); ++i)
@@ -57,32 +93,27 @@ ChainManager::makePoint(const sensor_msgs::JointState& state, const std::vector<
 
 bool ChainManager::moveToState(const sensor_msgs::JointState& state)
 {
-  // Split into head and arm
-  control_msgs::FollowJointTrajectoryGoal head_goal;
-  head_goal.trajectory.joint_names = head_joints_;
+  // Split into different controllers
+  for(size_t i = 0; i < controllers_.size(); ++i)
+  {
+    control_msgs::FollowJointTrajectoryGoal goal;
+    goal.trajectory.joint_names = controllers_[i]->joint_names;
 
-  trajectory_msgs::JointTrajectoryPoint p = makePoint(state, head_joints_);
-  p.time_from_start = ros::Duration(1.0);
-  head_goal.trajectory.points.push_back(p);
-  head_goal.goal_time_tolerance = ros::Duration(3.0);
+    trajectory_msgs::JointTrajectoryPoint p = makePoint(state, controllers_[i]->joint_names);
+    p.time_from_start = ros::Duration(1.0);
+    goal.trajectory.points.push_back(p);
+    goal.goal_time_tolerance = ros::Duration(3.0);
 
-  control_msgs::FollowJointTrajectoryGoal arm_goal;
-  arm_goal.trajectory.joint_names = arm_joints_;
-
-  p = makePoint(state, arm_joints_);
-  p.time_from_start = ros::Duration(3.0);
-  arm_goal.trajectory.points.push_back(p);
-  arm_goal.goal_time_tolerance = ros::Duration(1.0);
-
-  // Call actions
-  head_client_.sendGoal(head_goal);
-  arm_client_.sendGoal(arm_goal);
+    // Call actions
+    controllers_[i]->client.sendGoal(goal);
+  }
 
   // Wait for results
-  head_client_.waitForResult(ros::Duration(15.0));
-  arm_client_.waitForResult(ros::Duration(15.0));
-
-  // TODO: catch errors with clients
+  for (size_t i = 0; i < controllers_.size(); ++i)
+  {
+    // TODO: catch errors with clients
+    controllers_[i]->client.waitForResult(ros::Duration(15.0));
+  }
 
   return true;
 }
@@ -105,23 +136,15 @@ bool ChainManager::waitToSettle()
       if (fabs(state.velocity[j]) < 0.001)
         continue;
 
-      // Is this joint in head?
-      for (size_t i = 0; i < head_joints_.size(); ++i)
+      for (size_t i = 0; i < controllers_.size(); ++i)
       {
-        if (head_joints_[i] == state.name[j])
+        for (size_t k = 0; k < controllers_[i]->joint_names.size(); ++k)
         {
-          settled = false;
-          break;
-        }
-      }
-
-      // Is this joint in the arm?
-      for (size_t i = 0; i < arm_joints_.size(); ++i)
-      {
-        if (arm_joints_[i] == state.name[j])
-        {
-          settled = false;
-          break;
+          if (controllers_[i]->joint_names[k] == state.name[j])
+          {
+            settled = false;
+            break;
+          }
         }
       }
 

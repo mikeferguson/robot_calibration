@@ -1,4 +1,5 @@
 /*
+ * Copyright (C) 2014 Fetch Robotics Inc.
  * Copyright (C) 2013-2014 Unbounded Robotics Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -30,50 +31,43 @@ namespace robot_calibration
 typedef actionlib::SimpleActionClient<control_msgs::FollowJointTrajectoryAction> TrajectoryClient;
 
 /**
- *  \brief Manages moving joints to a new pose, determining when they
- *  are settled, and returning current joint_states.
+ *  @brief Manages moving joints to a new pose, determining when they
+ *         are settled, and returning current joint_states.
  */
 class ChainManager
 {
-public:
-  ChainManager(ros::NodeHandle & n) :
-    head_client_("/head_controller/follow_joint_trajectory", true),
-    arm_client_("/arm_controller/follow_joint_trajectory", true)
+  struct ChainController
   {
-    subscriber_ = n.subscribe("/joint_states", 1, &ChainManager::stateCallback, this);
+    ChainController(const std::string& topic) :
+      client(topic, true)
+    {
+    }
 
-    ROS_INFO("Waiting for head_controller/follow_joint_trajectory...");
-    head_client_.waitForServer();
+    TrajectoryClient client;
+    std::vector<std::string> joint_names;
+  };
 
-    ROS_INFO("Waiting for arm_controller/follow_joint_trajectory...");
-    arm_client_.waitForServer();
-
-    head_joints_.push_back("head_pan_joint");
-    head_joints_.push_back("head_tilt_joint");
-
-    arm_joints_.push_back("shoulder_pan_joint");
-    arm_joints_.push_back("shoulder_lift_joint");
-    arm_joints_.push_back("upperarm_roll_joint");
-    arm_joints_.push_back("elbow_flex_joint");
-    arm_joints_.push_back("forearm_roll_joint");
-    arm_joints_.push_back("wrist_flex_joint");
-    arm_joints_.push_back("wrist_roll_joint");
-  }
+public:
+  /**
+   * @brief Constructor, sets up chains from ros parameters.
+   * @param nh The node handle, sets namespace for parameters.
+   */
+  ChainManager(ros::NodeHandle& nh);
 
   /**
-   *  \brief Send commands to all managed joints. The ChainManager automatically figures out
+   *  @brief Send commands to all managed joints. The ChainManager automatically figures out
    *         which controller to send these to.
-   *  \returns False if failed.
+   *  @returns False if failed.
    */
   bool moveToState(const sensor_msgs::JointState& state);
 
   /**
-   *  \brief Wait for joints to settle.
+   *  @brief Wait for joints to settle.
    */
   bool waitToSettle();
 
   /**
-   *  \brief Get the current JointState message.
+   *  @brief Get the current JointState message.
    */
   bool getState(sensor_msgs::JointState* state);
 
@@ -81,16 +75,11 @@ private:
   void stateCallback(const sensor_msgs::JointStateConstPtr& msg);
 
   trajectory_msgs::JointTrajectoryPoint makePoint(const sensor_msgs::JointState& state,
-                                                  const std::vector<std::string> joints);
+                                                  const std::vector<std::string>& joints);
 
   ros::Subscriber subscriber_;
   sensor_msgs::JointState state_;
-
-  TrajectoryClient head_client_;
-  TrajectoryClient arm_client_;
-
-  std::vector<std::string> head_joints_;
-  std::vector<std::string> arm_joints_;
+  std::vector<boost::shared_ptr<ChainController> > controllers_;
 };
 
 }  // namespace robot_calibration
