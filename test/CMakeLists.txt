@@ -1,3 +1,5 @@
+find_package(rostest REQUIRED)
+
 catkin_add_gtest(test_error_blocks test_error_blocks.cpp
                                    ../src/calibration_offset_parser.cpp
                                    ../src/models.cpp)
@@ -21,3 +23,12 @@ target_link_libraries(test_rotations ${Boost_LIBRARIES}
                                      ${catkin_LIBRARIES}
                                      ${CERES_LIBRARIES}
                                      ${orocos_kdl_LIBRARIES})
+
+add_executable(chain_manager_tests chain_manager_tests.cpp
+                                   ../src/chain_manager.cpp)
+add_dependencies(tests chain_manager_tests)
+target_link_libraries(chain_manager_tests ${Boost_LIBRARIES}
+                                          ${catkin_LIBRARIES}
+                                          ${GTEST_LIBRARIES})
+
+add_rostest(chain_manager_tests.launch)

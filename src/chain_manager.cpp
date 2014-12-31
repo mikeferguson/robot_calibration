@@ -22,7 +22,7 @@
 namespace robot_calibration
 {
 
-ChainManager::ChainManager(ros::NodeHandle& nh)
+ChainManager::ChainManager(ros::NodeHandle& nh, double wait_time)
 {
   // We cannot do much without some kinematic chains
   if (!nh.hasParam("chains"))
@@ -38,10 +38,11 @@ ChainManager::ChainManager(ros::NodeHandle& nh)
   // Construct each chain to manage
   for (size_t i = 0; i < chains.size(); ++i)
   {
-    std::string topic;
+    std::string name, topic;
+    name = static_cast<std::string>(chains[i]["name"]);
     topic = static_cast<std::string>(chains[i]["topic"]);
 
-    boost::shared_ptr<ChainController> controller(new ChainController(topic));
+    boost::shared_ptr<ChainController> controller(new ChainController(name, topic));
 
     for (size_t j = 0; j < chains[i]["joints"].size(); ++j)
     {
@@ -49,7 +50,7 @@ ChainManager::ChainManager(ros::NodeHandle& nh)
     }
 
     ROS_INFO("Waiting for %s...", topic.c_str());
-    controller->client.waitForServer();
+    controller->client.waitForServer(ros::Duration(wait_time));
 
     controllers_.push_back(controller);
   }
@@ -161,6 +162,28 @@ bool ChainManager::waitToSettle()
   }
 
   return true;
+}
+
+std::vector<std::string> ChainManager::getChains()
+{
+  std::vector<std::string> chains;
+  for (int i = 0; i < controllers_.size(); ++i)
+  {
+    chains.push_back(controllers_[i]->chain_name);
+  }
+  return chains;
+}
+
+std::vector<std::string> ChainManager::getChainJointNames(
+  const std::string& chain_name)
+{
+  for (int i = 0; i < controllers_.size(); ++i)
+  {
+    if (controllers_[i]->chain_name == chain_name)
+      return controllers_[i]->joint_names;
+  }
+  std::vector<std::string> empty;
+  return empty;
 }
 
 }  // namespace robot_calibration

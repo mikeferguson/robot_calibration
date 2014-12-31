@@ -1,0 +1,16 @@
+chains:
+  - name: arm
+    topic: arm_controller/follow_joint_trajectory
+    joints:
+     - arm_lift_joint
+     - arm_shoulder_pan_joint
+     - arm_shoulder_lift_joint
+     - arm_upperarm_roll_joint
+     - arm_elbow_flex_joint
+     - arm_wrist_flex_joint
+     - arm_wrist_roll_joint
+  - name: head
+    topic: head_controller/follow_joint_trajectory
+    joints:
+     - head_pan_joint
+     - head_tilt_joint

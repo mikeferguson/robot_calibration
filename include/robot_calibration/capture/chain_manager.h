@@ -31,19 +31,22 @@ namespace robot_calibration
 typedef actionlib::SimpleActionClient<control_msgs::FollowJointTrajectoryAction> TrajectoryClient;
 
 /**
- *  @brief Manages moving joints to a new pose, determining when they
- *         are settled, and returning current joint_states.
+ * @brief Manages moving joints to a new pose, determining when they
+ *        are settled, and returning current joint_states.
  */
 class ChainManager
 {
   struct ChainController
   {
-    ChainController(const std::string& topic) :
-      client(topic, true)
+    ChainController(const std::string& name,
+                    const std::string& topic) :
+      client(topic, true),
+      chain_name(name)
     {
     }
 
     TrajectoryClient client;
+    std::string chain_name;
     std::vector<std::string> joint_names;
   };
 
@@ -51,25 +54,36 @@ public:
   /**
    * @brief Constructor, sets up chains from ros parameters.
    * @param nh The node handle, sets namespace for parameters.
+   * @param wait_time The time to wait for each action to come up.
    */
-  ChainManager(ros::NodeHandle& nh);
+  ChainManager(ros::NodeHandle& nh, double wait_time = 15.0);
 
   /**
-   *  @brief Send commands to all managed joints. The ChainManager automatically figures out
-   *         which controller to send these to.
-   *  @returns False if failed.
+   * @brief Send commands to all managed joints. The ChainManager automatically figures out
+   *        which controller to send these to.
+   * @returns False if failed.
    */
   bool moveToState(const sensor_msgs::JointState& state);
 
   /**
-   *  @brief Wait for joints to settle.
+   * @brief Wait for joints to settle.
    */
   bool waitToSettle();
 
   /**
-   *  @brief Get the current JointState message.
+   * @brief Get the current JointState message.
    */
   bool getState(sensor_msgs::JointState* state);
+
+  /**
+   * @brief Get the names of chains. Mainly for testing
+   */
+  std::vector<std::string> getChains();
+
+  /**
+   * @brief Get the joint names associated with a chain. Mainly for testing
+   */
+  std::vector<std::string> getChainJointNames(const std::string& chain_name);
 
 private:
   void stateCallback(const sensor_msgs::JointStateConstPtr& msg);

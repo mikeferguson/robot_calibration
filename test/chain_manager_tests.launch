@@ -1,0 +1,5 @@
+<launch>
+  <test time-limit="300" test-name="chain_manager_tests" pkg="robot_calibration" type="chain_manager_tests">
+    <rosparam file="$(find robot_calibration)/test/chain_manager_tests.yaml" command="load" />
+  </test>
+</launch>
