@@ -1,8 +1,0 @@
-<launch>
-
-  <node pkg="robot_calibration" type="calibrate" name="calibrate"
-        args="--from-bag /tmp/robot_calibration/calibration_data.bag"
-        output="screen" required="true">
-  </node>
-  
-</launch>

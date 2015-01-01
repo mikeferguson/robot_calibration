@@ -33,8 +33,6 @@ find_package(catkin REQUIRED
     std_msgs
 )
 
-catkin_python_setup()
-
 add_message_files(FILES CalibrationData.msg DepthCameraInfo.msg)
 generate_messages(DEPENDENCIES
   geometry_msgs
@@ -84,6 +82,3 @@ add_subdirectory(test)
 
 install(TARGETS calibrate calibrate_base
         DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
-
-install(DIRECTORY launch
-  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
