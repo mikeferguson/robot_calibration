@@ -91,10 +91,10 @@ int main(int argc, char** argv)
     // no name provided for a calibration bag file, must do capture
     robot_calibration::ChainManager chain_manager_(nh);
     robot_calibration::FeatureFinder * finder_;
-    if (nh.hasParam("use_checkerboards"))
-      finder_ = new robot_calibration::CheckerboardFinder(nh);
-    else
+    if (nh.hasParam("use_led_finder"))
       finder_ = new robot_calibration::LedFinder(nh);
+    else
+      finder_ = new robot_calibration::CheckerboardFinder(nh);
 
     ros::Publisher pub = nh.advertise<robot_calibration::CalibrationData>("/calibration_data", 10);
     ros::Publisher urdf_pub = nh.advertise<std_msgs::String>("/robot_description", 1, true);  // latched
