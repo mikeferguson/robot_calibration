@@ -1,0 +1,5 @@
+<launch>
+  <test time-limit="300" test-name="optimization_param_tests" pkg="robot_calibration" type="optimization_param_tests">
+    <rosparam file="$(find robot_calibration)/test/optimization_param_tests.yaml" command="load" />
+  </test>
+</launch>

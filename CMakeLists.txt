@@ -56,20 +56,28 @@ add_executable(calibrate_base src/calibrate_base.cpp)
 target_link_libraries(calibrate_base ${Boost_LIBRARIES}
                                      ${catkin_LIBRARIES})
 
-add_executable(calibrate src/calibrate.cpp
-                         src/calibration_offset_parser.cpp
-                         src/chain_manager.cpp
-                         src/checkerboard_finder.cpp
-                         src/led_finder.cpp
-                         src/models.cpp)
-target_link_libraries(calibrate ${Boost_LIBRARIES}
+add_library(robot_calibration src/calibration_offset_parser.cpp
+                              src/chain_manager.cpp
+                              src/checkerboard_finder.cpp
+                              src/led_finder.cpp
+                              src/models.cpp
+                              src/optimization_params.cpp)
+target_link_libraries(robot_calibration ${Boost_LIBRARIES}
+                                        ${catkin_LIBRARIES}
+                                        ${CERES_LIBRARIES}
+                                        ${tinyxml_LIBRARIES}
+                                        ${orocos_kdl_LIBRARIES})
+
+add_executable(calibrate src/calibrate.cpp)
+target_link_libraries(calibrate robot_calibration
+                                ${Boost_LIBRARIES}
                                 ${catkin_LIBRARIES}
                                 ${CERES_LIBRARIES}
                                 ${OpenCV_LIBRARIES}  # visualization only
                                 ${tinyxml_LIBRARIES}
                                 ${orocos_kdl_LIBRARIES})
-add_dependencies(calibrate ubr_calibration_gencpp
-                           ubr_msgs_gencpp)
+add_dependencies(calibrate robot_calibration_gencpp
+                           robot_calibration)
 
 add_subdirectory(test)
 
