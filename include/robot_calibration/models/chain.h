@@ -113,7 +113,7 @@ public:
    *         models used for error modeling. Usually 'base_link'.
    *  \param tip The tip of the chain.
    */
-  ChainModel(KDL::Tree model, std::string root, std::string tip);
+  ChainModel(const std::string& name, KDL::Tree model, std::string root, std::string tip);
   virtual ~ChainModel() {}
 
   /**
@@ -138,6 +138,7 @@ private:
 protected:
   std::string root_;
   std::string tip_;
+  std::string name_;
 };
 
 /** \brief Converts our angle-axis-with-integrated-magnitude representation to a KDL::Rotation */

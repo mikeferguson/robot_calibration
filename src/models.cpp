@@ -36,8 +36,8 @@ double positionFromMsg(const std::string& name,
   return 0.0;
 }
 
-ChainModel::ChainModel(KDL::Tree model, std::string root, std::string tip) :
-    root_(root), tip_(tip)
+ChainModel::ChainModel(const std::string& name, KDL::Tree model, std::string root, std::string tip) :
+    root_(root), tip_(tip), name_(name)
 {
   // Create a KDL::Chain
   if (!model.getChain(root, tip, chain_))
@@ -111,8 +111,8 @@ KDL::Frame ChainModel::getChainFK(const CalibrationOffsetParser& offsets,
   return p_out;
 }
 
-Camera3dModel::Camera3dModel(KDL::Tree model, std::string root, std::string tip) :
-    ChainModel(model, root, tip)
+Camera3dModel::Camera3dModel(const std::string& name, KDL::Tree model, std::string root, std::string tip) :
+    ChainModel(name, model, root, tip)
 {
   // TODO add additional parameters for unprojecting observations using initial parameters
 }
@@ -139,12 +139,12 @@ std::vector<geometry_msgs::PointStamped> Camera3dModel::project(
   double z_scaling = data.rgbd_info.z_scaling;
 
   // Get calibrated camera info
-  double new_camera_fx = camera_fx * (1.0 + offsets.get("camera_fx"));
-  double new_camera_fy = camera_fy * (1.0 + offsets.get("camera_fy"));
-  double new_camera_cx = camera_cx * (1.0 + offsets.get("camera_cx"));
-  double new_camera_cy = camera_cy * (1.0 + offsets.get("camera_cy"));
-  double new_z_offset = offsets.get("camera_z_offset");
-  double new_z_scaling = 1.0 + offsets.get("camera_z_scaling");
+  double new_camera_fx = camera_fx * (1.0 + offsets.get(name_+"_fx"));
+  double new_camera_fy = camera_fy * (1.0 + offsets.get(name_+"_fy"));
+  double new_camera_cx = camera_cx * (1.0 + offsets.get(name_+"_cx"));
+  double new_camera_cy = camera_cy * (1.0 + offsets.get(name_+"_cy"));
+  double new_z_offset = offsets.get(name_+"_z_offset");
+  double new_z_scaling = 1.0 + offsets.get(name_+"_z_scaling");
 
   std::vector<geometry_msgs::PointStamped> points;
   points.resize(data.rgbd_observations.size());

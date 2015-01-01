@@ -71,12 +71,12 @@ int Optimizer::optimize(OptimizationParams& params,
   {
     if (params.models[i].type == "chain")
     {
-      ChainModel* model = new ChainModel(tree_, params.base_link, params.models[i].params["frame"]);
+      ChainModel* model = new ChainModel(params.models[i].name, tree_, params.base_link, params.models[i].params["frame"]);
       models_[params.models[i].name] = model;
     }
     else if (params.models[i].type == "camera3d")
     {
-      Camera3dModel* model = new Camera3dModel(tree_, params.base_link, params.models[i].params["frame"]);
+      Camera3dModel* model = new Camera3dModel(params.models[i].name, tree_, params.base_link, params.models[i].params["frame"]);
       models_[params.models[i].name] = model;
     }
     else

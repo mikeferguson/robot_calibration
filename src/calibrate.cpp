@@ -52,9 +52,8 @@
  *   - Capture:
  *     - move joints to a particular place
  *     - wait to settle
- *     - find LEDs in the camera view. This currently works, but might be
- *       be improved by sampling a plane in the local region of the point.
- *     - write sample to bag file: joint angles, position of LEDs in camera.
+ *     - find target (led or checkerboard)
+ *     - write sample to bag file: joint angles, position of targets in camera.
  *   - Calibrate:
  *     - load urdf, samples from bag file.
  *     - create arm and camera reprojection chains.
