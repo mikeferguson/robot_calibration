@@ -72,11 +72,11 @@
 int main(int argc, char** argv)
 {
   ros::init(argc, argv,"calibration_node");
-  ros::NodeHandle nh;
+  ros::NodeHandle nh("~");
 
   // Should we be stupidly verbose?
   bool verbose;
-  nh.param<bool>("verbose_calibration", verbose, false);
+  nh.param<bool>("verbose", verbose, false);
 
   // The calibration data
   std_msgs::String description_msg;
@@ -97,11 +97,11 @@ int main(int argc, char** argv)
     else
       finder_ = new robot_calibration::LedFinder(nh);
 
-    ros::Publisher pub = nh.advertise<robot_calibration::CalibrationData>("calibration_data", 10);
-    ros::Publisher urdf_pub = nh.advertise<std_msgs::String>("robot_description", 1, true);  // latched
+    ros::Publisher pub = nh.advertise<robot_calibration::CalibrationData>("/calibration_data", 10);
+    ros::Publisher urdf_pub = nh.advertise<std_msgs::String>("/robot_description", 1, true);  // latched
 
     // Get the robot_description and republish it
-    if (!nh.getParam("robot_description", description_msg.data))
+    if (!nh.getParam("/robot_description", description_msg.data))
     {
       ROS_FATAL("robot_description not set!");
       return -1;
@@ -232,8 +232,10 @@ int main(int argc, char** argv)
   }
 
   // Create instance of optimizer
-  robot_calibration::Optimizer opt(description_msg.data, "base_link", "wrist_roll_link");
-  opt.optimize(data, verbose);
+  robot_calibration::OptimizationParams params;
+  params.LoadFromROS(nh);
+  robot_calibration::Optimizer opt(description_msg.data);
+  opt.optimize(params, data, verbose);
   if (verbose)
   {
     std::cout << "Parameter Offsets:" << std::endl;
@@ -253,7 +255,7 @@ int main(int argc, char** argv)
   // Save updated URDF
   {
     std::stringstream urdf_name;
-    urdf_name << "/tmp/ubr1_calibrated_" << datecode << ".urdf";
+    urdf_name << "/tmp/calibrated_" << datecode << ".urdf";
     std::ofstream file;
     file.open(urdf_name.str().c_str());
     file << s;
@@ -290,7 +292,7 @@ int main(int argc, char** argv)
     file << opt.getOffsets().getOffsetYAML();
     file << "depth_info: depth_" << datecode << ".yaml" << std::endl;
     file << "rgb_info: rgb_" << datecode << ".yaml" << std::endl;
-    file << "urdf: ubr1_calibrated_" << datecode << ".urdf" << std::endl;
+    file << "urdf: calibrated_" << datecode << ".urdf" << std::endl;
     file.close();
   }
 

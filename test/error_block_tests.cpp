@@ -185,7 +185,7 @@ std::string robot_description =
 
 TEST(ErrorBlockTests, error_blocks_maxwell)
 {
-  robot_calibration::Optimizer opt(robot_description, "base_link", "gripper_led_frame");
+  robot_calibration::Optimizer opt(robot_description);
 
   std::vector<robot_calibration::CalibrationData> data;
   robot_calibration::CalibrationData msg;
@@ -243,7 +243,8 @@ TEST(ErrorBlockTests, error_blocks_maxwell)
   msg.rgbd_observations[0].point.z = 0.517497963716;
   data.push_back(msg);
 
-  opt.optimize(data, false);
+  robot_calibration::OptimizationParams params;
+  opt.optimize(params, data, false);
 
   EXPECT_LT(opt.summary()->initial_cost, 1e-20);
 }

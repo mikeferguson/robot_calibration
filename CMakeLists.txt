@@ -61,7 +61,8 @@ add_library(robot_calibration src/calibration_offset_parser.cpp
                               src/checkerboard_finder.cpp
                               src/led_finder.cpp
                               src/models.cpp
-                              src/optimization_params.cpp)
+                              src/optimization_params.cpp
+                              src/optimizer.cpp)
 target_link_libraries(robot_calibration ${Boost_LIBRARIES}
                                         ${catkin_LIBRARIES}
                                         ${CERES_LIBRARIES}

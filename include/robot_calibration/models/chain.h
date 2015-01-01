@@ -55,7 +55,7 @@ namespace robot_calibration
  *        |                     |
  *        |    2           1    |
  *        |                     |
- *         \\___________________/
+ *         \___________________/
  *
  *  </PRE>
  *  When using a checkerboard, each interesection on the checkerboard is an
