@@ -66,6 +66,7 @@ target_link_libraries(robot_calibration ${Boost_LIBRARIES}
                                         ${CERES_LIBRARIES}
                                         ${tinyxml_LIBRARIES}
                                         ${orocos_kdl_LIBRARIES})
+add_dependencies(robot_calibration robot_calibration_gencpp)
 
 add_executable(calibrate src/calibrate.cpp)
 target_link_libraries(calibrate robot_calibration
@@ -75,8 +76,7 @@ target_link_libraries(calibrate robot_calibration
                                 ${OpenCV_LIBRARIES}  # visualization only
                                 ${tinyxml_LIBRARIES}
                                 ${orocos_kdl_LIBRARIES})
-add_dependencies(calibrate robot_calibration_gencpp
-                           robot_calibration)
+add_dependencies(calibrate robot_calibration)
 
 add_subdirectory(test)
 
