@@ -1,4 +1,5 @@
 /*
+ * Copyright (C) 2015 Fetch Robotics Inc.
  * Copyright (C) 2014 Unbounded Robotics Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -27,7 +28,6 @@
 #include <nav_msgs/Odometry.h>
 
 #define PI          3.14159265359
-#define ACCEL_LIM   3.0
 
 class BaseCalibration
 {
@@ -39,8 +39,13 @@ public:
 
     // Get params
     ros::NodeHandle nh("~");
+
+    // Min/Max acceptable error when aligning with wall
     nh.param<double>("min_angle", min_angle_, -0.5);
     nh.param<double>("max_angle", max_angle_, 0.5);
+
+    // How fast to accelerate
+    nh.param<double>("accel_limit", accel_limit_, 2.0);
 
     // cmd vel publisher
     cmd_pub_ = n.advertise<geometry_msgs::Twist>("cmd_vel", 10);
@@ -71,7 +76,7 @@ public:
   {
     double odom, imu;
     ros::NodeHandle nh;
-    nh.param<double>("base_controller/track_width", odom, 0.33665);
+    nh.param<double>("base_controller/track_width", odom, 0.37476);
     nh.param<double>("imu/gyro_scale", imu, 0.001221729);
 
     // scaling to be computed
@@ -128,7 +133,7 @@ public:
     std::cout << "spin..." << std::endl;
 
     // need to account for de-acceleration time (v^2/2a)
-    double angle = rotations * 2 * PI - (0.5 * velocity * velocity / ACCEL_LIM);
+    double angle = rotations * 2 * PI - (0.5 * velocity * velocity / accel_limit_);
 
     while (fabs(odom_angle_) < angle)
     {
@@ -141,7 +146,7 @@ public:
     std::cout << "...done" << std::endl;
 
     // wait to stop
-    ros::Duration(0.5 + fabs(velocity) / ACCEL_LIM).sleep();
+    ros::Duration(0.5 + fabs(velocity) / accel_limit_).sleep();
 
     // save measurements
     imu_.push_back(imu_angle_);
@@ -262,6 +267,7 @@ private:
   double scan_angle_, scan_r2_, scan_dist_;
 
   double min_angle_, max_angle_;
+  double accel_limit_;
 
   std::vector<double> scan_;
   std::vector<double> imu_;
