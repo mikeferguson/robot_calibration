@@ -52,7 +52,7 @@ public:
 
     // Subscribe
     odom_subscriber_ = n.subscribe("odom", 5, &BaseCalibration::odometryCallback, this);
-    imu_subscriber_ = n.subscribe("imu/filtered", 5, &BaseCalibration::imuCallback, this);
+    imu_subscriber_ =  n.subscribe("imu", 5, &BaseCalibration::imuCallback, this);
     scan_subscriber_ = n.subscribe("base_scan", 1, &BaseCalibration::laserCallback, this);
 
     resetInternal();
@@ -77,7 +77,7 @@ public:
     double odom, imu;
     ros::NodeHandle nh;
     nh.param<double>("base_controller/track_width", odom, 0.37476);
-    nh.param<double>("imu/gyro_scale", imu, 0.001221729);
+    nh.param<double>("imu/gyro/scale", imu, 0.001221729);
 
     // scaling to be computed
     double odom_scale = 0.0;
