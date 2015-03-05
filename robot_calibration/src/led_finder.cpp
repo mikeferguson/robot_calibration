@@ -151,12 +151,12 @@ struct CloudDifferenceTracker
 
 LedFinder::LedFinder(ros::NodeHandle & n) :
   FeatureFinder(n),
-  //client_("/gripper_led_action", true),
+  client_("/gripper_led_action", true),
   waiting_(false)
 {
   subscriber_ = n.subscribe("/head_camera/depth_registered/points", 1, &LedFinder::cameraCallback, this);
   ROS_INFO("Waiting for gripper_led_action...");
-  //client_.waitForServer();
+  client_.waitForServer();
 
   publisher_ = n.advertise<sensor_msgs::PointCloud2>("led_points", 10);
 
@@ -196,7 +196,7 @@ bool LedFinder::waitForCloud()
   return !waiting_;
 }
 
-bool LedFinder::find(robot_calibration::CalibrationData * msg)
+bool LedFinder::find(robot_calibration_msgs::CalibrationData * msg)
 {
   uint8_t commands[] = {1, 0, 8, 0, 2, 0, 4, 0};
   uint8_t command_idx = -1;
@@ -206,10 +206,10 @@ bool LedFinder::find(robot_calibration::CalibrationData * msg)
 
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr prev_cloud(new pcl::PointCloud<pcl::PointXYZRGB>);
 
-/*  ubr_msgs::GripperLedCommandGoal command;
+  robot_calibration_msgs::GripperLedCommandGoal command;
   command.led_code = 0;
   client_.sendGoal(command);
-  client_.waitForResult(ros::Duration(10.0));*/
+  client_.waitForResult(ros::Duration(10.0));
 
   // Get initial cloud
   if(!waitForCloud())
@@ -235,9 +235,9 @@ bool LedFinder::find(robot_calibration::CalibrationData * msg)
   {
     // Toggle LED to next state
     command_idx = (command_idx + 1) % 8;
-    /*command.led_code = commands[command_idx];
+    command.led_code = commands[command_idx];
     client_.sendGoal(command);
-    client_.waitForResult(ros::Duration(10.0));*/
+    client_.waitForResult(ros::Duration(10.0));
 
     // Get a point cloud
     if(!waitForCloud())

@@ -20,7 +20,7 @@
 #define ROBOT_CALIBRATION_CAPTURE_FEATURE_FINDER_H
 
 #include <ros/ros.h>
-#include <robot_calibration/CalibrationData.h>
+#include <robot_calibration_msgs/CalibrationData.h>
 
 namespace robot_calibration
 {
@@ -34,7 +34,7 @@ public:
   FeatureFinder(ros::NodeHandle & n) {};
   virtual ~FeatureFinder() {};
 
-  virtual bool find(robot_calibration::CalibrationData * msg) = 0;
+  virtual bool find(robot_calibration_msgs::CalibrationData * msg) = 0;
 };
 
 }  // namespace robot_calibration

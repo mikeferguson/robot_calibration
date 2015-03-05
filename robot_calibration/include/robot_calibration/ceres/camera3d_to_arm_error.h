@@ -24,7 +24,7 @@
 #include <robot_calibration/calibration_offset_parser.h>
 #include <robot_calibration/models/camera3d.h>
 #include <robot_calibration/models/chain.h>
-#include <robot_calibration/CalibrationData.h>
+#include <robot_calibration_msgs/CalibrationData.h>
 
 namespace robot_calibration
 {
@@ -44,7 +44,7 @@ struct Camera3dToArmError
   Camera3dToArmError(Camera3dModel* camera_model,
                      ChainModel* arm_model,
                      CalibrationOffsetParser* offsets,
-                     CalibrationData& data)
+                     robot_calibration_msgs::CalibrationData& data)
   {
     camera_model_ = camera_model;
     arm_model_ = arm_model;
@@ -103,7 +103,7 @@ struct Camera3dToArmError
   static ceres::CostFunction* Create(Camera3dModel* camera_model,
                                      ChainModel* arm_model,
                                      CalibrationOffsetParser* offsets,
-                                     CalibrationData& data)
+                                     robot_calibration_msgs::CalibrationData& data)
   {
     if (data.rgbd_observations.size() < 4)
       std::cerr << "WARNING: less than 4 points in observation." << std::endl;
@@ -120,7 +120,7 @@ struct Camera3dToArmError
   Camera3dModel * camera_model_;
   ChainModel * arm_model_;
   CalibrationOffsetParser * offsets_;
-  CalibrationData data_;
+  robot_calibration_msgs::CalibrationData data_;
 };
 
 }  // namespace robot_calibration

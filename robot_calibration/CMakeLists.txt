@@ -24,20 +24,13 @@ find_package(catkin REQUIRED
     cv_bridge
     geometry_msgs
     kdl_parser
-    message_generation
     nav_msgs
     pcl_ros
+    robot_calibration_msgs
     rosbag
     roscpp
     sensor_msgs
     std_msgs
-)
-
-add_message_files(FILES CalibrationData.msg DepthCameraInfo.msg)
-generate_messages(DEPENDENCIES
-  geometry_msgs
-  sensor_msgs
-  std_msgs
 )
 
 catkin_package()
@@ -66,7 +59,7 @@ target_link_libraries(robot_calibration ${Boost_LIBRARIES}
                                         ${CERES_LIBRARIES}
                                         ${tinyxml_LIBRARIES}
                                         ${orocos_kdl_LIBRARIES})
-add_dependencies(robot_calibration robot_calibration_gencpp)
+add_dependencies(robot_calibration robot_calibration_msgs_gencpp)
 
 add_executable(calibrate src/calibrate.cpp)
 target_link_libraries(calibrate robot_calibration

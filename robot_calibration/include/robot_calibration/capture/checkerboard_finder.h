@@ -23,7 +23,7 @@
 #include <pcl/point_types.h>
 #include <pcl_ros/point_cloud.h>
 #include <robot_calibration/capture/feature_finder.h>
-#include <robot_calibration/CalibrationData.h>
+#include <robot_calibration_msgs/CalibrationData.h>
 
 #include <opencv2/calib3d/calib3d.hpp>
 #include <robot_calibration/pcl_conversions.h>
@@ -49,10 +49,10 @@ public:
    * \param points_y Number of checkerboard points in y
    * \returns True if point has been filled in.
    */
-  bool find(robot_calibration::CalibrationData * msg);
+  bool find(robot_calibration_msgs::CalibrationData * msg);
 
 private:
-  bool findInternal(robot_calibration::CalibrationData * msg);
+  bool findInternal(robot_calibration_msgs::CalibrationData * msg);
 
   void cameraCallback(const pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud);
   bool waitForCloud();

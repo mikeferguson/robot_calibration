@@ -1,4 +1,5 @@
 /*
+ * Copyright (C) 2015 Fetch Robotics Inc.
  * Copyright (C) 2013-2014 Unbounded Robotics Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -25,7 +26,7 @@
 #include <rosbag/query.h>
 
 #include <std_msgs/String.h>
-#include <robot_calibration/CalibrationData.h>
+#include <robot_calibration_msgs/CalibrationData.h>
 
 #include <robot_calibration/capture/chain_manager.h>
 #include <robot_calibration/capture/checkerboard_finder.h>
@@ -79,7 +80,7 @@ int main(int argc, char** argv)
 
   // The calibration data
   std_msgs::String description_msg;
-  std::vector<robot_calibration::CalibrationData> data;
+  std::vector<robot_calibration_msgs::CalibrationData> data;
 
   // What bag to use to load calibration poses out of (for capture)
   std::string pose_bag_name("calibration_poses.bag");
@@ -96,7 +97,7 @@ int main(int argc, char** argv)
     else
       finder_ = new robot_calibration::CheckerboardFinder(nh);
 
-    ros::Publisher pub = nh.advertise<robot_calibration::CalibrationData>("/calibration_data", 10);
+    ros::Publisher pub = nh.advertise<robot_calibration_msgs::CalibrationData>("/calibration_data", 10);
     ros::Publisher urdf_pub = nh.advertise<std_msgs::String>("/robot_description", 1, true);  // latched
 
     // Get the robot_description and republish it
@@ -144,7 +145,7 @@ int main(int argc, char** argv)
     // For each pose in the capture sequence.
     for (unsigned int pose_idx = 0; (pose_idx < poses.size()) || (poses.size() == 0); ++pose_idx)
     {
-      robot_calibration::CalibrationData msg;
+      robot_calibration_msgs::CalibrationData msg;
 
       if (poses.size() == 0)
       {
@@ -225,7 +226,7 @@ int main(int argc, char** argv)
     rosbag::View data_view_(bag_, rosbag::TopicQuery("calibration_data"));
     BOOST_FOREACH (rosbag::MessageInstance const m, data_view_)
     {
-      robot_calibration::CalibrationData::ConstPtr msg = m.instantiate<robot_calibration::CalibrationData>();
+      robot_calibration_msgs::CalibrationData::ConstPtr msg = m.instantiate<robot_calibration_msgs::CalibrationData>();
       data.push_back(*msg);
     }
   }

@@ -1,0 +1,7 @@
+# This action is used to flash a sequence with LEDs, which can then be detected by calibration
+
+uint8 led_code
+
+---
+
+---

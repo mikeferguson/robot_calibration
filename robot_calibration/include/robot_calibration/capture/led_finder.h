@@ -27,8 +27,8 @@
 #include <tf/transform_listener.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <geometry_msgs/PointStamped.h>
-#include <robot_calibration/CalibrationData.h>
-//#include <ubr_msgs/GripperLedCommandAction.h>
+#include <robot_calibration_msgs/CalibrationData.h>
+#include <robot_calibration_msgs/GripperLedCommandAction.h>
 #include <actionlib/client/simple_action_client.h>
 
 #include <opencv/cv.h>
@@ -37,7 +37,7 @@
 namespace robot_calibration
 {
 
-//typedef actionlib::SimpleActionClient<ubr_msgs::GripperLedCommandAction> LedClient;
+typedef actionlib::SimpleActionClient<robot_calibration_msgs::GripperLedCommandAction> LedClient;
 
 /**
  *  \brief This class processes the point cloud input to find the LED
@@ -52,7 +52,7 @@ public:
    * \param msg CalibrationData instance to fill in with led point information.
    * \returns True if point has been filled in.
    */
-  bool find(robot_calibration::CalibrationData * msg);
+  bool find(robot_calibration_msgs::CalibrationData * msg);
 
 private:
   void cameraCallback(const pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud);
@@ -60,7 +60,7 @@ private:
 
   ros::Subscriber subscriber_;  /// Incoming sensor_msgs::Image
   ros::Publisher publisher_;  /// Outgoing sensor_msgs::PointCloud2
-  //LedClient client_;
+  LedClient client_;
 
   bool waiting_;
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_ptr_;

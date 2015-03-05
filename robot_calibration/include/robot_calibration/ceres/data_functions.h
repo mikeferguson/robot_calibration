@@ -19,7 +19,7 @@
 #ifndef ROBOT_CALIBRATION_CERES_DATA_FUNCTIONS_H
 #define ROBOT_CALIBRATION_CERES_DATA_FUNCTIONS_H
 
-#include <robot_calibration/CalibrationData.h>
+#include <robot_calibration_msgs/CalibrationData.h>
 
 namespace robot_calibration
 {
@@ -89,7 +89,7 @@ double getDistance(geometry_msgs::PointStamped& p1,
 std::vector<double> getErrors(ChainModel * chain1,
                               ChainModel * chain2,
                               CalibrationOffsetParser * offsets,
-                              CalibrationData& data)
+                              robot_calibration_msgs::CalibrationData& data)
 {
   std::vector<double> error;
   std::vector<geometry_msgs::PointStamped> proj1 = chain1->project(data, *offsets);
@@ -112,7 +112,7 @@ std::vector<geometry_msgs::PointStamped>
 getErrorPoints(ChainModel * chain1,
                ChainModel * chain2,
                CalibrationOffsetParser * offsets,
-               CalibrationData& data)
+               robot_calibration_msgs::CalibrationData& data)
 {
   std::vector<geometry_msgs::PointStamped> error;
   std::vector<geometry_msgs::PointStamped> proj1 = chain1->project(data, *offsets);
@@ -130,7 +130,7 @@ void printSimpleDistanceError(ChainModel * chain1,
                               ChainModel * chain2,
                               CalibrationOffsetParser * before,
                               CalibrationOffsetParser * after,
-                              CalibrationData& data)
+                              robot_calibration_msgs::CalibrationData& data)
 {
   std::cout << "  Distance Error Before: " << computeAverage(getErrors(chain1, chain2, before, data)) <<
                  ", After: " << computeAverage(getErrors(chain1, chain2, after, data)) << std::endl;
@@ -139,7 +139,7 @@ void printSimpleDistanceError(ChainModel * chain1,
 void printComparePointsInternal(ChainModel * chain1,
                                 ChainModel * chain2,
                                 CalibrationOffsetParser * offsets,
-                                CalibrationData& data)
+                                robot_calibration_msgs::CalibrationData& data)
 {
   std::vector<geometry_msgs::PointStamped> proj1 = chain1->project(data, *offsets);
   std::vector<geometry_msgs::PointStamped> proj2 = chain2->project(data, *offsets);
@@ -173,7 +173,7 @@ void printComparePoints(ChainModel * chain1,
                         ChainModel * chain2,
                         CalibrationOffsetParser * before,
                         CalibrationOffsetParser * after,
-                        CalibrationData& data)
+                        robot_calibration_msgs::CalibrationData& data)
 {
   std::cout << "  Points Before:" << std::endl;
   printComparePointsInternal(chain1, chain2, before, data);

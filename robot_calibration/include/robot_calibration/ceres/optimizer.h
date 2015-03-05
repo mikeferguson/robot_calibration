@@ -24,7 +24,7 @@
 
 #include <urdf/model.h>
 #include <kdl_parser/kdl_parser.hpp>
-#include <robot_calibration/CalibrationData.h>
+#include <robot_calibration_msgs/CalibrationData.h>
 
 #include <robot_calibration/calibration_offset_parser.h>
 #include <robot_calibration/ceres/optimization_params.h>
@@ -57,7 +57,7 @@ public:
    *        stdout.
    */
   int optimize(OptimizationParams& params,
-               std::vector<robot_calibration::CalibrationData> data,
+               std::vector<robot_calibration_msgs::CalibrationData> data,
                bool progress_to_stdout = false);
 
   /** \brief Returns the summary of the optimization last run. */

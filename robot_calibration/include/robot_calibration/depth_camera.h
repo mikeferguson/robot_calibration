@@ -21,8 +21,8 @@
 
 #include <ros/ros.h>
 #include <sensor_msgs/CameraInfo.h>
-#include <robot_calibration/CalibrationData.h>
-#include <robot_calibration/DepthCameraInfo.h>
+#include <robot_calibration_msgs/CalibrationData.h>
+#include <robot_calibration_msgs/DepthCameraInfo.h>
 
 namespace robot_calibration
 {
@@ -102,9 +102,9 @@ public:
     return false;
   }
 
-  DepthCameraInfo getDepthCameraInfo()
+  robot_calibration_msgs::DepthCameraInfo getDepthCameraInfo()
   {
-    DepthCameraInfo info;
+    robot_calibration_msgs::DepthCameraInfo info;
     info.camera_info = *camera_info_ptr_;
     info.z_offset = z_offset_mm_;
     info.z_scaling = z_scaling_;

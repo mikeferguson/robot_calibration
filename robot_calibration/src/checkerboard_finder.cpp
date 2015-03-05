@@ -55,7 +55,7 @@ bool CheckerboardFinder::waitForCloud()
   return !waiting_;
 }
 
-bool CheckerboardFinder::find(robot_calibration::CalibrationData * msg)
+bool CheckerboardFinder::find(robot_calibration_msgs::CalibrationData * msg)
 {
   // Try up to 50 frames
   for (int i = 0; i < 50; ++i)
@@ -66,7 +66,7 @@ bool CheckerboardFinder::find(robot_calibration::CalibrationData * msg)
   return false;
 }
 
-bool CheckerboardFinder::findInternal(robot_calibration::CalibrationData * msg)
+bool CheckerboardFinder::findInternal(robot_calibration_msgs::CalibrationData * msg)
 {
   geometry_msgs::PointStamped rgbd;
   geometry_msgs::PointStamped world;

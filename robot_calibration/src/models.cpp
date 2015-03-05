@@ -45,7 +45,7 @@ ChainModel::ChainModel(const std::string& name, KDL::Tree model, std::string roo
 }
 
 std::vector<geometry_msgs::PointStamped> ChainModel::project(
-    const robot_calibration::CalibrationData& data,
+    const robot_calibration_msgs::CalibrationData& data,
     const CalibrationOffsetParser& offsets)
 {
   std::vector<geometry_msgs::PointStamped> points;
@@ -118,7 +118,7 @@ Camera3dModel::Camera3dModel(const std::string& name, KDL::Tree model, std::stri
 }
 
 std::vector<geometry_msgs::PointStamped> Camera3dModel::project(
-    const robot_calibration::CalibrationData& data,
+    const robot_calibration_msgs::CalibrationData& data,
     const CalibrationOffsetParser& offsets)
 {
   // Get existing camera info

@@ -1,4 +1,5 @@
 /*
+ * Copyright (C) 2015 Fetch Robotics Inc.
  * Copyright (C) 2013-2014 Unbounded Robotics Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -26,7 +27,7 @@
 
 #include <geometry_msgs/PointStamped.h>
 #include <sensor_msgs/JointState.h>
-#include <robot_calibration/CalibrationData.h>
+#include <robot_calibration_msgs/CalibrationData.h>
 
 /** \brief Calibration code lives under this namespace */
 namespace robot_calibration
@@ -122,7 +123,7 @@ public:
    *  \param offsets The offsets that the solver wants to examine.
    */
   virtual std::vector<geometry_msgs::PointStamped> project(
-    const robot_calibration::CalibrationData& data,
+    const robot_calibration_msgs::CalibrationData& data,
     const CalibrationOffsetParser& offsets);
 
   /**
