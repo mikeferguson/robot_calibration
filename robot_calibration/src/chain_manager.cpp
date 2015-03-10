@@ -76,11 +76,13 @@ ChainManager::makePoint(const sensor_msgs::JointState& state, const std::vector<
   for (size_t i = 0; i < joints.size(); ++i)
   {
     for (size_t j = 0; j < state.name.size(); ++j)
+    {
       if (joints[i] == state.name[j])
       {
         p.positions.push_back(state.position[j]);
         break;
       }
+    }
     p.velocities.push_back(0.0);
     p.accelerations.push_back(0.0);
     if (p.velocities.size() != p.positions.size())
@@ -149,7 +151,7 @@ bool ChainManager::waitToSettle()
         }
       }
 
-      // If at least one joint is not settled, break out this for loop
+      // If at least one joint is not settled, break out of this for loop
       if (!settled)
         break;
     }
