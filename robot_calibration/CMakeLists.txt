@@ -33,7 +33,29 @@ find_package(catkin REQUIRED
     std_msgs
 )
 
-catkin_package()
+catkin_package(
+  INCLUDE_DIRS
+    include
+  CATKIN_DEPENDS
+    actionlib
+    camera_calibration_parsers
+    cv_bridge
+    geometry_msgs
+    kdl_parser
+    nav_msgs
+    pcl_ros
+    robot_calibration_msgs
+    rosbag
+    roscpp
+    sensor_msgs
+    std_msgs
+  DEPENDS
+    Boost
+    Ceres
+    orocos_kdl
+  LIBRARIES
+    robot_calibration
+)
 
 include_directories(include ${Boost_INCLUDE_DIRS}
                             ${catkin_INCLUDE_DIRS}
@@ -73,5 +95,9 @@ add_dependencies(calibrate robot_calibration)
 
 add_subdirectory(test)
 
-install(TARGETS calibrate calibrate_base
-        DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
+install(DIRECTORY include/ DESTINATION include)
+
+install(TARGETS calibrate calibrate_base robot_calibration
+  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
