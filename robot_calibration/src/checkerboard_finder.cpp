@@ -1,4 +1,5 @@
 /*
+ * Copyright (C) 2015 Fetch Robotics Inc.
  * Copyright (C) 2013-2014 Unbounded Robotics Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,15 +23,21 @@ namespace robot_calibration
 {
 
 CheckerboardFinder::CheckerboardFinder(ros::NodeHandle & n) : 
-  FeatureFinder(n), waiting_(false)
+  FeatureFinder(n),
+  waiting_(false)
 {
-  subscriber_ = n.subscribe("/head_camera/depth_registered/points",
+  ros::NodeHandle nh(n, "checkerboard_finder");
+
+  // Setup Scriber
+  std::string topic_name;
+  nh.param<std::string>("topic", topic_name, "/points");
+  subscriber_ = n.subscribe(topic_name,
                             1,
                             &CheckerboardFinder::cameraCallback,
                             this);
 
-  n.param<int>("checkerboard_finder_points_x", points_x_, 4);
-  n.param<int>("checkerboard_finder_points_y", points_y_, 5);
+  nh.param<int>("points_x", points_x_, 4);
+  nh.param<int>("points_y", points_y_, 5);
 }
 
 void CheckerboardFinder::cameraCallback(const pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud)

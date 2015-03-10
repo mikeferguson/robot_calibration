@@ -36,8 +36,12 @@ LedFinder::LedFinder(ros::NodeHandle & n) :
   ROS_INFO("Waiting for %s...", topic_name.c_str());
   client_->waitForServer();
 
-  nh.param<std::string>("points", topic_name, "/points");
-  subscriber_ = n.subscribe(topic_name, 1, &LedFinder::cameraCallback, this);
+  // Setup subscriber
+  nh.param<std::string>("topic", topic_name, "/points");
+  subscriber_ = n.subscribe(topic_name,
+                            1,
+                            &LedFinder::cameraCallback,
+                            this);
 
   publisher_ = n.advertise<sensor_msgs::PointCloud2>("led_points", 10);
 
