@@ -1,4 +1,5 @@
 /*
+ * Copyright (C) 2015 Fetch Robotics Inc.
  * Copyright (C) 2013-2014 Unbounded Robotics Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -37,13 +38,41 @@
 namespace robot_calibration
 {
 
-typedef actionlib::SimpleActionClient<robot_calibration_msgs::GripperLedCommandAction> LedClient;
-
-/**
- *  \brief This class processes the point cloud input to find the LED
- */
+/** @brief This class processes the point cloud input to find the LED. */
 class LedFinder : public FeatureFinder
 {
+  /** @brief Internally used within LED finder to track each of several LEDs. */
+  struct CloudDifferenceTracker
+  {
+
+    CloudDifferenceTracker(std::string frame, double x, double y, double z);
+
+    // Weight should be +/- 1 typically
+    bool process(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud,
+                 pcl::PointCloud<pcl::PointXYZRGB>::Ptr prev,
+                 double weight);
+
+    // Have we found the LED?
+    bool isFound(const pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud,
+                 double threshold);
+
+    // Gives a refined centroid using multiple points
+    bool getRefinedCentroid(const pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud,
+                            geometry_msgs::PointStamped& point);
+
+    // Reset the tracker
+    void reset(size_t size);
+
+    std::vector<double> diff_;
+    double max_;
+    int max_idx_;
+    int count_;
+    std::string frame_;  // frame of led coordinates
+    double x_, y_, z_;  // coordinates of led this is tracking
+  };
+
+  typedef actionlib::SimpleActionClient<robot_calibration_msgs::GripperLedCommandAction> LedClient;
+
 public:
   LedFinder(ros::NodeHandle & n);
 
@@ -58,12 +87,15 @@ private:
   void cameraCallback(const pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud);
   bool waitForCloud();
 
-  ros::Subscriber subscriber_;  /// Incoming sensor_msgs::Image
+  ros::Subscriber subscriber_;  /// Incoming sensor_msgs::PointCloud2
   ros::Publisher publisher_;  /// Outgoing sensor_msgs::PointCloud2
-  LedClient client_;
+  boost::scoped_ptr<LedClient> client_;
 
   bool waiting_;
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_ptr_;
+
+  std::vector<CloudDifferenceTracker> trackers_;
+  std::vector<uint8_t> codes_;
 
   double threshold_;  /// Minimum value of diffs in order to trigger that this is an LED
   int max_iterations_;  /// Maximum number of cycles before we abort finding the LED
