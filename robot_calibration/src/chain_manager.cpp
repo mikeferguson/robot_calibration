@@ -55,6 +55,9 @@ ChainManager::ChainManager(ros::NodeHandle& nh, double wait_time)
     controllers_.push_back(controller);
   }
 
+  // Parameter to set movement time
+  nh.param<double>("duration", duration_, 5.0);
+
   subscriber_ = nh.subscribe("/joint_states", 1, &ChainManager::stateCallback, this);
 }
 
@@ -122,9 +125,9 @@ bool ChainManager::moveToState(const sensor_msgs::JointState& state)
     goal.trajectory.joint_names = controllers_[i]->joint_names;
 
     trajectory_msgs::JointTrajectoryPoint p = makePoint(state, controllers_[i]->joint_names);
-    p.time_from_start = ros::Duration(1.0);
+    p.time_from_start = ros::Duration(duration_);
     goal.trajectory.points.push_back(p);
-    goal.goal_time_tolerance = ros::Duration(3.0);
+    goal.goal_time_tolerance = ros::Duration(1.0);
 
     // Call actions
     controllers_[i]->client.sendGoal(goal);
@@ -134,7 +137,7 @@ bool ChainManager::moveToState(const sensor_msgs::JointState& state)
   for (size_t i = 0; i < controllers_.size(); ++i)
   {
     // TODO: catch errors with clients
-    controllers_[i]->client.waitForResult(ros::Duration(15.0));
+    controllers_[i]->client.waitForResult(ros::Duration(duration_*1.5));
   }
 
   return true;

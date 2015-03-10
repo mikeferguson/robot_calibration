@@ -60,8 +60,8 @@ public:
   ChainManager(ros::NodeHandle& nh, double wait_time = 15.0);
 
   /**
-   * @brief Send commands to all managed joints. The ChainManager automatically figures out
-   *        which controller to send these to.
+   * @brief Send commands to all managed joints. The ChainManager automatically
+   *        figures out which controller to send these to.
    * @returns False if failed.
    */
   bool moveToState(const sensor_msgs::JointState& state);
@@ -94,6 +94,7 @@ private:
 
   ros::Subscriber subscriber_;
   sensor_msgs::JointState state_;
+  double duration_;
   boost::mutex state_mutex_;
   std::vector<boost::shared_ptr<ChainController> > controllers_;
 };
