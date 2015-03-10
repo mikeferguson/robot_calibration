@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 Fetch Robotics Inc.
+ * Copyright (C) 2014-2015 Fetch Robotics Inc.
  * Copyright (C) 2013-2014 Unbounded Robotics Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,6 +21,7 @@
 #define ROBOT_CALIBRATION_CAPTURE_CHAIN_MANAGER_H
 
 #include <ros/ros.h>
+#include <boost/thread/mutex.hpp>
 #include <sensor_msgs/JointState.h>
 #include <control_msgs/FollowJointTrajectoryAction.h>
 #include <actionlib/client/simple_action_client.h>
@@ -93,6 +94,7 @@ private:
 
   ros::Subscriber subscriber_;
   sensor_msgs::JointState state_;
+  boost::mutex state_mutex_;
   std::vector<boost::shared_ptr<ChainController> > controllers_;
 };
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 Fetch Robotics Inc.
+ * Copyright (C) 2014-2015 Fetch Robotics Inc.
  * Copyright (C) 2013-2014 Unbounded Robotics Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -58,14 +58,33 @@ ChainManager::ChainManager(ros::NodeHandle& nh, double wait_time)
   subscriber_ = nh.subscribe("/joint_states", 1, &ChainManager::stateCallback, this);
 }
 
-// TODO: need mutex here?
 void ChainManager::stateCallback(const sensor_msgs::JointStateConstPtr& msg)
 {
-  state_ = *msg;
+  boost::mutex::scoped_lock lock(state_mutex_);
+  // Update each joint based on message
+  for (size_t msg_j = 0; msg_j < msg->name.size(); msg_j++)
+  {
+    size_t state_j;
+    for (state_j = 0; state_j < state_.name.size(); state_j++)
+    {
+      if (state_.name[state_j] == msg->name[msg_j])
+      {
+        state_.position[state_j] = msg->position[msg_j];
+        break;
+      }
+    }
+    if (state_j == state_.name.size())
+    {
+      // New joint
+      state_.name.push_back(msg->name[msg_j]);
+      state_.position.push_back(msg->position[msg_j]);
+    }
+  }
 }
 
 bool ChainManager::getState(sensor_msgs::JointState* state)
 {
+  boost::mutex::scoped_lock lock(state_mutex_);
   *state = state_;
 }
 

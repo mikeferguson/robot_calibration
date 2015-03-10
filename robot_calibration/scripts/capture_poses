@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+# Copyright (C) 2015 Fetch Robotics Inc.
 # Copyright (C) 2013-2014 Unbounded Robotics Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -29,6 +30,8 @@ class CapturePoses:
     last_state_ = None # last joint states
 
     def __init__(self):
+        self.last_state_ = JointState()
+
         rospy.init_node('capture_calibration_poses')
         rospy.Subscriber("joint_states", JointState, self.stateCb)
 
@@ -47,6 +50,7 @@ class CapturePoses:
                     print('Cannot save state')
                     continue
                 # save a pose
+                print(self.last_state_)
                 bag.write('calibration_joint_states', self.last_state_)
                 print("Saving pose %d" % count)
                 count += 1
@@ -54,7 +58,13 @@ class CapturePoses:
 
     def stateCb(self, msg):
         """ Callback for joint_states messages """
-        self.last_state_ = msg
+        for joint, position in zip(msg.name, msg.position):
+            try:
+                idx = self.last_state_.name.index(joint)
+                self.last_state_.position[idx] = position
+            except ValueError:
+                self.last_state_.name.append(joint)
+                self.last_state_.position.append(position)
 
 if __name__=='__main__':
     CapturePoses()
