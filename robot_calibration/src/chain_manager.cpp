@@ -73,6 +73,7 @@ void ChainManager::stateCallback(const sensor_msgs::JointStateConstPtr& msg)
       if (state_.name[state_j] == msg->name[msg_j])
       {
         state_.position[state_j] = msg->position[msg_j];
+        state_.velocity[state_j] = msg->velocity[msg_j];
         break;
       }
     }
@@ -81,6 +82,7 @@ void ChainManager::stateCallback(const sensor_msgs::JointStateConstPtr& msg)
       // New joint
       state_.name.push_back(msg->name[msg_j]);
       state_.position.push_back(msg->position[msg_j]);
+      state_.velocity.push_back(msg->velocity[msg_j]);
     }
   }
 }
