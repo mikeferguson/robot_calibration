@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 Fetch Robotics Inc.
+ * Copyright (C) 2014-2015 Fetch Robotics Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@
 namespace robot_calibration
 {
 
-OptimizationParams::OptimizationParams() : 
+OptimizationParams::OptimizationParams() :
   base_link("base_link")
 {
 }

@@ -71,7 +71,7 @@
  */
 int main(int argc, char** argv)
 {
-  ros::init(argc, argv,"calibration_node");
+  ros::init(argc, argv,"robot_calibration");
   ros::NodeHandle nh("~");
 
   // Should we be stupidly verbose?
@@ -121,8 +121,7 @@ int main(int argc, char** argv)
     std::vector<sensor_msgs::JointState> poses;
     if (pose_bag_name.compare("--manual") != 0)
     {
-      if (verbose)
-        ROS_INFO_STREAM("Opening " << pose_bag_name);
+      ROS_INFO_STREAM("Opening " << pose_bag_name);
       rosbag::Bag bag;
       try
       {
@@ -154,7 +153,7 @@ int main(int argc, char** argv)
       if (poses.size() == 0)
       {
         // Manual calibration, wait for keypress
-        ROS_INFO("Press key when arm is ready...");
+        ROS_INFO("Press key when arm is ready... (type 'done' to finish capture)");
         std::string throwaway;
         std::getline(std::cin, throwaway);
         if (throwaway.compare("done") == 0)

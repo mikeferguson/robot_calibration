@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 Fetch Robotics Inc.
+ * Copyright (C) 2014-2015 Fetch Robotics Inc.
  * Copyright (C) 2013-2014 Unbounded Robotics Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -71,11 +71,16 @@ int Optimizer::optimize(OptimizationParams& params,
   {
     if (params.models[i].type == "chain")
     {
+      ROS_INFO_STREAM("Creating chain '" << params.models[i].name << "' from " <<
+                                            params.base_link << " to " <<
+                                            params.models[i].params["frame"]);
       ChainModel* model = new ChainModel(params.models[i].name, tree_, params.base_link, params.models[i].params["frame"]);
       models_[params.models[i].name] = model;
     }
     else if (params.models[i].type == "camera3d")
     {
+      ROS_INFO_STREAM("Creating camera3d '" << params.models[i].name << "' in frame " <<
+                                               params.models[i].params["frame"]);
       Camera3dModel* model = new Camera3dModel(params.models[i].name, tree_, params.base_link, params.models[i].params["frame"]);
       models_[params.models[i].name] = model;
     }
