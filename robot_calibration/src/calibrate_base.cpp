@@ -121,6 +121,8 @@ public:
     sendVelocityCommand(0.0);
     std::cout << "...done" << std::endl;
     ros::Duration(0.25).sleep();
+
+    return true;
   }
 
   /** \brief Spin and record imu, odom, scan */
@@ -155,6 +157,8 @@ public:
       scan_.push_back(scan_start + 2 * rotations * PI - scan_angle_);
     else
       scan_.push_back(scan_start - 2 * rotations * PI - scan_angle_);
+
+    return true;
   }
 
 private:
@@ -186,7 +190,7 @@ private:
     double mean_x, mean_y, n;
     mean_x = mean_y = n = 0;
     int start = -1;
-    for (int i = 0; i < scan->ranges.size(); ++i, angle += scan->angle_increment)
+    for (size_t i = 0; i < scan->ranges.size(); ++i, angle += scan->angle_increment)
     {
       if (angle < min_angle_ || angle > max_angle_)
         continue;
@@ -211,7 +215,7 @@ private:
     angle = scan->angle_min + start * scan->angle_increment;  // reset angle
     double x, y, xx, xy, yy;
     x = y = xx = xy = yy = n = 0;
-    for (int i = start; i < scan->ranges.size(); ++i, angle += scan->angle_increment)
+    for (size_t i = start; i < scan->ranges.size(); ++i, angle += scan->angle_increment)
     {
       if (angle > max_angle_)
         break;
