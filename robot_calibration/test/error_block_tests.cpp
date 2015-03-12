@@ -187,8 +187,8 @@ TEST(ErrorBlockTests, error_blocks_maxwell)
 {
   robot_calibration::Optimizer opt(robot_description);
 
-  std::vector<robot_calibration::CalibrationData> data;
-  robot_calibration::CalibrationData msg;
+  std::vector<robot_calibration_msgs::CalibrationData> data;
+  robot_calibration_msgs::CalibrationData msg;
   msg.joint_states.name.resize(10);
   msg.joint_states.name[0] = "arm_lift_flex_joint";
   msg.joint_states.name[1] = "arm_shoulder_pan_joint";
