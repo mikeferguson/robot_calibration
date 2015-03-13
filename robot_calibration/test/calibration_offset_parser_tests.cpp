@@ -80,7 +80,7 @@ TEST(CalibrationOffsetParserTests, test_urdf_update)
   boost::split(s_pieces, s, boost::is_any_of("\n"));
   boost::split(robot_pieces, robot_description_updated, boost::is_any_of("\n"));
 
-  for (int i = 0; i < robot_pieces.size(); ++i)
+  for (size_t i = 0; i < robot_pieces.size(); ++i)
   {
     ASSERT_STREQ(robot_pieces[i].c_str(), s_pieces[i].c_str());
   }
