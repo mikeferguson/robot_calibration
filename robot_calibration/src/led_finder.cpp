@@ -56,7 +56,7 @@ LedFinder::LedFinder(ros::NodeHandle & n) :
   nh.getParam("poses", led_poses);
   ROS_ASSERT(led_poses.getType() == XmlRpc::XmlRpcValue::TypeArray);
   // Each LED has a code, and pose in the gripper_led_frame
-  for (size_t i = 0; i < led_poses.size(); ++i)
+  for (int i = 0; i < led_poses.size(); ++i)
   {
     codes_.push_back(static_cast<int>(led_poses[i]["code"]));
     codes_.push_back(0);  // assumes "0" is code for "OFF"

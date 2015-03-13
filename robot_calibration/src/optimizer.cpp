@@ -67,7 +67,7 @@ int Optimizer::optimize(OptimizationParams& params,
   }
 
   // Create models
-  for (int i = 0; i < params.models.size(); ++i)
+  for (size_t i = 0; i < params.models.size(); ++i)
   {
     if (params.models[i].type == "chain")
     {
@@ -92,11 +92,11 @@ int Optimizer::optimize(OptimizationParams& params,
 
   // Setup  parameters to calibrate
   offsets_ = new CalibrationOffsetParser();
-  for (int i = 0; i < params.free_params.size(); ++i)
+  for (size_t i = 0; i < params.free_params.size(); ++i)
   {
     offsets_->add(params.free_params[i]);
   }
-  for (int i = 0; i < params.free_frames.size(); ++i)
+  for (size_t i = 0; i < params.free_frames.size(); ++i)
   {
     offsets_->addFrame(params.free_frames[i].name,
                        params.free_frames[i].x,

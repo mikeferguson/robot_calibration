@@ -36,6 +36,7 @@ bool CalibrationOffsetParser::add(const std::string name)
 {
   parameter_names_.push_back(name);
   parameter_offsets_.push_back(0.0);
+  return true;
 }
 
 bool CalibrationOffsetParser::addFrame(
@@ -59,6 +60,8 @@ bool CalibrationOffsetParser::addFrame(
     add(std::string(name).append("_b"));
   if (calibrate_yaw)
     add(std::string(name).append("_c"));
+
+  return true;
 }
 
 bool CalibrationOffsetParser::update(const double* const free_params)
@@ -109,7 +112,7 @@ bool CalibrationOffsetParser::getFrame(const std::string name, KDL::Frame& offse
 
 int CalibrationOffsetParser::size()
 {
-  parameter_names_.size();
+  return parameter_names_.size();
 }
 
 std::string CalibrationOffsetParser::getOffsetYAML()

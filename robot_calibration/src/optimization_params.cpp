@@ -38,7 +38,7 @@ bool OptimizationParams::LoadFromROS(ros::NodeHandle& nh)
     nh.getParam("free_params", names);
     ROS_ASSERT(names.getType() == XmlRpc::XmlRpcValue::TypeArray);
 
-    for (size_t i = 0; i < names.size(); ++i)
+    for (int i = 0; i < names.size(); ++i)
     {
       free_params.push_back(static_cast<std::string>(names[i]));
     }
@@ -52,7 +52,7 @@ bool OptimizationParams::LoadFromROS(ros::NodeHandle& nh)
     nh.getParam("free_frames", free_frame_params);
     ROS_ASSERT(free_frame_params.getType() == XmlRpc::XmlRpcValue::TypeArray);
 
-    for (size_t i = 0; i < free_frame_params.size(); ++i)
+    for (int i = 0; i < free_frame_params.size(); ++i)
     {
       FreeFrameParams params;
       params.name = static_cast<std::string>(free_frame_params[i]["name"]);
@@ -74,7 +74,7 @@ bool OptimizationParams::LoadFromROS(ros::NodeHandle& nh)
     nh.getParam("models", model_params);
     ROS_ASSERT(model_params.getType() == XmlRpc::XmlRpcValue::TypeArray);
 
-    for (size_t i = 0; i < model_params.size(); ++i)
+    for (int i = 0; i < model_params.size(); ++i)
     {
       Params params;
       params.name = static_cast<std::string>(model_params[i]["name"]);
@@ -92,7 +92,7 @@ bool OptimizationParams::LoadFromROS(ros::NodeHandle& nh)
     nh.getParam("error_blocks", error_params);
     ROS_ASSERT(error_params.getType() == XmlRpc::XmlRpcValue::TypeArray);
 
-    for (size_t i = 0; i < error_params.size(); ++i)
+    for (int i = 0; i < error_params.size(); ++i)
     {
       Params params;
       params.name = static_cast<std::string>(error_params[i]["name"]);

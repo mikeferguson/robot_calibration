@@ -88,7 +88,7 @@ KDL::Frame ChainModel::getChainFK(const CalibrationOffsetParser& offsets,
   KDL::Frame p_out = KDL::Frame::Identity();
 
   // Step through joints
-  for (int i = 0; i < chain_.getNrOfSegments(); ++i)
+  for (size_t i = 0; i < chain_.getNrOfSegments(); ++i)
   {
     std::string name = chain_.getSegment(i).getJoint().getName();
     KDL::Frame correction;
