@@ -153,13 +153,13 @@ bool ChainManager::moveToState(const sensor_msgs::JointState& state)
 
       moveit_msgs::Constraints c1;
       c1.joint_constraints.resize(controllers_[i]->joint_names.size());
-      for (size_t i = 0; i < controllers_[i]->joint_names.size(); i++)
+      for (size_t c = 0; c < controllers_[i]->joint_names.size(); c++)
       {
-        c1.joint_constraints[i].joint_name = controllers_[i]->joint_names[i];
-        c1.joint_constraints[i].position = p.positions[i];
-        c1.joint_constraints[i].tolerance_above = 0.01;
-        c1.joint_constraints[i].tolerance_below = 0.01;
-        c1.joint_constraints[i].weight = 1.0;
+        c1.joint_constraints[c].joint_name = controllers_[i]->joint_names[c];
+        c1.joint_constraints[c].position = p.positions[i];
+        c1.joint_constraints[c].tolerance_above = 0.01;
+        c1.joint_constraints[c].tolerance_below = 0.01;
+        c1.joint_constraints[c].weight = 1.0;
       }
       moveit_goal.request.goal_constraints.push_back(c1);
 
