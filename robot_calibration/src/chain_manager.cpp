@@ -76,6 +76,18 @@ ChainManager::ChainManager(ros::NodeHandle& nh, double wait_time)
 
 void ChainManager::stateCallback(const sensor_msgs::JointStateConstPtr& msg)
 {
+  if (msg->name.size() != msg->position.size())
+  {
+    ROS_ERROR("JointState Error: name array is not same size as position array.");
+    return;
+  }
+
+  if (msg->position.size() != msg->velocity.size())
+  {
+    ROS_ERROR("JointState Error: position array is not same size as velocity array.");
+    return;
+  }
+
   boost::mutex::scoped_lock lock(state_mutex_);
   // Update each joint based on message
   for (size_t msg_j = 0; msg_j < msg->name.size(); msg_j++)
@@ -156,7 +168,7 @@ bool ChainManager::moveToState(const sensor_msgs::JointState& state)
       for (size_t c = 0; c < controllers_[i]->joint_names.size(); c++)
       {
         c1.joint_constraints[c].joint_name = controllers_[i]->joint_names[c];
-        c1.joint_constraints[c].position = p.positions[i];
+        c1.joint_constraints[c].position = p.positions[c];
         c1.joint_constraints[c].tolerance_above = 0.01;
         c1.joint_constraints[c].tolerance_below = 0.01;
         c1.joint_constraints[c].weight = 1.0;
