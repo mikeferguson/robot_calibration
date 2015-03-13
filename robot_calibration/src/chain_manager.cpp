@@ -51,7 +51,7 @@ ChainManager::ChainManager(ros::NodeHandle& nh, double wait_time)
     }
 
     ROS_INFO("Waiting for %s...", topic.c_str());
-    if (controller->client.waitForServer(ros::Duration(wait_time)))
+    if (!controller->client.waitForServer(ros::Duration(wait_time)))
     {
       ROS_WARN("Failed to connect to %s", topic.c_str());
     }
@@ -59,7 +59,7 @@ ChainManager::ChainManager(ros::NodeHandle& nh, double wait_time)
     if (controller->shouldPlan() && (!move_group_))
     {
       move_group_.reset(new MoveGroupClient("move_group", true));
-      move_group_->waitForServer(ros::Duration(3.0));
+      if (!move_group_->waitForServer(ros::Duration(wait_time)))
       {
         ROS_WARN("Failed to connect to move_group");
       }
