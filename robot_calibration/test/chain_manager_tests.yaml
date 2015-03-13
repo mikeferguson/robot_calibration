@@ -9,6 +9,7 @@ chains:
      - arm_elbow_flex_joint
      - arm_wrist_flex_joint
      - arm_wrist_roll_joint
+    planning_group: arm_group
   - name: head
     topic: /head_controller/follow_joint_trajectory
     joints:

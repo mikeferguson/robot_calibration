@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 Fetch Robotics Inc.
+ * Copyright (C) 2014-2015 Fetch Robotics Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@
 TEST(ChainManagerTests, test_rosparam_loading)
 {
   ros::NodeHandle nh("~");
-  robot_calibration::ChainManager manager(nh, 1.0);
+  robot_calibration::ChainManager manager(nh, 0.001);
 
   std::vector<std::string> chain_names = manager.getChains();
   EXPECT_EQ(2, chain_names.size());
@@ -42,6 +42,12 @@ TEST(ChainManagerTests, test_rosparam_loading)
   EXPECT_EQ(2, joint_names.size());
   EXPECT_EQ("head_pan_joint", joint_names[0]);
   EXPECT_EQ("head_tilt_joint", joint_names[1]);
+
+  std::string group_name = manager.getPlanningGroupName("arm");
+  EXPECT_EQ("arm_group", group_name);
+
+  group_name = manager.getPlanningGroupName("head");
+  EXPECT_EQ("", group_name);
 }
 
 int main(int argc, char** argv)

@@ -1,6 +1,10 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(robot_calibration)
 
+if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
+endif()
+
 find_package(Boost REQUIRED system thread)
 find_package(PCL REQUIRED)
 find_package(OpenCV REQUIRED)  # visualization only
@@ -24,6 +28,7 @@ find_package(catkin REQUIRED
     cv_bridge
     geometry_msgs
     kdl_parser
+    moveit_msgs
     nav_msgs
     pcl_ros
     robot_calibration_msgs
@@ -42,6 +47,7 @@ catkin_package(
     cv_bridge
     geometry_msgs
     kdl_parser
+    moveit_msgs
     nav_msgs
     pcl_ros
     robot_calibration_msgs
