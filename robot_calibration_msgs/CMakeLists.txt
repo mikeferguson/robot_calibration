@@ -10,13 +10,24 @@ find_package(catkin REQUIRED
     std_msgs
 )
 
-add_action_files(FILES GripperLedCommand.action)
-add_message_files(FILES CalibrationData.msg DepthCameraInfo.msg)
-generate_messages(DEPENDENCIES
-  actionlib_msgs
-  geometry_msgs
-  sensor_msgs
-  std_msgs
+add_action_files(
+  FILES
+    GripperLedCommand.action
+)
+
+add_message_files(
+  FILES
+    CalibrationData.msg
+    CameraParameter.msg
+    ExtendedCameraInfo.msg
+)
+
+generate_messages(
+  DEPENDENCIES
+    actionlib_msgs
+    geometry_msgs
+    sensor_msgs
+    std_msgs
 )
 
 catkin_package(

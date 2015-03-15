@@ -1,4 +1,5 @@
 /*
+ * Copyright (C) 2015 Fetch Robotics Inc.
  * Copyright (C) 2013-2014 Unbounded Robotics Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,7 +23,7 @@
 #include <ros/ros.h>
 #include <sensor_msgs/CameraInfo.h>
 #include <robot_calibration_msgs/CalibrationData.h>
-#include <robot_calibration_msgs/DepthCameraInfo.h>
+#include <robot_calibration_msgs/ExtendedCameraInfo.h>
 
 namespace robot_calibration
 {
@@ -102,12 +103,15 @@ public:
     return false;
   }
 
-  robot_calibration_msgs::DepthCameraInfo getDepthCameraInfo()
+  robot_calibration_msgs::ExtendedCameraInfo getDepthCameraInfo()
   {
-    robot_calibration_msgs::DepthCameraInfo info;
+    robot_calibration_msgs::ExtendedCameraInfo info;
     info.camera_info = *camera_info_ptr_;
-    info.z_offset = z_offset_mm_;
-    info.z_scaling = z_scaling_;
+    info.parameters.resize(2);
+    info.parameters[0].name = "z_offset_mm";
+    info.parameters[0].value = z_offset_mm_;
+    info.parameters[1].name = "z_scaling";
+    info.parameters[1].value = z_scaling_;
     return info;
   }
 

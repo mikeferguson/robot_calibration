@@ -1,4 +1,5 @@
 /*
+ * Copyright (C) 2015 Fetch Robotics Inc.
  * Copyright (C) 2013-2014 Unbounded Robotics Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -135,8 +136,19 @@ std::vector<geometry_msgs::PointStamped> Camera3dModel::project(
    * new_depth_mm = (depth_mm + z_offset_mm) * z_scale
    * NOTE: these work on integer values not floats
    */
-  double z_offset = data.rgbd_info.z_offset / 1000.0; // (mm -> m)
-  double z_scaling = data.rgbd_info.z_scaling;
+  double z_offset = 0.0;
+  double z_scaling = 1.0;
+  for (size_t i = 0; i < data.rgbd_info.parameters.size(); i++)
+  {
+    if (data.rgbd_info.parameters[i].name == "z_scaling")
+    {
+      z_scaling = data.rgbd_info.parameters[i].value;
+    }
+    else if (data.rgbd_info.parameters[i].name == "z_offset_mm")
+    {
+      z_offset = data.rgbd_info.parameters[i].value / 1000.0;  // (mm -> m)
+    }
+  }
 
   // Get calibrated camera info
   double new_camera_fx = camera_fx * (1.0 + offsets.get(name_+"_fx"));
