@@ -57,13 +57,19 @@ private:
   void cameraCallback(const pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud);
   bool waitForCloud();
 
-  int points_x_;
-  int points_y_;
 
   ros::Subscriber subscriber_;  /// Incoming sensor_msgs::PointCloud2
 
   bool waiting_;
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_ptr_;
+
+  /*
+   * ROS Parameters
+   */
+  int points_x_;        /// Size of checkerboard
+  int points_y_;        /// Size of checkerboard
+
+  bool output_debug_;   /// Should we output debug image/cloud?
 };
 
 }  // namespace robot_calibration

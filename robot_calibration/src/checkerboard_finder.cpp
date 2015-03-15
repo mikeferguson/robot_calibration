@@ -36,8 +36,12 @@ CheckerboardFinder::CheckerboardFinder(ros::NodeHandle & n) :
                             &CheckerboardFinder::cameraCallback,
                             this);
 
+  // Size of checkerboard
   nh.param<int>("points_x", points_x_, 4);
   nh.param<int>("points_y", points_y_, 5);
+
+  // Should we output debug image/cloud
+  nh.param<bool>("debug", output_debug_, false);
 }
 
 void CheckerboardFinder::cameraCallback(const pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud)
@@ -148,7 +152,12 @@ bool CheckerboardFinder::findInternal(robot_calibration_msgs::CalibrationData * 
       msg->observations[0].features[i] = rgbd;
       msg->observations[1].features[i] = world;
     }
-    pcl::toROSMsg(*cloud_ptr_, msg->observations[0].cloud);
+
+    // Add debug cloud to message
+    if (output_debug_)
+    {
+      pcl::toROSMsg(*cloud_ptr_, msg->observations[0].cloud);
+    }
 
     // Found all points
     return true;
