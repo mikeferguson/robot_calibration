@@ -48,6 +48,10 @@ LedFinder::LedFinder(ros::NodeHandle & n) :
   // Parameters for detection
   nh.param<double>("threshold", threshold_, 1000.0);
   nh.param<int>("max_iterations", max_iterations_, 50);
+
+  // Maximum distance LED can be from expected pose
+  nh.param<double>("max_error", max_error_, 0.1);
+
   nh.param<bool>("debug_image", output_debug_image_, false);
 
   // Parameters for LEDs themselves
@@ -237,24 +241,27 @@ bool LedFinder::find(robot_calibration_msgs::CalibrationData * msg)
       continue;
     }
 
-    // Check that point is close enough
-    // TODO: this should be pushed into tracker, as that knows where point should be
+    // Check that point is close enough to expected pose
     try
     {
-      listener_.transformPoint(gripper_led_frame_, ros::Time(0), rgbd_pt,
+      listener_.transformPoint(trackers_[t].frame_, ros::Time(0), rgbd_pt,
                                rgbd_pt.header.frame_id, world_pt);
     }
     catch(const tf::TransformException &ex)
     {
-      ROS_ERROR_STREAM("Failed to transform point to " << gripper_led_frame_);
+      ROS_ERROR_STREAM("Failed to transform point to " << trackers_[t].frame_);
       continue;
     }
-    double distance = (world_pt.point.x * world_pt.point.x) +
-                      (world_pt.point.y * world_pt.point.y) +
-                      (world_pt.point.z * world_pt.point.z);
-    if (distance > 0.1)  // TODO parameterize
+    geometry_msgs::Point pt;
+    pt.x = world_pt.point.x - trackers_[t].x_;
+    pt.y = world_pt.point.y - trackers_[t].y_;
+    pt.z = world_pt.point.z - trackers_[t].z_;
+    double distance = (pt.x * pt.x) +
+                      (pt.y * pt.y) +
+                      (pt.z * pt.z);
+    if (distance > max_error_)
     {
-      ROS_ERROR_STREAM("Point was too far away from " << gripper_led_frame_ << ": " << distance);
+      ROS_ERROR_STREAM("Point was too far away from " << trackers_[t].frame_ << ": " << distance);
       continue;
     }
 

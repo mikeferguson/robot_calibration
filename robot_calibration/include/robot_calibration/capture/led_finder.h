@@ -97,8 +97,11 @@ private:
   std::vector<CloudDifferenceTracker> trackers_;
   std::vector<uint8_t> codes_;
 
+  double max_error_;  /// Maximum distance led can be from expected pose
+
   double threshold_;  /// Minimum value of diffs in order to trigger that this is an LED
   int max_iterations_;  /// Maximum number of cycles before we abort finding the LED
+
   bool output_debug_image_;
   std::string gripper_led_frame_;
 
