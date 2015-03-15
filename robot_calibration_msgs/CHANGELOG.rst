@@ -2,8 +2,8 @@
 Changelog for package robot_calibration_msgs
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.1.2 (2015-03-15)
+------------------
 * update cmake/package.xml
 * Contributors: Michael Ferguson
 

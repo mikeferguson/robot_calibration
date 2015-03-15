@@ -2,8 +2,8 @@
 Changelog for package robot_calibration
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.1.2 (2015-03-15)
+------------------
 * fix a number of warning
 * enable use of moveit for planning between poses
 * handle multiple joint_states publisher
