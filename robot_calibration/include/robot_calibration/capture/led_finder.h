@@ -103,7 +103,6 @@ private:
   int max_iterations_;  /// Maximum number of cycles before we abort finding the LED
 
   bool output_debug_image_;
-  std::string gripper_led_frame_;
 
   tf::TransformListener listener_;
 };

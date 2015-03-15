@@ -55,7 +55,8 @@ LedFinder::LedFinder(ros::NodeHandle & n) :
   nh.param<bool>("debug_image", output_debug_image_, false);
 
   // Parameters for LEDs themselves
-  nh.param<std::string>("gripper_led_frame", gripper_led_frame_, "wrist_roll_link");
+  std::string gripper_led_frame;
+  nh.param<std::string>("gripper_led_frame", gripper_led_frame, "wrist_roll_link");
   XmlRpc::XmlRpcValue led_poses;
   nh.getParam("poses", led_poses);
   ROS_ASSERT(led_poses.getType() == XmlRpc::XmlRpcValue::TypeArray);
@@ -69,7 +70,7 @@ LedFinder::LedFinder(ros::NodeHandle & n) :
     x = static_cast<double>(led_poses[i]["x"]);
     y = static_cast<double>(led_poses[i]["y"]);
     z = static_cast<double>(led_poses[i]["z"]);
-    trackers_.push_back(CloudDifferenceTracker(gripper_led_frame_, x, y, z));
+    trackers_.push_back(CloudDifferenceTracker(gripper_led_frame, x, y, z));
   }
 
   if (output_debug_image_)
