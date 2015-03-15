@@ -50,7 +50,26 @@ std::vector<geometry_msgs::PointStamped> ChainModel::project(
     const CalibrationOffsetParser& offsets)
 {
   std::vector<geometry_msgs::PointStamped> points;
-  points.resize(data.world_observations.size());
+
+  // Determine which observation to use
+  int sensor_idx = -1;
+  for (size_t obs = 0; obs < data.observations.size(); obs++)
+  {
+    if (data.observations[obs].sensor_name == name_)
+    {
+      sensor_idx = obs;
+      break;
+    }
+  }
+
+  if (sensor_idx < 0)
+  {
+    // TODO: any sort of error message?
+    return points;
+  }
+
+  // Resize to match # of features
+  points.resize(data.observations[sensor_idx].features.size());
 
   KDL::Frame fk = getChainFK(offsets, data.joint_states);
 
@@ -59,14 +78,14 @@ std::vector<geometry_msgs::PointStamped> ChainModel::project(
     points[i].header.frame_id = root_;  // fk returns point in root_ frame
 
     KDL::Frame p(KDL::Frame::Identity());
-    p.p.x(data.world_observations[i].point.x);
-    p.p.y(data.world_observations[i].point.y);
-    p.p.z(data.world_observations[i].point.z);
+    p.p.x(data.observations[sensor_idx].features[i].point.x);
+    p.p.y(data.observations[sensor_idx].features[i].point.y);
+    p.p.z(data.observations[sensor_idx].features[i].point.z);
 
-    if (data.world_observations[i].header.frame_id != tip_)
+    if (data.observations[sensor_idx].features[i].header.frame_id != tip_)
     {
       KDL::Frame p2(KDL::Frame::Identity());
-      if (offsets.getFrame(data.world_observations[i].header.frame_id, p2))
+      if (offsets.getFrame(data.observations[sensor_idx].features[i].header.frame_id, p2))
       {
         p = p2 * p;
       }
@@ -122,14 +141,33 @@ std::vector<geometry_msgs::PointStamped> Camera3dModel::project(
     const robot_calibration_msgs::CalibrationData& data,
     const CalibrationOffsetParser& offsets)
 {
+  std::vector<geometry_msgs::PointStamped> points;
+
+  // Determine which observation to use
+  int sensor_idx = -1;
+  for (size_t obs = 0; obs < data.observations.size(); obs++)
+  {
+    if (data.observations[obs].sensor_name == name_)
+    {
+      sensor_idx = obs;
+      break;
+    }
+  }
+
+  if (sensor_idx < 0)
+  {
+    // TODO: any sort of error message?
+    return points;
+  }
+
   // Get existing camera info
-  if (data.rgbd_info.camera_info.P.size() != 12)
+  if (data.observations[sensor_idx].ext_camera_info.camera_info.P.size() != 12)
     std::cerr << "Unexpected CameraInfo projection matrix size" << std::endl;
 
-  double camera_fx = data.rgbd_info.camera_info.P[CAMERA_INFO_P_FX_INDEX];
-  double camera_fy = data.rgbd_info.camera_info.P[CAMERA_INFO_P_FY_INDEX];
-  double camera_cx = data.rgbd_info.camera_info.P[CAMERA_INFO_P_CX_INDEX];
-  double camera_cy = data.rgbd_info.camera_info.P[CAMERA_INFO_P_CY_INDEX];
+  double camera_fx = data.observations[sensor_idx].ext_camera_info.camera_info.P[CAMERA_INFO_P_FX_INDEX];
+  double camera_fy = data.observations[sensor_idx].ext_camera_info.camera_info.P[CAMERA_INFO_P_FY_INDEX];
+  double camera_cx = data.observations[sensor_idx].ext_camera_info.camera_info.P[CAMERA_INFO_P_CX_INDEX];
+  double camera_cy = data.observations[sensor_idx].ext_camera_info.camera_info.P[CAMERA_INFO_P_CY_INDEX];
 
   /*
    * z_scale and z_offset defined in openni2_camera/src/openni2_driver.cpp
@@ -138,15 +176,15 @@ std::vector<geometry_msgs::PointStamped> Camera3dModel::project(
    */
   double z_offset = 0.0;
   double z_scaling = 1.0;
-  for (size_t i = 0; i < data.rgbd_info.parameters.size(); i++)
+  for (size_t i = 0; i < data.observations[sensor_idx].ext_camera_info.parameters.size(); i++)
   {
-    if (data.rgbd_info.parameters[i].name == "z_scaling")
+    if (data.observations[sensor_idx].ext_camera_info.parameters[i].name == "z_scaling")
     {
-      z_scaling = data.rgbd_info.parameters[i].value;
+      z_scaling = data.observations[sensor_idx].ext_camera_info.parameters[i].value;
     }
-    else if (data.rgbd_info.parameters[i].name == "z_offset_mm")
+    else if (data.observations[sensor_idx].ext_camera_info.parameters[i].name == "z_offset_mm")
     {
-      z_offset = data.rgbd_info.parameters[i].value / 1000.0;  // (mm -> m)
+      z_offset = data.observations[sensor_idx].ext_camera_info.parameters[i].value / 1000.0;  // (mm -> m)
     }
   }
 
@@ -158,18 +196,17 @@ std::vector<geometry_msgs::PointStamped> Camera3dModel::project(
   double new_z_offset = offsets.get(name_+"_z_offset");
   double new_z_scaling = 1.0 + offsets.get(name_+"_z_scaling");
 
-  std::vector<geometry_msgs::PointStamped> points;
-  points.resize(data.rgbd_observations.size());
+  points.resize(data.observations[sensor_idx].features.size());
 
   // Get position of camera frame
   KDL::Frame fk = getChainFK(offsets, data.joint_states);
 
-  for (size_t i = 0; i < data.rgbd_observations.size(); ++i)
+  for (size_t i = 0; i < points.size(); ++i)
   {
     // TODO: warn if frame_id != tip?
-    double x = data.rgbd_observations[i].point.x;
-    double y = data.rgbd_observations[i].point.y;
-    double z = data.rgbd_observations[i].point.z;
+    double x = data.observations[sensor_idx].features[i].point.x;
+    double y = data.observations[sensor_idx].features[i].point.y;
+    double z = data.observations[sensor_idx].features[i].point.z;
 
     // Unproject through parameters stored at runtime
     double u = x * camera_fx / z + camera_cx;

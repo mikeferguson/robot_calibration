@@ -131,17 +131,17 @@ int Optimizer::optimize(OptimizationParams& params,
         {
           double ** params = new double*[1];
           params[0] = free_params_;
-          double * residuals = new double[data[i].rgbd_observations.size() * 3];
+          double * residuals = new double[data[i].observations[0].features.size() * 3];  // TODO: should check that all features are same length?
 
           cost->Evaluate(params, residuals, NULL);
           std::cout << "INITIAL COST (" << i << ")" << std::endl << "  x: ";
-          for (size_t k = 0; k < data[i].rgbd_observations.size(); ++k)
+          for (size_t k = 0; k < data[i].observations[0].features.size(); ++k)
             std::cout << "  " << std::setw(10) << std::fixed << residuals[(3*k + 0)];
           std::cout << std::endl << "  y: ";
-          for (size_t k = 0; k < data[i].rgbd_observations.size(); ++k)
+          for (size_t k = 0; k < data[i].observations[0].features.size(); ++k)
             std::cout << "  " << std::setw(10) << std::fixed << residuals[(3*k + 1)];
           std::cout << std::endl << "  z: ";
-          for (size_t k = 0; k < data[i].rgbd_observations.size(); ++k)
+          for (size_t k = 0; k < data[i].observations[0].features.size(); ++k)
             std::cout << "  " << std::setw(10) << std::fixed << residuals[(3*k + 2)];
           std::cout << std::endl << std::endl;
         }

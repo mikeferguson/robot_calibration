@@ -185,7 +185,8 @@ int main(int argc, char** argv)
       chain_manager_.getState(&msg.joint_states);
 
       // Fill in camera info
-      msg.rgbd_info = depth_camera_manager.getDepthCameraInfo();
+      // TODO: avoid hardcoding the observation index -- extended camera info should be pushed into finders
+      msg.observations[0].ext_camera_info = depth_camera_manager.getDepthCameraInfo();
 
       // Publish calibration data message.
       pub.publish(msg);
@@ -275,7 +276,7 @@ int main(int argc, char** argv)
                          opt.getOffsets().get("camera_fy"),
                          opt.getOffsets().get("camera_cx"),
                          opt.getOffsets().get("camera_cy"),
-                         data[0].rgbd_info.camera_info));
+                         data[0].observations[0].ext_camera_info.camera_info));  // TODO avoid hardcoding index
 
     std::stringstream rgb_name;
     rgb_name << "/tmp/rgb_" << datecode << ".yaml";
@@ -285,7 +286,7 @@ int main(int argc, char** argv)
                          opt.getOffsets().get("camera_fy"),
                          opt.getOffsets().get("camera_cx"),
                          opt.getOffsets().get("camera_cy"),
-                         data[0].rgbd_info.camera_info));
+                         data[0].observations[0].ext_camera_info.camera_info));  // TODO avoid hardcoding index
   }
 
   // Output the calibration yaml

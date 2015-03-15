@@ -1,5 +1,5 @@
-sensor_msgs/JointState        joint_states
-geometry_msgs/PointStamped[]  rgbd_observations
-geometry_msgs/PointStamped[]  world_observations
-ExtendedCameraInfo            rgbd_info
-sensor_msgs/PointCloud2       cloud
+# State of the robot when this data was collected
+sensor_msgs/JointState  joint_states
+
+# Observations, one entry per sensor that is collecting data
+Observation[]           observations

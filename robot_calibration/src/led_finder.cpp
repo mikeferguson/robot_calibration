@@ -223,6 +223,9 @@ bool LedFinder::find(robot_calibration_msgs::CalibrationData * msg)
   sensor_msgs::PointCloud2Iterator<float> iter_cloud(cloud, "x");
 
   // Export results
+  msg->observations.resize(2);
+  msg->observations[0].sensor_name = "camera";  // TODO: parameterize
+  msg->observations[1].sensor_name = "arm";     // TODO: parameterize
   for (size_t t = 0; t < trackers_.size(); ++t)
   {
     geometry_msgs::PointStamped rgbd_pt;
@@ -256,7 +259,7 @@ bool LedFinder::find(robot_calibration_msgs::CalibrationData * msg)
     }
 
     // Push back observation
-    msg->rgbd_observations.push_back(rgbd_pt);
+    msg->observations[0].features.push_back(rgbd_pt);
 
     // Visualize
     iter_cloud[0] = rgbd_pt.point.x;
@@ -269,11 +272,11 @@ bool LedFinder::find(robot_calibration_msgs::CalibrationData * msg)
     world_pt.point.x = trackers_[t].x_;
     world_pt.point.y = trackers_[t].y_;
     world_pt.point.z = trackers_[t].z_;
-    msg->world_observations.push_back(world_pt);
+    msg->observations[1].features.push_back(world_pt);
   }
 
   // Final check that all points are valid
-  if (msg->rgbd_observations.size() != 4)
+  if (msg->observations[0].features.size() != trackers_.size())
   {
     return false;
   }

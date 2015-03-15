@@ -1,4 +1,5 @@
 /*
+ * Copyright (C) 2015 Fetch Robotics Inc.
  * Copyright (C) 2013-2014 Unbounded Robotics Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -105,14 +106,11 @@ struct Camera3dToArmError
                                      CalibrationOffsetParser* offsets,
                                      robot_calibration_msgs::CalibrationData& data)
   {
-    if (data.rgbd_observations.size() < 4)
-      std::cerr << "WARNING: less than 4 points in observation." << std::endl;
-
     ceres::DynamicNumericDiffCostFunction<Camera3dToArmError> * func;
     func = new ceres::DynamicNumericDiffCostFunction<Camera3dToArmError>(
                     new Camera3dToArmError(camera_model, arm_model, offsets, data));
     func->AddParameterBlock(offsets->size());
-    func->SetNumResiduals(data.rgbd_observations.size() * 3);
+    func->SetNumResiduals(data.observations[0].features.size() * 3);
 
     return static_cast<ceres::CostFunction*>(func);
   }

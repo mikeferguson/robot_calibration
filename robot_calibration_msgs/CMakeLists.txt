@@ -20,6 +20,7 @@ add_message_files(
     CalibrationData.msg
     CameraParameter.msg
     ExtendedCameraInfo.msg
+    Observation.msg
 )
 
 generate_messages(

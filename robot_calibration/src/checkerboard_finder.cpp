@@ -111,8 +111,11 @@ bool CheckerboardFinder::findInternal(robot_calibration_msgs::CalibrationData * 
     ROS_INFO("Found the checkboard");
 
     // Set msg size
-    msg->rgbd_observations.resize(points_x_ * points_y_);
-    msg->world_observations.resize(points_x_ * points_y_);
+    msg->observations.resize(2);
+    msg->observations[0].sensor_name = "camera";  // TODO: parameterize
+    msg->observations[0].features.resize(points_x_ * points_y_);
+    msg->observations[1].sensor_name = "arm";     // TODO: parameterize
+    msg->observations[1].features.resize(points_x_ * points_y_);
 
     // Fill in the headers
     rgbd.header.seq = cloud_ptr_->header.seq;
@@ -142,10 +145,10 @@ bool CheckerboardFinder::findInternal(robot_calibration_msgs::CalibrationData * 
         return false;
       }
 
-      msg->rgbd_observations[i] = rgbd;
-      msg->world_observations[i] = world;
+      msg->observations[0].features[i] = rgbd;
+      msg->observations[1].features[i] = world;
     }
-    pcl::toROSMsg(*cloud_ptr_, msg->cloud);
+    pcl::toROSMsg(*cloud_ptr_, msg->observations[0].cloud);
 
     // Found all points
     return true;
