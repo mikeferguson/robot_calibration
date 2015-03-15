@@ -7,7 +7,6 @@ endif()
 
 find_package(Boost REQUIRED system thread)
 find_package(PCL REQUIRED)
-find_package(OpenCV REQUIRED)  # visualization only
 
 find_library(tinyxml_library tinyxml)
 if (tinyxml_library)
@@ -66,7 +65,6 @@ catkin_package(
 include_directories(include ${Boost_INCLUDE_DIRS}
                             ${catkin_INCLUDE_DIRS}
                             ${CERES_INCLUDES}
-                            ${OpenCV_INCLUDE_DIRS}  # visualization only
                             ${PCL_INCLUDE_DIRS}
                             ${orocos_kdl_INCLUDE_DIRS})
 link_directories(${orocos_kdl_LIBRARY_DIRS}) # this is a hack, will eventually be unneeded once orocos-kdl is fixed
@@ -94,7 +92,6 @@ target_link_libraries(calibrate robot_calibration
                                 ${Boost_LIBRARIES}
                                 ${catkin_LIBRARIES}
                                 ${CERES_LIBRARIES}
-                                ${OpenCV_LIBRARIES}  # visualization only
                                 ${tinyxml_LIBRARIES}
                                 ${orocos_kdl_LIBRARIES})
 add_dependencies(calibrate robot_calibration)

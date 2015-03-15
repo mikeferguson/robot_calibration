@@ -26,7 +26,6 @@
   <build_depend>rosbag</build_depend>
   <build_depend>sensor_msgs</build_depend>
   <build_depend>std_msgs</build_depend>
-  <build_depend>libopencv-dev</build_depend>
   <build_depend>libceres-dev</build_depend>
   <build_depend>libgflags-dev</build_depend>
   <build_depend>suitesparse</build_depend>
@@ -47,7 +46,6 @@
   <run_depend>rosbag</run_depend>
   <run_depend>sensor_msgs</run_depend>
   <run_depend>std_msgs</run_depend>
-  <run_depend>libopencv-dev</run_depend>
   <run_depend>libceres-dev</run_depend>
   <run_depend>suitesparse</run_depend>
   <run_depend>protobuf-dev</run_depend>

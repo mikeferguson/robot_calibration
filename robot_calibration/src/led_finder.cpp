@@ -43,16 +43,18 @@ LedFinder::LedFinder(ros::NodeHandle & n) :
                             &LedFinder::cameraCallback,
                             this);
 
+  // Publish where LEDs were seen
   publisher_ = n.advertise<sensor_msgs::PointCloud2>("led_points", 10);
+
+  // Maximum distance LED can be from expected pose
+  nh.param<double>("max_error", max_error_, 0.1);
 
   // Parameters for detection
   nh.param<double>("threshold", threshold_, 1000.0);
   nh.param<int>("max_iterations", max_iterations_, 50);
 
-  // Maximum distance LED can be from expected pose
-  nh.param<double>("max_error", max_error_, 0.1);
-
-  nh.param<bool>("debug_image", output_debug_image_, false);
+  // Should we output debug image/cloud
+  nh.param<bool>("debug", output_debug_, false);
 
   // Parameters for LEDs themselves
   std::string gripper_led_frame;
@@ -72,9 +74,6 @@ LedFinder::LedFinder(ros::NodeHandle & n) :
     z = static_cast<double>(led_poses[i]["z"]);
     trackers_.push_back(CloudDifferenceTracker(gripper_led_frame, x, y, z));
   }
-
-  if (output_debug_image_)
-    cv::namedWindow("led_finder");
 }
 
 void LedFinder::cameraCallback(const pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud)
@@ -171,51 +170,6 @@ bool LedFinder::find(robot_calibration_msgs::CalibrationData * msg)
     *prev_cloud = *cloud_ptr_;
   }
 
-  if (output_debug_image_)
-  {
-    // Convert point cloud into a color image.
-    cv::Mat img(cloud_ptr_->height, cloud_ptr_->width, CV_8UC3);
-    int k = 0;
-    for (size_t i = 0; i < cloud_ptr_->height; ++i)
-    {
-      char * s = img.ptr<char>(i);
-      for (size_t j = 0; j < cloud_ptr_->width; ++j)
-      {
-        s[j*3+0] = cloud_ptr_->points[k].b;
-        s[j*3+1] = cloud_ptr_->points[k].g;
-        s[j*3+2] = cloud_ptr_->points[k].r;
-        ++k;
-      }
-    }
-
-    // Color any points that are probably part of the LED with small red circles.
-    for (size_t i = 0; i < cloud_ptr_->size(); ++i)
-    {
-      for (size_t t = 0; t < trackers_.size(); ++t)
-      {
-        if (trackers_[t].diff_[i] > (threshold_ * 0.75))
-        {
-          cv::Point p(i%cloud_ptr_->width, i/cloud_ptr_->width);
-          cv::circle(img, p, 2, cv::Scalar(0,0,255), -1);
-        }
-      }
-    }
-
-    // Color the center of the LED with a big yellow circle.
-    for (size_t t = 0; t < trackers_.size(); ++t)
-    {
-      if (trackers_[t].max_ > threshold_)
-      {
-        cv::Point p(trackers_[t].max_idx_%cloud_ptr_->width, trackers_[t].max_idx_/cloud_ptr_->width);
-        cv::circle(img, p, 5, cv::Scalar(0,255,255), -1);
-      }
-    }
-
-    // Show the image
-    cv::imshow("led_finder", img);
-    cv::waitKey(3);
-  }
-
   // Create PointCloud2 to publish
   sensor_msgs::PointCloud2 cloud;
   cloud.width = 0;
@@ -287,6 +241,12 @@ bool LedFinder::find(robot_calibration_msgs::CalibrationData * msg)
   if (msg->observations[0].features.size() != trackers_.size())
   {
     return false;
+  }
+
+  // Add debug cloud to message
+  if (output_debug_)
+  {
+    pcl::toROSMsg(*cloud_ptr_, msg->observations[0].cloud);
   }
 
   // Publish results

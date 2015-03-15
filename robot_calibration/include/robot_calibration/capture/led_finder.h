@@ -32,9 +32,6 @@
 #include <robot_calibration_msgs/GripperLedCommandAction.h>
 #include <actionlib/client/simple_action_client.h>
 
-#include <opencv/cv.h>
-#include <opencv/highgui.h>
-
 namespace robot_calibration
 {
 
@@ -97,14 +94,17 @@ private:
   std::vector<CloudDifferenceTracker> trackers_;
   std::vector<uint8_t> codes_;
 
-  double max_error_;  /// Maximum distance led can be from expected pose
+  tf::TransformListener listener_;
 
-  double threshold_;  /// Minimum value of diffs in order to trigger that this is an LED
+  /*
+   * ROS Parameters
+   */
+  double max_error_;    /// Maximum distance led can be from expected pose
+
+  double threshold_;    /// Minimum value of diffs in order to trigger that this is an LED
   int max_iterations_;  /// Maximum number of cycles before we abort finding the LED
 
-  bool output_debug_image_;
-
-  tf::TransformListener listener_;
+  bool output_debug_;   /// Should we output debug image/cloud?
 };
 
 }  // namespace robot_calibration
