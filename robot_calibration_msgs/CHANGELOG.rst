@@ -2,8 +2,8 @@
 Changelog for package robot_calibration_msgs
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.2.0 (2015-03-16)
+------------------
 * extend messages to support multiple sensors
 * implement ExtendedCameraInfo
 * Contributors: Michael Ferguson

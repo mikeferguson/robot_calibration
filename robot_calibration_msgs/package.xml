@@ -1,6 +1,6 @@
 <package>
   <name>robot_calibration_msgs</name>
-  <version>0.1.2</version>
+  <version>0.2.0</version>
   <description>
     Messages for calibrating a robot
   </description>

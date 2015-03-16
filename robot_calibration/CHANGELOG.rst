@@ -2,8 +2,8 @@
 Changelog for package robot_calibration
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.2.0 (2015-03-16)
+------------------
 * enforce internal consistency between led features
 * remove opencv window, add cloud in message option
 * update how max error is handled
