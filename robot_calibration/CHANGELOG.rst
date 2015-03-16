@@ -2,6 +2,15 @@
 Changelog for package robot_calibration
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* enforce internal consistency between led features
+* remove opencv window, add cloud in message option
+* update how max error is handled
+* extend messages to support multiple sensors
+* implement ExtendedCameraInfo
+* Contributors: Michael Ferguson
+
 0.1.2 (2015-03-15)
 ------------------
 * fix a number of warning
