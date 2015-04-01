@@ -101,14 +101,19 @@ void LedFinder::cameraCallback(const pcl::PointCloud<pcl::PointXYZRGB>::Ptr clou
 bool LedFinder::waitForCloud()
 {
   // Initial wait cycle so that camera is definitely up to date.
-  ros::Duration(1/15.0).sleep();
+  ros::Duration(1/10.0).sleep();
 
   waiting_ = true;
   int count = 0;
-  while (waiting_ && count < 20)
+  while (waiting_ && count < 200)
   {
-    ros::Duration(0.1).sleep();
     ros::spinOnce();
+    ros::Duration(0.01).sleep();
+    count++;
+  }
+  if (waiting_)
+  {
+    ROS_ERROR("Failed to get cloud");
   }
   return !waiting_;
 }
