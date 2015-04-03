@@ -1,3 +1,19 @@
+/*
+ * Copyright (C) 2015 Fetch Robotics Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include <urdf/model.h>
 #include <robot_calibration/ceres/optimizer.h>
 #include <gtest/gtest.h>
@@ -185,10 +201,14 @@ std::string robot_description =
 
 TEST(ErrorBlockTests, error_blocks_maxwell)
 {
+  ros::NodeHandle nh("~");
+
   robot_calibration::Optimizer opt(robot_description);
 
   std::vector<robot_calibration_msgs::CalibrationData> data;
   robot_calibration_msgs::CalibrationData msg;
+
+  // Match expected output from chain manager
   msg.joint_states.name.resize(10);
   msg.joint_states.name[0] = "arm_lift_flex_joint";
   msg.joint_states.name[1] = "arm_shoulder_pan_joint";
@@ -211,46 +231,65 @@ TEST(ErrorBlockTests, error_blocks_maxwell)
   msg.joint_states.position[7] = -0.8280187999999999;
   msg.joint_states.position[8] = 0.6358500000000002;
   msg.joint_states.position[9] = 0.0;
-  msg.rgbd_observations.resize(1);
-  msg.rgbd_observations[0].header.frame_id = "head_camera_rgb_optical_frame";
-  msg.rgbd_observations[0].point.x = -0.0143163670728;
-  msg.rgbd_observations[0].point.y = 0.111304592065;
-  msg.rgbd_observations[0].point.z = 0.522079317365;
-  msg.world_observations.resize(1);
-  msg.world_observations[0].header.frame_id = "gripper_led_frame";
-  msg.world_observations[0].point.x = 0.0;
-  msg.world_observations[0].point.y = 0.0;
-  msg.world_observations[0].point.z = 0.0;
-  msg.rgbd_info.camera_info.P[0] = 100.0;  // fx
-  msg.rgbd_info.camera_info.P[5] = 100.0;  // fy
-  msg.rgbd_info.camera_info.P[2] = 320.0;  // cx
-  msg.rgbd_info.camera_info.P[6] = 240.0;  // cy
-  msg.rgbd_info.z_offset = 0.0;
-  msg.rgbd_info.z_scaling = 1.0;
+
+  // Expectect output from led finder
+  msg.observations.resize(2);
+  msg.observations[0].sensor_name = "camera";
+  msg.observations[1].sensor_name = "arm";
+
+  msg.observations[0].features.resize(1);
+  msg.observations[0].features[0].header.frame_id = "head_camera_rgb_optical_frame";
+  msg.observations[0].features[0].point.x = -0.0143163670728;
+  msg.observations[0].features[0].point.y = 0.111304592065;
+  msg.observations[0].features[0].point.z = 0.522079317365;
+
+  msg.observations[0].ext_camera_info.camera_info.P[0] = 100.0;  // fx
+  msg.observations[0].ext_camera_info.camera_info.P[5] = 100.0;  // fy
+  msg.observations[0].ext_camera_info.camera_info.P[2] = 320.0;  // cx
+  msg.observations[0].ext_camera_info.camera_info.P[6] = 240.0;  // cy
+  msg.observations[0].ext_camera_info.parameters.resize(2);
+  msg.observations[0].ext_camera_info.parameters[0].name = "z_offset";
+  msg.observations[0].ext_camera_info.parameters[0].value = 0.0;
+  msg.observations[0].ext_camera_info.parameters[1].name = "z_scaling";
+  msg.observations[0].ext_camera_info.parameters[1].value = 1.0;
+
+  msg.observations[1].features.resize(1);
+  msg.observations[1].features[0].header.frame_id = "gripper_led_frame";
+  msg.observations[1].features[0].point.x = 0.0;
+  msg.observations[1].features[0].point.y = 0.0;
+  msg.observations[1].features[0].point.z = 0.0;
+
+  // Add first data point
   data.push_back(msg);
 
+  // Add a second data point that is just a little different
   msg.joint_states.position[1] = -0.019781999999999966;
   msg.joint_states.position[7] = 0.0;
-  msg.rgbd_observations[0].point.x = 0.0365330705881;
-  msg.rgbd_observations[0].point.y = 0.102609552493;
-  msg.rgbd_observations[0].point.z = 0.536061220027;
+  msg.observations[0].features[0].point.x = 0.0365330705881;
+  msg.observations[0].features[0].point.y = 0.102609552493;
+  msg.observations[0].features[0].point.z = 0.536061220027;
   data.push_back(msg);
 
+  // And a third data point
   msg.joint_states.position[1] = 0.883596;
   msg.joint_states.position[7] = 0.9442135999999999;
-  msg.rgbd_observations[0].point.x = 0.0942445346646;
-  msg.rgbd_observations[0].point.y = 0.11409172323;
-  msg.rgbd_observations[0].point.z = 0.517497963716;
+  msg.observations[0].features[0].point.x = 0.0942445346646;
+  msg.observations[0].features[0].point.y = 0.11409172323;
+  msg.observations[0].features[0].point.z = 0.517497963716;
   data.push_back(msg);
 
+  // Setup params
   robot_calibration::OptimizationParams params;
-  opt.optimize(params, data, false);
+  params.LoadFromROS(nh);
 
+  // Optimize
+  opt.optimize(params, data, false);
   EXPECT_LT(opt.summary()->initial_cost, 1e-20);
 }
 
 int main(int argc, char** argv)
 {
+  ros::init(argc, argv, "error_block_tests");
   testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }

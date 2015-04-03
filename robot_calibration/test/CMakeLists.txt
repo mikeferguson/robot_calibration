@@ -1,12 +1,5 @@
 find_package(rostest REQUIRED)
 
-catkin_add_gtest(error_block_tests error_block_tests.cpp)
-target_link_libraries(error_block_tests robot_calibration
-                                        ${Boost_LIBRARIES}
-                                        ${catkin_LIBRARIES}
-                                        ${CERES_LIBRARIES}
-                                        ${orocos_kdl_LIBRARIES})
-
 catkin_add_gtest(calibration_offset_parser_tests calibration_offset_parser_tests.cpp)
 target_link_libraries(calibration_offset_parser_tests robot_calibration
                                                       ${Boost_LIBRARIES}
@@ -28,6 +21,15 @@ target_link_libraries(chain_manager_tests robot_calibration
                                           ${catkin_LIBRARIES}
                                           ${GTEST_LIBRARIES})
 
+add_executable(error_block_tests error_block_tests.cpp)
+add_dependencies(tests error_block_tests)
+target_link_libraries(error_block_tests robot_calibration
+                                        ${Boost_LIBRARIES}
+                                        ${catkin_LIBRARIES}
+                                        ${CERES_LIBRARIES}
+                                        ${GTEST_LIBRARIES}
+                                        ${orocos_kdl_LIBRARIES})
+
 add_executable(optimization_param_tests optimization_param_tests.cpp)
 add_dependencies(tests optimization_param_tests)
 target_link_libraries(optimization_param_tests robot_calibration
@@ -37,3 +39,4 @@ target_link_libraries(optimization_param_tests robot_calibration
 
 add_rostest(chain_manager_tests.launch)
 add_rostest(optimization_param_tests.launch)
+add_rostest(error_block_tests.test)

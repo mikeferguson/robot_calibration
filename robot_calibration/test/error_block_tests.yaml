@@ -1,0 +1,43 @@
+verbose: true
+base_link: base_link
+models:
+ - name: arm
+   type: chain
+   frame: gripper_led_frame
+ - name: camera
+   type: camera3d
+   frame: head_camera_rgb_optical_frame
+free_params:
+ - arm_shoulder_pan_joint
+ - arm_shoulder_lift_joint
+ - arm_upperarm_roll_joint
+ - arm_elbow_flex_joint
+ - arm_wrist_flex_joint
+ - arm_wrist_roll_joint
+ - head_pan_joint
+ - head_tilt_joint
+ - camera_fx
+ - camera_fy
+ - camera_cx
+ - camera_xy
+ - camera_z_offset
+ - camera_z_scaling
+free_frames:
+ - name: head_camera_rgb_joint
+   x: true
+   y: true
+   z: true
+   roll: true
+   pitch: true
+   yaw: true
+error_blocks:
+ - name: hand_eye
+   type: camera3d_to_arm
+   camera: camera
+   arm: arm
+ - name: restrict_camera
+   type: outrageous
+   param: head_camera_rgb_joint
+   joint_scale: 0.0
+   position_scale: 0.1
+   rotation_scale: 0.1

@@ -1,0 +1,5 @@
+<launch>
+  <test time-limit="300" test-name="error_block_tests" pkg="robot_calibration" type="error_block_tests">
+    <rosparam file="$(find robot_calibration)/test/error_block_tests.yaml" command="load" />
+  </test>
+</launch>
