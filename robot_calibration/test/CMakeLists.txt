@@ -37,6 +37,6 @@ target_link_libraries(optimization_param_tests robot_calibration
                                                ${catkin_LIBRARIES}
                                                ${GTEST_LIBRARIES})
 
-add_rostest(chain_manager_tests.launch)
-add_rostest(optimization_param_tests.launch)
+add_rostest(chain_manager_tests.test)
+add_rostest(optimization_param_tests.test)
 add_rostest(error_block_tests.test)
