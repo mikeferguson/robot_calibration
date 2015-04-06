@@ -2,8 +2,8 @@
 Changelog for package robot_calibration
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.2.1 (2015-04-05)
+------------------
 * fix uninitialized variable
 * test files should not use .launch extension
 * fix error_block_test, closes `#11 <https://github.com/mikeferguson/robot_calibration/issues/11>`_
