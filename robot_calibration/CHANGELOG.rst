@@ -2,6 +2,14 @@
 Changelog for package robot_calibration
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* fix uninitialized variable
+* test files should not use .launch extension
+* fix error_block_test, closes `#11 <https://github.com/mikeferguson/robot_calibration/issues/11>`_
+* fix issue with capture stalling
+* Contributors: Michael Ferguson
+
 0.2.0 (2015-03-16)
 ------------------
 * enforce internal consistency between led features
