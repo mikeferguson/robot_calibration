@@ -1,4 +1,5 @@
 /*
+ * Copyright (C) 2015 Fetch Robotics Inc.
  * Copyright (C) 2014 Unbounded Robotics Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -48,7 +49,7 @@ computeAverage(std::vector<geometry_msgs::PointStamped> points)
 /** \brief Compute the average value based on a vector of doubles. */
 double computeAverage(std::vector<double> values)
 {
-  double x;
+  double x = 0.0;
   for (size_t i = 0; i < values.size(); ++i)
     x += values[i];
   return (x/values.size()); 
