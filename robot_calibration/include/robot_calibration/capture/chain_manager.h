@@ -114,6 +114,7 @@ private:
   boost::mutex state_mutex_;
   std::vector<boost::shared_ptr<ChainController> > controllers_;
   MoveGroupClientPtr move_group_;
+  double velocity_factor_;  // scaling factor to slow down move_group plans
 };
 
 }  // namespace robot_calibration

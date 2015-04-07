@@ -71,6 +71,9 @@ ChainManager::ChainManager(ros::NodeHandle& nh, double wait_time)
   // Parameter to set movement time
   nh.param<double>("duration", duration_, 5.0);
 
+  // Parameter to set velocity scaling factor for move_group
+  nh.param<double>("velocity_factor", velocity_factor_, 1.0);
+
   subscriber_ = nh.subscribe("/joint_states", 1, &ChainManager::stateCallback, this);
 }
 
@@ -174,6 +177,9 @@ bool ChainManager::moveToState(const sensor_msgs::JointState& state)
         c1.joint_constraints[c].weight = 1.0;
       }
       moveit_goal.request.goal_constraints.push_back(c1);
+
+      // Reduce speed
+      moveit_goal.request.max_velocity_scaling_factor = velocity_factor_;
 
       // All diffs
       moveit_goal.request.start_state.is_diff = true;
