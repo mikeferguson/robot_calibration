@@ -2,8 +2,8 @@
 Changelog for package robot_calibration
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.2.2 (2015-04-12)
+------------------
 * add support for velocity scaling factor
 * Contributors: Michael Ferguson
 
