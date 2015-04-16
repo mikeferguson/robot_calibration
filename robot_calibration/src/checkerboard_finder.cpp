@@ -18,6 +18,7 @@
 // Author: Michael Ferguson
 
 #include <robot_calibration/capture/checkerboard_finder.h>
+#include <sensor_msgs/point_cloud2_iterator.h>
 
 namespace robot_calibration
 {
@@ -42,6 +43,9 @@ CheckerboardFinder::CheckerboardFinder(ros::NodeHandle & n) :
 
   // Should we output debug image/cloud
   nh.param<bool>("debug", output_debug_, false);
+
+  // Publish where checkerboard points were seen
+  publisher_ = n.advertise<sensor_msgs::PointCloud2>("checkerboard_points", 10);
 }
 
 void CheckerboardFinder::cameraCallback(const pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud)
@@ -114,6 +118,17 @@ bool CheckerboardFinder::findInternal(robot_calibration_msgs::CalibrationData * 
   {
     ROS_INFO("Found the checkboard");
 
+    // Create PointCloud2 to publish
+    sensor_msgs::PointCloud2 cloud;
+    cloud.width = 0;
+    cloud.height = 0;
+    cloud.header.stamp = ros::Time::now();
+    cloud.header.frame_id = cloud_ptr_->header.frame_id;
+    sensor_msgs::PointCloud2Modifier cloud_mod(cloud);
+    cloud_mod.setPointCloud2FieldsByString(1, "xyz");
+    cloud_mod.resize(points_x_ * points_y_);
+    sensor_msgs::PointCloud2Iterator<float> iter_cloud(cloud, "x");
+
     // Set msg size
     msg->observations.resize(2);
     msg->observations[0].sensor_name = "camera";  // TODO: parameterize
@@ -151,6 +166,12 @@ bool CheckerboardFinder::findInternal(robot_calibration_msgs::CalibrationData * 
 
       msg->observations[0].features[i] = rgbd;
       msg->observations[1].features[i] = world;
+
+      // Visualize
+      iter_cloud[0] = rgbd.point.x;
+      iter_cloud[1] = rgbd.point.y;
+      iter_cloud[2] = rgbd.point.z;
+      ++iter_cloud;
     }
 
     // Add debug cloud to message
@@ -158,6 +179,9 @@ bool CheckerboardFinder::findInternal(robot_calibration_msgs::CalibrationData * 
     {
       pcl::toROSMsg(*cloud_ptr_, msg->observations[0].cloud);
     }
+
+    // Publish results
+    publisher_.publish(cloud);
 
     // Found all points
     return true;

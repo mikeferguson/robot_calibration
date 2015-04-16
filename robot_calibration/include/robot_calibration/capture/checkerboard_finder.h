@@ -59,6 +59,7 @@ private:
 
 
   ros::Subscriber subscriber_;  /// Incoming sensor_msgs::PointCloud2
+  ros::Publisher publisher_;   /// Outgoing sensor_msgs::PointCloud2
 
   bool waiting_;
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_ptr_;
