@@ -145,6 +145,10 @@ int main(int argc, char** argv)
       ROS_INFO("Using manual calibration mode...");
     }
 
+    // Add a thread to process callbacks
+    ros::AsyncSpinner spinner(1);
+    spinner.start();
+
     // For each pose in the capture sequence.
     for (unsigned int pose_idx = 0; (pose_idx < poses.size()) || (poses.size() == 0); ++pose_idx)
     {
