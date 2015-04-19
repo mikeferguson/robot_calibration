@@ -150,7 +150,9 @@ int main(int argc, char** argv)
     spinner.start();
 
     // For each pose in the capture sequence.
-    for (unsigned int pose_idx = 0; (pose_idx < poses.size()) || (poses.size() == 0); ++pose_idx)
+    for (unsigned pose_idx = 0;
+         (pose_idx < poses.size() || poses.size() == 0) && ros::ok();
+         ++pose_idx)
     {
       robot_calibration_msgs::CalibrationData msg;
 
