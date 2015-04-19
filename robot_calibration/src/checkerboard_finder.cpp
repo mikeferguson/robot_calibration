@@ -61,12 +61,17 @@ void CheckerboardFinder::cameraCallback(const pcl::PointCloud<pcl::PointXYZRGB>:
 bool CheckerboardFinder::waitForCloud()
 {
   waiting_ = true;
-  int count = 0;
-  while (waiting_ && (++count < 20))
+  int count = 20;
+  while (--count)
   {
     ros::Duration(0.1).sleep();
-    ros::spinOnce();
+    if (!waiting_)
+    {
+      // success
+      return true;
+    }
   }
+  ROS_ERROR("Failed to get cloud");
   return !waiting_;
 }
 

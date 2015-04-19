@@ -145,7 +145,7 @@ int main(int argc, char** argv)
       ROS_INFO("Using manual calibration mode...");
     }
 
-    // Add a thread to process callbacks
+    // All ROS callbacks are processed in a separate thread
     ros::AsyncSpinner spinner(1);
     spinner.start();
 

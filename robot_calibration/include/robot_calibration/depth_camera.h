@@ -93,10 +93,9 @@ public:
     int count = 25;
     while (--count)
     {
+      ros::Duration(0.1).sleep();
       if (camera_info_valid_)
         return true;
-      ros::Duration(0.1).sleep();
-      ros::spinOnce();
     }
 
     ROS_WARN("CameraInfo receive timed out.");
