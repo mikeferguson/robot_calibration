@@ -168,7 +168,11 @@ int main(int argc, char** argv)
       else
       {
         // Move head/arm to pose
-        chain_manager_.moveToState(poses[pose_idx]);
+        if (!chain_manager_.moveToState(poses[pose_idx]))
+        {
+          ROS_WARN("Unable to move to desired state for sample %u.", pose_idx);
+          continue;
+        }
       }
 
       // Regardless of manual vs. automatic, wait for joints to settle
