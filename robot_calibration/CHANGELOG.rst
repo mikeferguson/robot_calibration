@@ -2,8 +2,8 @@
 Changelog for package robot_calibration
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.3.0 (2015-04-22)
+------------------
 * process all callbacks in async spinner
 * make waitForCloud consistent between feature detectors
 * remove all calls to spinOnce in feature detectors, chain management
