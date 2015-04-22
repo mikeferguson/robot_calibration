@@ -2,6 +2,16 @@
 Changelog for package robot_calibration
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* process all callbacks in async spinner
+* make waitForCloud consistent between feature detectors
+* remove all calls to spinOnce in feature detectors, chain management
+* exit if not ros::ok(), fixes `#12 <https://github.com/mikeferguson/robot_calibration/issues/12>`_
+* do not capture if move failed, fixes `#14 <https://github.com/mikeferguson/robot_calibration/issues/14>`_
+* publish point cloud for checkerboard detector
+* Contributors: Michael Ferguson
+
 0.2.2 (2015-04-12)
 ------------------
 * add support for velocity scaling factor
