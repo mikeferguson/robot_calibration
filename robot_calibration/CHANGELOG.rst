@@ -2,8 +2,8 @@
 Changelog for package robot_calibration
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.3.1 (2015-04-23)
+------------------
 * start async spinner earlier
 * update how we sleep for better data capture
 * Contributors: Michael Ferguson
