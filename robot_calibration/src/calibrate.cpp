@@ -180,6 +180,9 @@ int main(int argc, char** argv)
       // Regardless of manual vs. automatic, wait for joints to settle
       chain_manager_.waitToSettle();
 
+      // Make sure sensor data is up to date after settling
+      ros::Duration(0.1).sleep();
+
       // Get pose of the features
       if (!finder_->find(&msg))
       {
