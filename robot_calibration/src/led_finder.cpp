@@ -104,12 +104,12 @@ bool LedFinder::waitForCloud()
   int count = 20;
   while (--count)
   {
-    ros::Duration(0.1).sleep();
     if (!waiting_)
     {
       // success
       return true;
     }
+    ros::Duration(0.1).sleep();
   }
   ROS_ERROR("Failed to get cloud");
   return !waiting_;
