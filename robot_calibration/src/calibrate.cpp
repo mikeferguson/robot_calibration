@@ -87,6 +87,10 @@ int main(int argc, char** argv)
   if (argc > 1)
     pose_bag_name = argv[1];
 
+  // All ROS callbacks are processed in a separate thread
+  ros::AsyncSpinner spinner(1);
+  spinner.start();
+
   if (pose_bag_name.compare("--from-bag") != 0)
   {
     // no name provided for a calibration bag file, must do capture
@@ -144,10 +148,6 @@ int main(int argc, char** argv)
     {
       ROS_INFO("Using manual calibration mode...");
     }
-
-    // All ROS callbacks are processed in a separate thread
-    ros::AsyncSpinner spinner(1);
-    spinner.start();
 
     // For each pose in the capture sequence.
     for (unsigned pose_idx = 0;
