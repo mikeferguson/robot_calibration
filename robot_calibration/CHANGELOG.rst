@@ -2,6 +2,12 @@
 Changelog for package robot_calibration
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* fix for multiple joint_state publishers, roll back async spinner changes
+* output tracker status as image
+* Contributors: Michael Ferguson
+
 0.3.1 (2015-04-23)
 ------------------
 * start async spinner earlier
