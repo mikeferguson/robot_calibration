@@ -184,7 +184,23 @@ bool LedFinder::find(robot_calibration_msgs::CalibrationData * msg)
       break;
     }
 
-    trackers_[tracker].process(cloud_ptr_, prev_cloud, weight);
+    // Get expected pose of LED in the cloud frame
+    geometry_msgs::PointStamped led;
+    led.point = trackers_[tracker].point;
+    led.header.frame_id = trackers_[tracker].frame_;
+    try
+    {
+      listener_.transformPoint(cloud_ptr_->header.frame_id, ros::Time(0), led,
+                               led.header.frame_id, led);
+    }
+    catch (const tf::TransformException& ex)
+    {
+      ROS_ERROR_STREAM("Failed to transform feature to " << cloud_ptr_->header.frame_id);
+      return false;
+    }
+
+    // Update the tracker
+    trackers_[tracker].process(cloud_ptr_, prev_cloud, led.point, max_error_, weight);
 
     if (++cycles > max_iterations_)
     {
@@ -325,6 +341,8 @@ void LedFinder::CloudDifferenceTracker::reset(size_t height, size_t width)
 bool LedFinder::CloudDifferenceTracker::process(
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud,
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr prev,
+  geometry_msgs::Point& led_point,
+  double max_distance,
   double weight)
 {
   if (cloud->size() != diff_.size())
@@ -333,9 +351,49 @@ bool LedFinder::CloudDifferenceTracker::process(
     return false;
   }
 
+  // We want to compare each point to the expected LED pose,
+  // but when the LED is on, the points will be NAN,
+  // fall back on most recent distance for these points
+  double last_distance = 1000.0;
+
+  // Update each point in the tracker
   for (size_t i = 0; i < cloud->size(); i++)
   {
-    diff_[i] += ((double)(cloud->points[i].b) - (double)(prev->points[i].b)) * weight;
+    // If within range of LED pose...
+    geometry_msgs::Point p;
+    p.x = cloud->points[i].x;
+    p.y = cloud->points[i].y;
+    p.z = cloud->points[i].z;
+    double distance = distancePoints(p, led_point);
+
+    if (std::isfinite(distance))
+    {
+      last_distance = distance;
+    }
+    else
+    {
+      distance = last_distance;
+    }
+
+    if (!std::isfinite(distance) || distance > max_distance)
+    {
+      continue;
+    }
+
+    // ...and has proper change in sign
+    double r = (double)(cloud->points[i].r) - (double)(prev->points[i].r);
+    double g = (double)(cloud->points[i].g) - (double)(prev->points[i].g);
+    double b = (double)(cloud->points[i].b) - (double)(prev->points[i].b);
+    if (r > 0 && g > 0 && b > 0 && weight > 0)
+    {
+      diff_[i] += (r + g + b) * weight;
+    }
+    else if (r < 0 && g < 0 && b < 0 && weight < 0)
+    {
+      diff_[i] += (r + g + b) * weight;
+    }
+
+    // Is this a new max value?
     if (diff_[i] > max_)
     {
       max_ = diff_[i];

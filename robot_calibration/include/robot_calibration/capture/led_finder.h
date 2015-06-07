@@ -45,9 +45,20 @@ class LedFinder : public FeatureFinder
 
     CloudDifferenceTracker(std::string frame, double x, double y, double z);
 
-    // Weight should be +/- 1 typically
+    /**
+     * @brief Update the tracker based on new cloud compared to previous.
+     * @param cloud The newest cloud
+     * @param prev The previous cloud
+     * @param led_point The expected pose of this led in cloud frame
+     * @param max_distance The maximum distance from expected led pose
+     *        that we should consider changes.
+     * @param weight Whether the change between frames should increase
+     *        or decrease the LED point values. Should be +/- 1 typically.
+     */
     bool process(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud,
                  pcl::PointCloud<pcl::PointXYZRGB>::Ptr prev,
+                 geometry_msgs::Point& led_point,
+                 double max_distance,
                  double weight);
 
     // Have we found the LED?
