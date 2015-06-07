@@ -26,6 +26,7 @@
 #include <robot_calibration/capture/feature_finder.h>
 
 #include <tf/transform_listener.h>
+#include <sensor_msgs/Image.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <geometry_msgs/PointStamped.h>
 #include <robot_calibration_msgs/CalibrationData.h>
@@ -58,12 +59,16 @@ class LedFinder : public FeatureFinder
                             geometry_msgs::PointStamped& point);
 
     // Reset the tracker
-    void reset(size_t size);
+    void reset(size_t height, size_t width);
+
+    // Get an image of tracker status
+    sensor_msgs::Image getImage();
 
     std::vector<double> diff_;
     double max_;
     int max_idx_;
     int count_;
+    size_t height_, width_;
     std::string frame_;  // frame of led coordinates
     geometry_msgs::Point point;  //coordinates of led this is tracking
   };
@@ -91,6 +96,7 @@ private:
   bool waiting_;
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_ptr_;
 
+  std::vector<boost::shared_ptr<ros::Publisher> > tracker_publishers_;
   std::vector<CloudDifferenceTracker> trackers_;
   std::vector<uint8_t> codes_;
 

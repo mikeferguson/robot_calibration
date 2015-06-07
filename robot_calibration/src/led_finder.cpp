@@ -20,6 +20,7 @@
 #include <math.h>
 #include <robot_calibration/capture/led_finder.h>
 #include <sensor_msgs/point_cloud2_iterator.h>
+#include <sensor_msgs/image_encodings.h>
 
 namespace robot_calibration
 {
@@ -85,6 +86,11 @@ LedFinder::LedFinder(ros::NodeHandle & n) :
     y = static_cast<double>(led_poses[i]["y"]);
     z = static_cast<double>(led_poses[i]["z"]);
     trackers_.push_back(CloudDifferenceTracker(gripper_led_frame, x, y, z));
+
+    // Publisher
+    boost::shared_ptr<ros::Publisher> pub(new ros::Publisher);
+    *pub = n.advertise<sensor_msgs::Image>(static_cast<std::string>(led_poses[i]["topic"]), 10);
+    tracker_publishers_.push_back(pub);
   }
 }
 
@@ -143,7 +149,7 @@ bool LedFinder::find(robot_calibration_msgs::CalibrationData * msg)
   // Initialize difference trackers
   for (size_t i = 0; i < trackers_.size(); ++i)
   {
-    trackers_[i].reset(cloud_ptr_->size());
+    trackers_[i].reset(cloud_ptr_->height, cloud_ptr_->width);
   }
 
   int cycles = 0;
@@ -186,6 +192,13 @@ bool LedFinder::find(robot_calibration_msgs::CalibrationData * msg)
     }
 
     *prev_cloud = *cloud_ptr_;
+
+    // Publish state of each tracker
+    for (size_t i = 0; i < trackers_.size(); i++)
+    {
+      sensor_msgs::Image image = trackers_[i].getImage();
+      tracker_publishers_[i]->publish(image);
+    }
   }
 
   // Create PointCloud2 to publish
@@ -287,8 +300,12 @@ LedFinder::CloudDifferenceTracker::CloudDifferenceTracker(
   point.z = z;
 }
 
-void LedFinder::CloudDifferenceTracker::reset(size_t size)
+void LedFinder::CloudDifferenceTracker::reset(size_t height, size_t width)
 {
+  // Save for creating images
+  height_ = height;
+  width_ = width;
+
   // Number of clouds processed.
   count_ = 0;
   // Maximum difference observed
@@ -297,7 +314,7 @@ void LedFinder::CloudDifferenceTracker::reset(size_t size)
   max_idx_ = -1;
 
   // Setup difference tracker
-  diff_.resize(size);
+  diff_.resize(height * width);
   for (std::vector<double>::iterator it = diff_.begin(); it != diff_.end(); ++it)
   {
     *it = 0.0;
@@ -413,6 +430,43 @@ bool LedFinder::CloudDifferenceTracker::getRefinedCentroid(
   point.header.stamp.fromNSec(cloud->header.stamp * 1e3);  // from pcl_conversion
 
   return true;
+}
+
+sensor_msgs::Image LedFinder::CloudDifferenceTracker::getImage()
+{
+  sensor_msgs::Image image;
+
+  image.height = height_;
+  image.width = width_;
+
+  image.encoding = sensor_msgs::image_encodings::BGR8;
+  image.step = width_ * 3;
+
+  image.data.resize(width_ * height_ * 3);
+
+  for (size_t i = 0; i < diff_.size(); i++)
+  {
+    if (diff_[i] > max_ * 0.9)
+    {
+      image.data[i*3] = 255;
+      image.data[i*3 + 1] = 0;
+      image.data[i*3 + 2] = 0;
+    }
+    else if (diff_[i] > 0)
+    {
+      image.data[i*3] = static_cast<uint8_t>(diff_[i]/2.0);
+      image.data[i*3 + 1] = static_cast<uint8_t>(diff_[i]/2.0);
+      image.data[i*3 + 2] = static_cast<uint8_t>(diff_[i]/2.0);
+    }
+    else
+    {
+      image.data[i*3] = 0;
+      image.data[i*3 + 1] = 0;
+      image.data[i*3 + 2] = 0;
+    }
+  }
+
+  return image;
 }
 
 }  // namespace robot_calibration
