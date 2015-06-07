@@ -74,7 +74,7 @@ ChainManager::ChainManager(ros::NodeHandle& nh, double wait_time)
   // Parameter to set velocity scaling factor for move_group
   nh.param<double>("velocity_factor", velocity_factor_, 1.0);
 
-  subscriber_ = nh.subscribe("/joint_states", 1, &ChainManager::stateCallback, this);
+  subscriber_ = nh.subscribe("/joint_states", 10, &ChainManager::stateCallback, this);
 }
 
 void ChainManager::stateCallback(const sensor_msgs::JointStateConstPtr& msg)
