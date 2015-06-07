@@ -261,6 +261,8 @@ bool ChainManager::waitToSettle()
     // If all joints are settled, break out of while loop
     if (settled)
       break;
+
+    ros::spinOnce();
   }
 
   return true;

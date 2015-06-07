@@ -60,8 +60,11 @@ void CheckerboardFinder::cameraCallback(const pcl::PointCloud<pcl::PointXYZRGB>:
 // Returns true if we got a message, false if we timeout
 bool CheckerboardFinder::waitForCloud()
 {
+  // Initial wait cycle so that camera is definitely up to date.
+  ros::Duration(1/10.0).sleep();
+
   waiting_ = true;
-  int count = 20;
+  int count = 250;
   while (--count)
   {
     if (!waiting_)
@@ -69,7 +72,8 @@ bool CheckerboardFinder::waitForCloud()
       // success
       return true;
     }
-    ros::Duration(0.1).sleep();
+    ros::Duration(0.01).sleep();
+    ros::spinOnce();
   }
   ROS_ERROR("Failed to get cloud");
   return !waiting_;
