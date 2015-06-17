@@ -2,6 +2,11 @@
 Changelog for package robot_calibration
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* check distance to expected pose in tracker process()
+* Contributors: Michael Ferguson
+
 0.4.0 (2015-06-07)
 ------------------
 * fix for multiple joint_state publishers, roll back async spinner changes
