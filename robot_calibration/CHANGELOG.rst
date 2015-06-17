@@ -2,8 +2,8 @@
 Changelog for package robot_calibration
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.4.1 (2015-06-17)
+------------------
 * check distance to expected pose in tracker process()
 * Contributors: Michael Ferguson
 
