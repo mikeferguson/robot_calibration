@@ -44,6 +44,13 @@ CheckerboardFinder::CheckerboardFinder(ros::NodeHandle & nh) :
 
   // Publish where checkerboard points were seen
   publisher_ = nh.advertise<sensor_msgs::PointCloud2>("checkerboard_points", 10);
+
+  // Setup to get camera depth info
+  if (!depth_camera_manager_.init(nh))
+  {
+    // Error will be printed in manager
+    throw;
+  }
 }
 
 void CheckerboardFinder::cameraCallback(const pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud)
@@ -172,6 +179,7 @@ bool CheckerboardFinder::findInternal(robot_calibration_msgs::CalibrationData * 
       }
 
       msg->observations[0].features[i] = rgbd;
+      msg->observations[0].ext_camera_info = depth_camera_manager_.getDepthCameraInfo();
       msg->observations[1].features[i] = world;
 
       // Visualize

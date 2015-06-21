@@ -30,7 +30,6 @@
 
 #include <robot_calibration/capture/chain_manager.h>
 #include <robot_calibration/capture/feature_finder.h>
-#include <robot_calibration/depth_camera.h>
 
 #include <camera_calibration_parsers/parse.h>
 #include <robot_calibration/ceres/optimizer.h>
@@ -108,11 +107,6 @@ int main(int argc, char** argv)
     }
     urdf_pub.publish(description_msg);
 
-    // Get the camera parameters
-    robot_calibration::DepthCameraInfoManager depth_camera_manager;
-    if (!depth_camera_manager.init(nh))
-      return -1;
-
     // Load a set of calibration poses
     std::vector<sensor_msgs::JointState> poses;
     if (pose_bag_name.compare("--manual") != 0)
@@ -188,10 +182,6 @@ int main(int argc, char** argv)
 
       // Fill in joint values
       chain_manager_.getState(&msg.joint_states);
-
-      // Fill in camera info
-      // TODO: avoid hardcoding the observation index -- extended camera info should be pushed into finders
-      msg.observations[0].ext_camera_info = depth_camera_manager.getDepthCameraInfo();
 
       // Publish calibration data message.
       pub.publish(msg);

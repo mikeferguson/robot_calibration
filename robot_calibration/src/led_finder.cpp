@@ -90,6 +90,13 @@ LedFinder::LedFinder(ros::NodeHandle& nh) :
     *pub = nh.advertise<sensor_msgs::Image>(static_cast<std::string>(led_poses[i]["topic"]), 10);
     tracker_publishers_.push_back(pub);
   }
+
+  // Setup to get camera depth info
+  if (!depth_camera_manager_.init(nh))
+  {
+    // Error will be printed in manager
+    throw;
+  }
 }
 
 void LedFinder::cameraCallback(const pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud)
@@ -274,6 +281,7 @@ bool LedFinder::find(robot_calibration_msgs::CalibrationData * msg)
 
     // Push back observation
     msg->observations[0].features.push_back(rgbd_pt);
+    msg->observations[0].ext_camera_info = depth_camera_manager_.getDepthCameraInfo();
 
     // Visualize
     iter_cloud[0] = rgbd_pt.point.x;
