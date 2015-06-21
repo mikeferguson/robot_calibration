@@ -29,8 +29,7 @@
 #include <robot_calibration_msgs/CalibrationData.h>
 
 #include <robot_calibration/capture/chain_manager.h>
-#include <robot_calibration/capture/checkerboard_finder.h>
-#include <robot_calibration/capture/led_finder.h>
+#include <robot_calibration/capture/feature_finder.h>
 #include <robot_calibration/depth_camera.h>
 
 #include <camera_calibration_parsers/parse.h>
@@ -89,16 +88,13 @@ int main(int argc, char** argv)
 
   if (pose_bag_name.compare("--from-bag") != 0)
   {
-    // no name provided for a calibration bag file, must do capture
+    // No name provided for a calibration bag file, must do capture
     robot_calibration::ChainManager chain_manager_(nh);
-    robot_calibration::FeatureFinder * finder_;
-    if (nh.hasParam("led_finder"))
+    robot_calibration::FeatureFinderMap finders_;
+    if (!robot_calibration::loadFeatureFinders(nh, finders_))
     {
-      finder_ = new robot_calibration::LedFinder(nh);
-    }
-    else
-    {
-      finder_ = new robot_calibration::CheckerboardFinder(nh);
+      ROS_FATAL("Unable to load feature finders!");
+      return -1;
     }
 
     ros::Publisher pub = nh.advertise<robot_calibration_msgs::CalibrationData>("/calibration_data", 10);
@@ -180,7 +176,7 @@ int main(int argc, char** argv)
       ros::Duration(0.1).sleep();
 
       // Get pose of the features
-      if (!finder_->find(&msg))
+      if (!finders_[0]->find(&msg))
       {
         ROS_WARN("Failed to capture sample %u.", pose_idx);
         continue;
