@@ -37,17 +37,22 @@ bool loadFeatureFinders(ros::NodeHandle& nh,
     return false;
   }
 
-  if (finder_params.getType() != XmlRpc::XmlRpcValue::TypeArray)
+  // Should be a struct (mapping name -> config)
+  if (finder_params.getType() != XmlRpc::XmlRpcValue::TypeStruct)
   {
-    ROS_FATAL("Parameter 'features' should be a list.");
+    ROS_FATAL("Parameter 'features' should be a struct.");
     return false;
   }
 
+  ROS_INFO("Loading %d feature finders.", (int)finder_params.size());
+
   // Load each finder
-  for (int f = 0; f < finder_params.size(); f++)
+  for (XmlRpc::XmlRpcValue::iterator it = finder_params.begin();
+       it != finder_params.end();
+       it++)
   {
     // Get name(space) of this finder
-    std::string name = static_cast<std::string>(finder_params[f]);
+    std::string name = static_cast<std::string>(it->first);
     ros::NodeHandle finder_handle(nh, "features/"+name);
 
     // Get finder type
@@ -63,10 +68,12 @@ bool loadFeatureFinders(ros::NodeHandle& nh,
     FeatureFinderPtr finder;
     if (type == "robot_calibration/LedFinder")
     {
+      ROS_INFO("  New robot_calibration/LedFinder: %s", name.c_str());
       finder.reset(new robot_calibration::LedFinder(finder_handle));
     }
     else if (type == "robot_calibration/CheckerboardFinder")
     {
+      ROS_INFO("  New robot_calibration/CheckerboardFinder: %s", name.c_str());
       finder.reset(new robot_calibration::CheckerboardFinder(finder_handle));
     }
     else
@@ -74,6 +81,8 @@ bool loadFeatureFinders(ros::NodeHandle& nh,
       ROS_FATAL("Unknown finder: %s", type.c_str());
       return false;
     }
+
+    features[name] = finder;
   }
 
   return true;
