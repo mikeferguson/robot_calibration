@@ -19,7 +19,7 @@
 #ifndef ROBOT_CALIBRATION_MODELS_CAMERA3D_H
 #define ROBOT_CALIBRATION_MODELS_CAMERA3D_H
 
-#include <robot_calibration/depth_camera.h>
+#include <robot_calibration/camera_info.h>
 #include <robot_calibration/models/chain.h>
 
 namespace robot_calibration

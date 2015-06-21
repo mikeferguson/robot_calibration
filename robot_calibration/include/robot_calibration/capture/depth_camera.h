@@ -28,43 +28,6 @@
 namespace robot_calibration
 {
 
-enum {CAMERA_INFO_P_FX_INDEX=0,
-      CAMERA_INFO_P_FY_INDEX=5,
-      CAMERA_INFO_P_CX_INDEX=2,
-      CAMERA_INFO_P_CY_INDEX=6};
-
-enum {CAMERA_INFO_K_FX_INDEX=0,
-      CAMERA_INFO_K_FY_INDEX=4,
-      CAMERA_INFO_K_CX_INDEX=2,
-      CAMERA_INFO_K_CY_INDEX=5};
-
-enum {CAMERA_PARAMS_CX_INDEX=0,
-      CAMERA_PARAMS_CY_INDEX=1,
-      CAMERA_PARAMS_FX_INDEX=2,
-      CAMERA_PARAMS_FY_INDEX=3,
-      CAMERA_PARAMS_Z_SCALE_INDEX=4,
-      CAMERA_PARAMS_Z_OFFSET_INDEX=5};
-
-/** @brief Update the camera calibration with the new offsets */
-inline sensor_msgs::CameraInfo updateCameraInfo(double camera_fx, double camera_fy,
-                                                double camera_cx, double camera_cy,
-                                                const sensor_msgs::CameraInfo& info)
-{
-  sensor_msgs::CameraInfo new_info = info;
-
-  new_info.P[CAMERA_INFO_P_CX_INDEX] *= camera_cx + 1.0;  // CX
-  new_info.P[CAMERA_INFO_P_CY_INDEX] *= camera_cy + 1.0;  // CY
-  new_info.P[CAMERA_INFO_P_FX_INDEX] *= camera_fx + 1.0;  // FX
-  new_info.P[CAMERA_INFO_P_FY_INDEX] *= camera_fy + 1.0;  // FY
-
-  new_info.K[CAMERA_INFO_K_CX_INDEX] = new_info.P[CAMERA_INFO_P_CX_INDEX];
-  new_info.K[CAMERA_INFO_K_CY_INDEX] = new_info.P[CAMERA_INFO_P_CY_INDEX];
-  new_info.K[CAMERA_INFO_K_FX_INDEX] = new_info.P[CAMERA_INFO_P_FX_INDEX];
-  new_info.K[CAMERA_INFO_K_FY_INDEX] = new_info.P[CAMERA_INFO_P_FY_INDEX];
-
-  return new_info;
-}
-
 /** @brief Base class for a feature finder. */
 class DepthCameraInfoManager
 {

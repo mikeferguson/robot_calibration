@@ -34,7 +34,7 @@
 
 #include <camera_calibration_parsers/parse.h>
 #include <robot_calibration/ceres/optimizer.h>
-#include <robot_calibration/depth_camera.h>
+#include <robot_calibration/camera_info.h>
 
 #include <boost/foreach.hpp>  // for rosbag iterator
 
