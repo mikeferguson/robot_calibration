@@ -17,8 +17,8 @@
 
 // Author: Michael Ferguson
 
-#ifndef ROBOT_CALIBRATION_DEPTH_CAMERA_H
-#define ROBOT_CALIBRATION_DEPTH_CAMERA_H
+#ifndef ROBOT_CALIBRATION_CAPTURE_DEPTH_CAMERA_H
+#define ROBOT_CALIBRATION_CAPTURE_DEPTH_CAMERA_H
 
 #include <ros/ros.h>
 #include <sensor_msgs/CameraInfo.h>
@@ -135,4 +135,4 @@ private:
 
 }  // namespace robot_calibration
 
-#endif  // ROBOT_CALIBRATION_DEPTH_CAMERA_H
+#endif  // ROBOT_CALIBRATION_CAPTURE_DEPTH_CAMERA_H

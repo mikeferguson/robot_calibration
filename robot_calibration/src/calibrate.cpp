@@ -27,11 +27,10 @@
 
 #include <std_msgs/String.h>
 #include <robot_calibration_msgs/CalibrationData.h>
+#include <robot_calibration_msgs/CaptureConfig.h>
 
 #include <robot_calibration/capture/chain_manager.h>
-#include <robot_calibration/capture/checkerboard_finder.h>
-#include <robot_calibration/capture/led_finder.h>
-#include <robot_calibration/depth_camera.h>
+#include <robot_calibration/capture/feature_finder.h>
 
 #include <camera_calibration_parsers/parse.h>
 #include <robot_calibration/ceres/optimizer.h>
@@ -89,16 +88,13 @@ int main(int argc, char** argv)
 
   if (pose_bag_name.compare("--from-bag") != 0)
   {
-    // no name provided for a calibration bag file, must do capture
+    // No name provided for a calibration bag file, must do capture
     robot_calibration::ChainManager chain_manager_(nh);
-    robot_calibration::FeatureFinder * finder_;
-    if (nh.hasParam("led_finder"))
+    robot_calibration::FeatureFinderMap finders_;
+    if (!robot_calibration::loadFeatureFinders(nh, finders_))
     {
-      finder_ = new robot_calibration::LedFinder(nh);
-    }
-    else
-    {
-      finder_ = new robot_calibration::CheckerboardFinder(nh);
+      ROS_FATAL("Unable to load feature finders!");
+      return -1;
     }
 
     ros::Publisher pub = nh.advertise<robot_calibration_msgs::CalibrationData>("/calibration_data", 10);
@@ -112,13 +108,8 @@ int main(int argc, char** argv)
     }
     urdf_pub.publish(description_msg);
 
-    // Get the camera parameters
-    robot_calibration::DepthCameraInfoManager depth_camera_manager;
-    if (!depth_camera_manager.init(nh))
-      return -1;
-
     // Load a set of calibration poses
-    std::vector<sensor_msgs::JointState> poses;
+    std::vector<robot_calibration_msgs::CaptureConfig> poses;
     if (pose_bag_name.compare("--manual") != 0)
     {
       ROS_INFO_STREAM("Opening " << pose_bag_name);
@@ -136,8 +127,29 @@ int main(int argc, char** argv)
 
       BOOST_FOREACH (rosbag::MessageInstance const m, data_view)
       {
-        sensor_msgs::JointState::ConstPtr msg = m.instantiate<sensor_msgs::JointState>();
-        poses.push_back(*msg);
+        robot_calibration_msgs::CaptureConfig::ConstPtr msg = m.instantiate<robot_calibration_msgs::CaptureConfig>();
+        if (msg == NULL)
+        {
+          // Try to load older style bags
+          sensor_msgs::JointState::ConstPtr js_msg = m.instantiate<sensor_msgs::JointState>();
+          if (js_msg != NULL)
+          {
+            robot_calibration_msgs::CaptureConfig config;
+            config.joint_states = *js_msg;
+            // Assume all finders should find this pose (old style config):
+            for (robot_calibration::FeatureFinderMap::iterator it = finders_.begin();
+                 it != finders_.end();
+                 it++)
+            {
+              config.features.push_back(it->first);
+            }
+            poses.push_back(config);
+          }
+        }
+        else
+        {
+          poses.push_back(*msg);
+        }
       }
     }
     else
@@ -166,7 +178,7 @@ int main(int argc, char** argv)
       else
       {
         // Move head/arm to pose
-        if (!chain_manager_.moveToState(poses[pose_idx]))
+        if (!chain_manager_.moveToState(poses[pose_idx].joint_states))
         {
           ROS_WARN("Unable to move to desired state for sample %u.", pose_idx);
           continue;
@@ -180,22 +192,54 @@ int main(int argc, char** argv)
       ros::Duration(0.1).sleep();
 
       // Get pose of the features
-      if (!finder_->find(&msg))
+      bool found_all_features = true;
+      if (poses.size() == 0)
+      {
+        // In manual mode, we need to capture all features
+        for (robot_calibration::FeatureFinderMap::iterator it = finders_.begin();
+             it != finders_.end();
+             it++)
+        {
+          if (!it->second->find(&msg))
+          {
+            ROS_WARN("%s failed to capture features.", it->first.c_str());
+            found_all_features = false;
+            break;
+          }
+        }
+      }
+      else
+      {
+        // Capture only the intended features for this sample
+        // NOTE: while you can capture multiple sensors at once for a single
+        //       pose, such things probably won't currently calibrate. Most
+        //       of the existing finders will override the entire observation
+        //       vector
+        for (size_t i = 0; i < poses[pose_idx].features.size(); i++)
+        {
+          std::string feature = poses[pose_idx].features[i];
+          if (!finders_[feature]->find(&msg))
+          {
+            ROS_WARN("%s failed to capture features.", feature.c_str());
+            found_all_features = false;
+            break;
+          }
+        }
+      }
+
+      // Make sure we succeeded
+      if (found_all_features)
+      {
+        ROS_INFO("Captured pose %u", pose_idx);
+      }
+      else
       {
         ROS_WARN("Failed to capture sample %u.", pose_idx);
         continue;
       }
-      else
-      {
-        ROS_INFO("Captured pose %u", pose_idx);
-      }
 
       // Fill in joint values
       chain_manager_.getState(&msg.joint_states);
-
-      // Fill in camera info
-      // TODO: avoid hardcoding the observation index -- extended camera info should be pushed into finders
-      msg.observations[0].ext_camera_info = depth_camera_manager.getDepthCameraInfo();
 
       // Publish calibration data message.
       pub.publish(msg);

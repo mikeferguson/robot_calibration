@@ -34,12 +34,10 @@ double distancePoints(
                    (p1.z-p2.z) * (p1.z-p2.z));
 }
 
-LedFinder::LedFinder(ros::NodeHandle & n) :
-  FeatureFinder(n),
+LedFinder::LedFinder(ros::NodeHandle& nh) :
+  FeatureFinder(nh),
   waiting_(false)
 {
-  ros::NodeHandle nh(n, "led_finder");
-
   // Setup the action client
   std::string topic_name;
   nh.param<std::string>("action", topic_name, "/gripper_led_action");
@@ -49,13 +47,13 @@ LedFinder::LedFinder(ros::NodeHandle & n) :
 
   // Setup subscriber
   nh.param<std::string>("topic", topic_name, "/points");
-  subscriber_ = n.subscribe(topic_name,
-                            1,
-                            &LedFinder::cameraCallback,
-                            this);
+  subscriber_ = nh.subscribe(topic_name,
+                             1,
+                             &LedFinder::cameraCallback,
+                             this);
 
   // Publish where LEDs were seen
-  publisher_ = n.advertise<sensor_msgs::PointCloud2>("led_points", 10);
+  publisher_ = nh.advertise<sensor_msgs::PointCloud2>("led_points", 10);
 
   // Maximum distance LED can be from expected pose
   nh.param<double>("max_error", max_error_, 0.1);
@@ -89,8 +87,15 @@ LedFinder::LedFinder(ros::NodeHandle & n) :
 
     // Publisher
     boost::shared_ptr<ros::Publisher> pub(new ros::Publisher);
-    *pub = n.advertise<sensor_msgs::Image>(static_cast<std::string>(led_poses[i]["topic"]), 10);
+    *pub = nh.advertise<sensor_msgs::Image>(static_cast<std::string>(led_poses[i]["topic"]), 10);
     tracker_publishers_.push_back(pub);
+  }
+
+  // Setup to get camera depth info
+  if (!depth_camera_manager_.init(nh))
+  {
+    // Error will be printed in manager
+    throw;
   }
 }
 
@@ -276,6 +281,7 @@ bool LedFinder::find(robot_calibration_msgs::CalibrationData * msg)
 
     // Push back observation
     msg->observations[0].features.push_back(rgbd_pt);
+    msg->observations[0].ext_camera_info = depth_camera_manager_.getDepthCameraInfo();
 
     // Visualize
     iter_cloud[0] = rgbd_pt.point.x;

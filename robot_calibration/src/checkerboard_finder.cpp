@@ -23,19 +23,17 @@
 namespace robot_calibration
 {
 
-CheckerboardFinder::CheckerboardFinder(ros::NodeHandle & n) : 
-  FeatureFinder(n),
+CheckerboardFinder::CheckerboardFinder(ros::NodeHandle & nh) :
+  FeatureFinder(nh),
   waiting_(false)
 {
-  ros::NodeHandle nh(n, "checkerboard_finder");
-
   // Setup Scriber
   std::string topic_name;
   nh.param<std::string>("topic", topic_name, "/points");
-  subscriber_ = n.subscribe(topic_name,
-                            1,
-                            &CheckerboardFinder::cameraCallback,
-                            this);
+  subscriber_ = nh.subscribe(topic_name,
+                             1,
+                             &CheckerboardFinder::cameraCallback,
+                             this);
 
   // Size of checkerboard
   nh.param<int>("points_x", points_x_, 4);
@@ -45,7 +43,14 @@ CheckerboardFinder::CheckerboardFinder(ros::NodeHandle & n) :
   nh.param<bool>("debug", output_debug_, false);
 
   // Publish where checkerboard points were seen
-  publisher_ = n.advertise<sensor_msgs::PointCloud2>("checkerboard_points", 10);
+  publisher_ = nh.advertise<sensor_msgs::PointCloud2>("checkerboard_points", 10);
+
+  // Setup to get camera depth info
+  if (!depth_camera_manager_.init(nh))
+  {
+    // Error will be printed in manager
+    throw;
+  }
 }
 
 void CheckerboardFinder::cameraCallback(const pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud)
@@ -174,6 +179,7 @@ bool CheckerboardFinder::findInternal(robot_calibration_msgs::CalibrationData * 
       }
 
       msg->observations[0].features[i] = rgbd;
+      msg->observations[0].ext_camera_info = depth_camera_manager_.getDepthCameraInfo();
       msg->observations[1].features[i] = world;
 
       // Visualize

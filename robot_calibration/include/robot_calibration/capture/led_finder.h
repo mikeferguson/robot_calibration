@@ -23,6 +23,7 @@
 #include <ros/ros.h>
 #include <pcl/point_types.h>
 #include <pcl_ros/point_cloud.h>
+#include <robot_calibration/capture/depth_camera.h>
 #include <robot_calibration/capture/feature_finder.h>
 
 #include <tf/transform_listener.h>
@@ -112,6 +113,7 @@ private:
   std::vector<uint8_t> codes_;
 
   tf::TransformListener listener_;
+  DepthCameraInfoManager depth_camera_manager_;
 
   /*
    * ROS Parameters

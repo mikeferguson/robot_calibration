@@ -1,4 +1,5 @@
 /*
+ * Copyright (C) 2015 Fetch Robotics Inc.
  * Copyright (C) 2013-2014 Unbounded Robotics Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,6 +20,9 @@
 #ifndef ROBOT_CALIBRATION_CAPTURE_FEATURE_FINDER_H
 #define ROBOT_CALIBRATION_CAPTURE_FEATURE_FINDER_H
 
+#include <map>
+#include <boost/shared_ptr.hpp>
+
 #include <ros/ros.h>
 #include <robot_calibration_msgs/CalibrationData.h>
 
@@ -26,7 +30,7 @@ namespace robot_calibration
 {
 
 /**
- *  \brief Base class for a feature finder.
+ *  @brief Base class for a feature finder.
  */
 class FeatureFinder
 {
@@ -36,6 +40,15 @@ public:
 
   virtual bool find(robot_calibration_msgs::CalibrationData * msg) = 0;
 };
+
+typedef boost::shared_ptr<FeatureFinder> FeatureFinderPtr;
+typedef std::map<std::string, FeatureFinderPtr > FeatureFinderMap;
+
+/**
+ * @brief Load feature finders, based on param server config.
+ */
+bool loadFeatureFinders(ros::NodeHandle& nh,
+                        FeatureFinderMap& features);
 
 }  // namespace robot_calibration
 
