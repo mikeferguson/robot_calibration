@@ -27,6 +27,7 @@
 
 #include <std_msgs/String.h>
 #include <robot_calibration_msgs/CalibrationData.h>
+#include <robot_calibration_msgs/CaptureConfig.h>
 
 #include <robot_calibration/capture/chain_manager.h>
 #include <robot_calibration/capture/feature_finder.h>
@@ -108,7 +109,7 @@ int main(int argc, char** argv)
     urdf_pub.publish(description_msg);
 
     // Load a set of calibration poses
-    std::vector<sensor_msgs::JointState> poses;
+    std::vector<robot_calibration_msgs::CaptureConfig> poses;
     if (pose_bag_name.compare("--manual") != 0)
     {
       ROS_INFO_STREAM("Opening " << pose_bag_name);
@@ -126,8 +127,29 @@ int main(int argc, char** argv)
 
       BOOST_FOREACH (rosbag::MessageInstance const m, data_view)
       {
-        sensor_msgs::JointState::ConstPtr msg = m.instantiate<sensor_msgs::JointState>();
-        poses.push_back(*msg);
+        robot_calibration_msgs::CaptureConfig::ConstPtr msg = m.instantiate<robot_calibration_msgs::CaptureConfig>();
+        if (msg == NULL)
+        {
+          // Try to load older style bags
+          sensor_msgs::JointState::ConstPtr js_msg = m.instantiate<sensor_msgs::JointState>();
+          if (js_msg != NULL)
+          {
+            robot_calibration_msgs::CaptureConfig config;
+            config.joint_states = *js_msg;
+            // Assume all finders should find this pose (old style config):
+            for (robot_calibration::FeatureFinderMap::iterator it = finders_.begin();
+                 it != finders_.end();
+                 it++)
+            {
+              config.features.push_back(it->first);
+            }
+            poses.push_back(config);
+          }
+        }
+        else
+        {
+          poses.push_back(*msg);
+        }
       }
     }
     else
@@ -156,7 +178,7 @@ int main(int argc, char** argv)
       else
       {
         // Move head/arm to pose
-        if (!chain_manager_.moveToState(poses[pose_idx]))
+        if (!chain_manager_.moveToState(poses[pose_idx].joint_states))
         {
           ROS_WARN("Unable to move to desired state for sample %u.", pose_idx);
           continue;
@@ -170,14 +192,46 @@ int main(int argc, char** argv)
       ros::Duration(0.1).sleep();
 
       // Get pose of the features
-      if (!finders_[0]->find(&msg))
+      bool found_all_features = true;
+      if (poses.size() == 0)
       {
-        ROS_WARN("Failed to capture sample %u.", pose_idx);
-        continue;
+        // In manual mode, we need to capture all features
+        for (robot_calibration::FeatureFinderMap::iterator it = finders_.begin();
+             it != finders_.end();
+             it++)
+        {
+          if (!it->second->find(&msg))
+          {
+            ROS_WARN("%s failed to capture features.", it->first.c_str());
+            found_all_features = false;
+            break;
+          }
+        }
       }
       else
       {
+        // Capture only the intended features for this sample
+        for (size_t i = 0; i < poses[pose_idx].features.size(); i++)
+        {
+          std::string feature = poses[pose_idx].features[i];
+          if (!finders_[feature]->find(&msg))
+          {
+            ROS_WARN("%s failed to capture features.", feature.c_str());
+            found_all_features = false;
+            break;
+          }
+        }
+      }
+
+      // Make sure we succeeded
+      if (found_all_features)
+      {
         ROS_INFO("Captured pose %u", pose_idx);
+      }
+      else
+      {
+        ROS_WARN("Failed to capture sample %u.", pose_idx);
+        continue;
       }
 
       // Fill in joint values
