@@ -19,6 +19,7 @@
 #include <robot_calibration/capture/feature_finder.h>
 #include <robot_calibration/capture/led_finder.h>
 #include <robot_calibration/capture/checkerboard_finder.h>
+#include <robot_calibration/capture/ground_plane_finder.h>
 
 namespace robot_calibration
 {
@@ -70,6 +71,11 @@ bool loadFeatureFinders(ros::NodeHandle& nh,
     {
       ROS_INFO("  New robot_calibration/LedFinder: %s", name.c_str());
       finder.reset(new robot_calibration::LedFinder(finder_handle));
+    }
+    else if (type == "robot_calibration/GroundPlaneFinder")
+    {
+      ROS_INFO("  New robot_calibration/GroundPlaneFinder: %s", name.c_str());
+      finder.reset(new robot_calibration::GroundPlaneFinder(finder_handle));
     }
     else if (type == "robot_calibration/CheckerboardFinder")
     {
