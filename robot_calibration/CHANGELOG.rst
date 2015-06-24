@@ -2,8 +2,8 @@
 Changelog for package robot_calibration
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.5.0 (2015-06-23)
+------------------
 * add new CaptureConfig message for setting up samples
 * update optimizer to handle new types of error blocks
 * cleanup how we use the depth camera manager
