@@ -2,6 +2,11 @@
 Changelog for package robot_calibration_msgs
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* add new CaptureConfig message for setting up samples
+* Contributors: Michael Ferguson
+
 0.4.1 (2015-06-17)
 ------------------
 
