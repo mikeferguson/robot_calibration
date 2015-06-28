@@ -67,6 +67,10 @@ LedFinder::LedFinder(ros::NodeHandle& nh) :
   // Should we output debug image/cloud
   nh.param<bool>("debug", output_debug_, false);
 
+  // Get sensor names
+  nh.param<std::string>("camera_sensor_name", camera_sensor_name_, "camera");
+  nh.param<std::string>("chain_sensor_name", chain_sensor_name_, "arm");
+
   // Parameters for LEDs themselves
   std::string gripper_led_frame;
   nh.param<std::string>("gripper_led_frame", gripper_led_frame, "wrist_roll_link");
@@ -235,8 +239,8 @@ bool LedFinder::find(robot_calibration_msgs::CalibrationData * msg)
 
   // Export results
   msg->observations.resize(2);
-  msg->observations[0].sensor_name = "camera";  // TODO: parameterize
-  msg->observations[1].sensor_name = "arm";     // TODO: parameterize
+  msg->observations[0].sensor_name = camera_sensor_name_;
+  msg->observations[1].sensor_name = chain_sensor_name_;
   for (size_t t = 0; t < trackers_.size(); ++t)
   {
     geometry_msgs::PointStamped rgbd_pt;

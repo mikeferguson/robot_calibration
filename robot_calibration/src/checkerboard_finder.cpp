@@ -43,6 +43,10 @@ CheckerboardFinder::CheckerboardFinder(ros::NodeHandle & nh) :
   // Should we output debug image/cloud
   nh.param<bool>("debug", output_debug_, false);
 
+  // Get sensor names
+  nh.param<std::string>("camera_sensor_name", camera_sensor_name_, "camera");
+  nh.param<std::string>("chain_sensor_name", chain_sensor_name_, "arm");
+
   // Publish where checkerboard points were seen
   publisher_ = nh.advertise<sensor_msgs::PointCloud2>("checkerboard_points", 10);
 
@@ -146,9 +150,9 @@ bool CheckerboardFinder::findInternal(robot_calibration_msgs::CalibrationData * 
 
     // Set msg size
     msg->observations.resize(2);
-    msg->observations[0].sensor_name = "camera";  // TODO: parameterize
+    msg->observations[0].sensor_name = camera_sensor_name_;
     msg->observations[0].features.resize(points_x_ * points_y_);
-    msg->observations[1].sensor_name = "arm";     // TODO: parameterize
+    msg->observations[1].sensor_name = chain_sensor_name_;
     msg->observations[1].features.resize(points_x_ * points_y_);
 
     // Fill in the headers

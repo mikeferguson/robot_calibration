@@ -75,6 +75,9 @@ private:
   double square_size_;     /// Size of a square on checkboard (in meters)
 
   bool output_debug_;   /// Should we output debug image/cloud?
+
+  std::string camera_sensor_name_;
+  std::string chain_sensor_name_;
 };
 
 }  // namespace robot_calibration

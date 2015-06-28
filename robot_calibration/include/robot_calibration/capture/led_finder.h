@@ -125,6 +125,9 @@ private:
   int max_iterations_;  /// Maximum number of cycles before we abort finding the LED
 
   bool output_debug_;   /// Should we output debug image/cloud?
+
+  std::string camera_sensor_name_;
+  std::string chain_sensor_name_;
 };
 
 }  // namespace robot_calibration
