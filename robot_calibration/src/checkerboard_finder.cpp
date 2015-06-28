@@ -36,8 +36,9 @@ CheckerboardFinder::CheckerboardFinder(ros::NodeHandle & nh) :
                              this);
 
   // Size of checkerboard
-  nh.param<int>("points_x", points_x_, 4);
-  nh.param<int>("points_y", points_y_, 5);
+  nh.param<int>("points_x", points_x_, 5);
+  nh.param<int>("points_y", points_y_, 4);
+  nh.param<double>("size", square_size_, 0.0245);
 
   // Should we output debug image/cloud
   nh.param<bool>("debug", output_debug_, false);
@@ -160,8 +161,10 @@ bool CheckerboardFinder::findInternal(robot_calibration_msgs::CalibrationData * 
     // Fill in message
     for (size_t i = 0; i < points.size(); ++i)
     {
-      world.point.x = i / points_x_;
-      world.point.y = i % points_x_;
+      //world.point.x = (i % points_x_) * square_size_;
+      //world.point.y = (i / points_x_) * square_size_;
+      world.point.z = (i % points_x_) * -square_size_;
+      world.point.x = (i / points_x_) * -square_size_;
 
       // Get 3d point
       int index = (int)(points[i].y) * cloud_ptr_->width + (int)(points[i].x);
