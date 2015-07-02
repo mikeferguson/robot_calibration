@@ -2,8 +2,8 @@
 Changelog for package robot_calibration
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.5.1 (2015-07-01)
+------------------
 * store calibration output in unique file name
 * better memory management in optimizer
 * parameterize sensor names in finders
