@@ -2,6 +2,14 @@
 Changelog for package robot_calibration
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* store calibration output in unique file name
+* better memory management in optimizer
+* parameterize sensor names in finders
+* checkerboard finder working on fetch
+* Contributors: Michael Ferguson
+
 0.5.0 (2015-06-23)
 ------------------
 * add new CaptureConfig message for setting up samples
