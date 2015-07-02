@@ -61,14 +61,14 @@ public:
                bool progress_to_stdout = false);
 
   /** \brief Returns the summary of the optimization last run. */
-  ceres::Solver::Summary* summary()
+  boost::shared_ptr<ceres::Solver::Summary> summary()
   {
     return summary_;
   }
 
-  CalibrationOffsetParser& getOffsets()
+  boost::shared_ptr<CalibrationOffsetParser> getOffsets()
   {
-    return *offsets_;
+    return offsets_;
   }
 
 private:
@@ -79,12 +79,8 @@ private:
 
   std::map<std::string, ChainModel*> models_;
 
-  int num_free_params_;
-  double * free_params_;
-  CalibrationOffsetParser* offsets_;
-
-  ceres::Problem* problem_;
-  ceres::Solver::Summary* summary_;
+  boost::shared_ptr<CalibrationOffsetParser> offsets_;
+  boost::shared_ptr<ceres::Solver::Summary> summary_;
 };
 
 }  // namespace robot_calibration

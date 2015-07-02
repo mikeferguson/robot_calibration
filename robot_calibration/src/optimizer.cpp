@@ -47,15 +47,9 @@ Optimizer::Optimizer(const std::string& robot_description)
 
 Optimizer::~Optimizer()
 {
-  if (free_params_)
-    delete[] free_params_;
-  if (problem_)
-    delete problem_;
-  if (offsets_)
-    delete offsets_;
 }
 
-// Determine if an sample of data has an observation from
+// Determine if a sample of data has an observation from
 // the desired sensor
 bool hasSensor(
   const robot_calibration_msgs::CalibrationData& msg,
@@ -105,7 +99,7 @@ int Optimizer::optimize(OptimizationParams& params,
   }
 
   // Setup  parameters to calibrate
-  offsets_ = new CalibrationOffsetParser();
+  offsets_.reset(new CalibrationOffsetParser());
   for (size_t i = 0; i < params.free_params.size(); ++i)
   {
     offsets_->add(params.free_params[i]);
@@ -122,12 +116,12 @@ int Optimizer::optimize(OptimizationParams& params,
   }
 
   // Allocate space
-  free_params_ = new double[offsets_->size()];
+  double* free_params = new double[offsets_->size()];
   for (int i = 0; i < offsets_->size(); ++i)
-    free_params_[i] = 0.0;
+    free_params[i] = 0.0;
 
   // Houston, we have a problem...
-  problem_ = new ceres::Problem();
+  ceres::Problem* problem = new ceres::Problem();
 
   // For each sample of data:
   for (size_t i = 0; i < data.size(); ++i)
@@ -151,12 +145,12 @@ int Optimizer::optimize(OptimizationParams& params,
         ceres::CostFunction * cost = Camera3dToArmError::Create(
           dynamic_cast<Camera3dModel*>(models_[camera_name]),
           models_[arm_name],
-          offsets_, data[i]);
+          offsets_.get(), data[i]);
 
         if (progress_to_stdout)
         {
           double ** params = new double*[1];
-          params[0] = free_params_;
+          params[0] = free_params;
           double * residuals = new double[data[i].observations[0].features.size() * 3];  // TODO: should check that all features are same length?
 
           cost->Evaluate(params, residuals, NULL);
@@ -172,21 +166,21 @@ int Optimizer::optimize(OptimizationParams& params,
           std::cout << std::endl << std::endl;
         }
 
-        problem_->AddResidualBlock(cost,
+        problem->AddResidualBlock(cost,
                                    NULL /* squared loss */,
-                                   free_params_);
+                                   free_params);
       }
       else if (params.error_blocks[j].type == "outrageous")
       {
         // Outrageous error block requires no particular sensors, add to every sample
-        problem_->AddResidualBlock(
-          OutrageousError::Create(offsets_,
+        problem->AddResidualBlock(
+          OutrageousError::Create(offsets_.get(),
                                   params.error_blocks[j].name,
                                   static_cast<double>(params.error_blocks[j].params["joint_scale"]),
                                   static_cast<double>(params.error_blocks[j].params["position_scale"]),
                                   static_cast<double>(params.error_blocks[j].params["rotation_scale"])),
           NULL, // squared loss
-          free_params_);
+          free_params);
       }
       else
       {
@@ -206,8 +200,8 @@ int Optimizer::optimize(OptimizationParams& params,
 
   if (progress_to_stdout)
     std::cout << "\nSolver output:" << std::endl;
-  summary_ = new ceres::Solver::Summary();
-  ceres::Solve(options, problem_, summary_);
+  summary_.reset(new ceres::Solver::Summary());
+  ceres::Solve(options, problem, summary_.get());
   if (progress_to_stdout)
     std::cout << "\n" << summary_->BriefReport() << std::endl;
 
@@ -215,7 +209,7 @@ int Optimizer::optimize(OptimizationParams& params,
   /*if (progress_to_stdout)
   {
     CalibrationOffsetParser no_offsets;
-    offsets_->update(free_params_);
+    offsets_->update(free_params);
     for (size_t i = 0; i < data.size(); ++i)
     {
       std::cout << "Sample " << i << std::endl;
@@ -226,6 +220,10 @@ int Optimizer::optimize(OptimizationParams& params,
 
   // Note: the error blocks will be managed by scoped_ptr in cost functor
   //       which takes ownership, and so we do not need to delete them here
+
+  // Done with our free params
+  delete[] free_params;
+  delete problem;
 
   return 0;
 }
