@@ -302,7 +302,7 @@ int main(int argc, char** argv)
   // Update the URDF
   std::string s = opt.getOffsets()->updateURDF(description_msg.data);
 
-  // TODO: generate datecode
+  // Generate datecode
   char datecode[80];
   {
     std::time_t t = std::time(NULL);
@@ -344,8 +344,10 @@ int main(int argc, char** argv)
 
   // Output the calibration yaml
   {
+    std::stringstream yaml_name;
+    yaml_name << "/tmp/calibration_" << datecode << ".yaml";
     std::ofstream file;
-    file.open("/tmp/calibration.yaml");
+    file.open(yaml_name.str().c_str());
     file << opt.getOffsets()->getOffsetYAML();
     file << "depth_info: depth_" << datecode << ".yaml" << std::endl;
     file << "rgb_info: rgb_" << datecode << ".yaml" << std::endl;

@@ -305,8 +305,16 @@ int main(int argc, char** argv)
 
   // output yaml file
   {
+    // Generate datecode
+    char datecode[80];
+    {
+      std::time_t t = std::time(NULL);
+      std::strftime(datecode, 80, "%Y_%m_%d_%H_%M_%S", std::localtime(&t));
+    }
+    std::stringstream yaml_name;
+    yaml_name << "/tmp/base_calibration_" << datecode << ".yaml";
     std::ofstream file;
-    file.open("/tmp/base_calibration.yaml");
+    file.open(yaml_name.str().c_str());
     std::string cal = b.printCalibrationData();
     file << cal;
     file.close();
