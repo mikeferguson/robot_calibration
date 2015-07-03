@@ -195,7 +195,7 @@ bool LedFinder::find(robot_calibration_msgs::CalibrationData * msg)
 
     // Get expected pose of LED in the cloud frame
     geometry_msgs::PointStamped led;
-    led.point = trackers_[tracker].point;
+    led.point = trackers_[tracker].point_;
     led.header.frame_id = trackers_[tracker].frame_;
     try
     {
@@ -264,7 +264,7 @@ bool LedFinder::find(robot_calibration_msgs::CalibrationData * msg)
       ROS_ERROR_STREAM("Failed to transform feature to " << trackers_[t].frame_);
       return false;
     }
-    double distance = distancePoints(world_pt.point, trackers_[t].point);
+    double distance = distancePoints(world_pt.point, trackers_[t].point_);
     if (distance > max_error_)
     {
       ROS_ERROR_STREAM("Feature was too far away from expected pose in " << trackers_[t].frame_ << ": " << distance);
@@ -274,7 +274,7 @@ bool LedFinder::find(robot_calibration_msgs::CalibrationData * msg)
     // Check that points are consistent with one another
     for (size_t t2 = 0; t2 < t; ++t2)
     {
-      double expected = distancePoints(trackers_[t2].point, trackers_[t].point);
+      double expected = distancePoints(trackers_[t2].point_, trackers_[t].point_);
       double actual = distancePoints(msg->observations[0].features[t2].point, rgbd_pt.point);
       if (fabs(expected-actual) > max_inconsistency_)
       {
@@ -295,7 +295,7 @@ bool LedFinder::find(robot_calibration_msgs::CalibrationData * msg)
 
     // Push back expected location of point on robot
     world_pt.header.frame_id = trackers_[t].frame_;
-    world_pt.point = trackers_[t].point;
+    world_pt.point = trackers_[t].point_;
     msg->observations[1].features.push_back(world_pt);
   }
 
@@ -321,9 +321,9 @@ LedFinder::CloudDifferenceTracker::CloudDifferenceTracker(
   std::string frame, double x, double y, double z) :
     frame_(frame)
 {
-  point.x = x;
-  point.y = y;
-  point.z = z;
+  point_.x = x;
+  point_.y = y;
+  point_.z = z;
 }
 
 void LedFinder::CloudDifferenceTracker::reset(size_t height, size_t width)

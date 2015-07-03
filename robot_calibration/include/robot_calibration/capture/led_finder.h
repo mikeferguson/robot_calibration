@@ -68,7 +68,7 @@ class LedFinder : public FeatureFinder
 
     // Gives a refined centroid using multiple points
     bool getRefinedCentroid(const pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud,
-                            geometry_msgs::PointStamped& point);
+                            geometry_msgs::PointStamped& centroid);
 
     // Reset the tracker
     void reset(size_t height, size_t width);
@@ -82,7 +82,7 @@ class LedFinder : public FeatureFinder
     int count_;
     size_t height_, width_;
     std::string frame_;  // frame of led coordinates
-    geometry_msgs::Point point;  //coordinates of led this is tracking
+    geometry_msgs::Point point_;  //coordinates of led this is tracking
   };
 
   typedef actionlib::SimpleActionClient<robot_calibration_msgs::GripperLedCommandAction> LedClient;
