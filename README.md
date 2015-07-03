@@ -72,6 +72,16 @@ This specifies several items:
      absurd. An outrageous error block can be used to limit a particular
      parameter.
 
+## Exported Results
+
+The exported results consist of an updated URDF file, and one or more updated
+camera calibration YAML files. By default, these files will by exported into
+the /tmp folder, with filenames that include a timestamp of generation. These
+files need to be installed in the correct places to be properly loaded.
+
+The [fetch_calibration](https://github.com/fetchrobotics/fetch_ros/tree/indigo-devel/fetch_calibration)
+package has an example python script for installing the updated files.
+
 # Status
 
  * Devel Job Status: [![Devel Job Status](http://jenkins.ros.org/buildStatus/icon?job=devel-indigo-robot_calibration)](http://jenkins.ros.org/job/devel-indigo-robot_calibration/)
