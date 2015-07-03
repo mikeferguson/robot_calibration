@@ -6,7 +6,6 @@ if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
 endif()
 
 find_package(Boost REQUIRED system thread)
-find_package(PCL REQUIRED)
 
 find_library(tinyxml_library tinyxml)
 if (tinyxml_library)
@@ -29,12 +28,12 @@ find_package(catkin REQUIRED
     kdl_parser
     moveit_msgs
     nav_msgs
-    pcl_ros
     robot_calibration_msgs
     rosbag
     roscpp
     sensor_msgs
     std_msgs
+    tf
 )
 
 catkin_package(
@@ -48,12 +47,12 @@ catkin_package(
     kdl_parser
     moveit_msgs
     nav_msgs
-    pcl_ros
     robot_calibration_msgs
     rosbag
     roscpp
     sensor_msgs
     std_msgs
+    tf
   DEPENDS
     Boost
     Ceres
@@ -65,7 +64,6 @@ catkin_package(
 include_directories(include ${Boost_INCLUDE_DIRS}
                             ${catkin_INCLUDE_DIRS}
                             ${CERES_INCLUDES}
-                            ${PCL_INCLUDE_DIRS}
                             ${orocos_kdl_INCLUDE_DIRS})
 link_directories(${orocos_kdl_LIBRARY_DIRS}) # this is a hack, will eventually be unneeded once orocos-kdl is fixed
 

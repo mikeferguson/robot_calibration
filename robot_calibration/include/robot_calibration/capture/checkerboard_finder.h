@@ -21,16 +21,11 @@
 #define ROBOT_CALIBRATION_CAPTURE_CHECKERBOARD_FINDER_H
 
 #include <ros/ros.h>
-#include <pcl/point_types.h>
-#include <pcl_ros/point_cloud.h>
 #include <robot_calibration/capture/depth_camera.h>
 #include <robot_calibration/capture/feature_finder.h>
 #include <robot_calibration_msgs/CalibrationData.h>
 
 #include <opencv2/calib3d/calib3d.hpp>
-#include <robot_calibration/pcl_conversions.h>
-#include <pcl_conversions/pcl_conversions.h>
-
 #include <cv_bridge/cv_bridge.h>
 
 namespace robot_calibration
@@ -56,14 +51,14 @@ public:
 private:
   bool findInternal(robot_calibration_msgs::CalibrationData * msg);
 
-  void cameraCallback(const pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud);
+  void cameraCallback(const sensor_msgs::PointCloud2& cloud);
   bool waitForCloud();
 
   ros::Subscriber subscriber_;  /// Incoming sensor_msgs::PointCloud2
   ros::Publisher publisher_;   /// Outgoing sensor_msgs::PointCloud2
 
   bool waiting_;
-  pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_ptr_;
+  sensor_msgs::PointCloud2 cloud_;
   DepthCameraInfoManager depth_camera_manager_;
 
   /*

@@ -23,6 +23,11 @@
 namespace robot_calibration
 {
 
+// We use a number of PC2 iterators, define the indexes here
+const unsigned X = 0;
+const unsigned Y = 1;
+const unsigned Z = 2;
+
 CheckerboardFinder::CheckerboardFinder(ros::NodeHandle & nh) :
   FeatureFinder(nh),
   waiting_(false)
@@ -58,11 +63,11 @@ CheckerboardFinder::CheckerboardFinder(ros::NodeHandle & nh) :
   }
 }
 
-void CheckerboardFinder::cameraCallback(const pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud)
+void CheckerboardFinder::cameraCallback(const sensor_msgs::PointCloud2& cloud)
 {
   if (waiting_)
   {
-    cloud_ptr_ = cloud;
+    cloud_ = cloud;
     waiting_ = false;
   }
 }
@@ -112,10 +117,28 @@ bool CheckerboardFinder::findInternal(robot_calibration_msgs::CalibrationData * 
     return false;
   }
 
+  // Get an image message from point cloud
+  sensor_msgs::ImagePtr image_msg(new sensor_msgs::Image);
+  sensor_msgs::PointCloud2ConstIterator<uint8_t> rgb(cloud_, "rgb");
+  image_msg->encoding = "bgr8";
+  image_msg->height = cloud_.height;
+  image_msg->width = cloud_.width;
+  image_msg->step = image_msg->width * sizeof (uint8_t) * 3;
+  image_msg->data.resize(image_msg->step * image_msg->height);
+  for (size_t y = 0; y < cloud_.height; y++)
+  {
+    for (size_t x = 0; x < cloud_.width; x++)
+    {
+      uint8_t* pixel = &(image_msg->data[y * image_msg->step + x * 3]);
+      pixel[0] = rgb[0];
+      pixel[1] = rgb[1];
+      pixel[2] = rgb[2];
+      ++rgb;
+    }
+  }
+
   // Get an OpenCV image from the cloud
   cv_bridge::CvImagePtr bridge;
-  sensor_msgs::ImagePtr image_msg(new sensor_msgs::Image);
-  pcl_broke_again::toROSMsg (*cloud_ptr_, *image_msg);
   try
   {
     bridge = cv_bridge::toCvCopy(image_msg, "mono8");  // TODO: was rgb8? does this work?
@@ -142,11 +165,11 @@ bool CheckerboardFinder::findInternal(robot_calibration_msgs::CalibrationData * 
     cloud.width = 0;
     cloud.height = 0;
     cloud.header.stamp = ros::Time::now();
-    cloud.header.frame_id = cloud_ptr_->header.frame_id;
+    cloud.header.frame_id = cloud_.header.frame_id;
     sensor_msgs::PointCloud2Modifier cloud_mod(cloud);
     cloud_mod.setPointCloud2FieldsByString(1, "xyz");
     cloud_mod.resize(points_x_ * points_y_);
-    sensor_msgs::PointCloud2Iterator<float> iter_cloud(cloud, "x");
+    sensor_msgs::PointCloud2Iterator<float> iter_cloud(cloud_, "x");
 
     // Set msg size
     msg->observations.resize(2);
@@ -156,13 +179,11 @@ bool CheckerboardFinder::findInternal(robot_calibration_msgs::CalibrationData * 
     msg->observations[1].features.resize(points_x_ * points_y_);
 
     // Fill in the headers
-    rgbd.header.seq = cloud_ptr_->header.seq;
-    rgbd.header.frame_id = cloud_ptr_->header.frame_id;
-    rgbd.header.stamp.fromNSec(cloud_ptr_->header.stamp * 1e3);  // from pcl_conversion
-
+    rgbd.header = cloud_.header;
     world.header.frame_id = "checkerboard";
 
     // Fill in message
+    sensor_msgs::PointCloud2ConstIterator<float> xyz(cloud_, "x");
     for (size_t i = 0; i < points.size(); ++i)
     {
       //world.point.x = (i % points_x_) * square_size_;
@@ -171,10 +192,10 @@ bool CheckerboardFinder::findInternal(robot_calibration_msgs::CalibrationData * 
       world.point.x = (i / points_x_) * -square_size_;
 
       // Get 3d point
-      int index = (int)(points[i].y) * cloud_ptr_->width + (int)(points[i].x);
-      rgbd.point.x = cloud_ptr_->points[index].x;
-      rgbd.point.y = cloud_ptr_->points[index].y;
-      rgbd.point.z = cloud_ptr_->points[index].z;
+      int index = (int)(points[i].y) * cloud_.width + (int)(points[i].x);
+      rgbd.point.x = (xyz + index)[X];
+      rgbd.point.y = (xyz + index)[Y];
+      rgbd.point.z = (xyz + index)[Z];
 
       // Do not accept NANs
       if (isnan(rgbd.point.x) ||
@@ -199,7 +220,7 @@ bool CheckerboardFinder::findInternal(robot_calibration_msgs::CalibrationData * 
     // Add debug cloud to message
     if (output_debug_)
     {
-      pcl::toROSMsg(*cloud_ptr_, msg->observations[0].cloud);
+      msg->observations[0].cloud = cloud_;
     }
 
     // Publish results
