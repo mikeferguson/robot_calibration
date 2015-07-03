@@ -2,6 +2,13 @@
 Changelog for package robot_calibration
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* remove dependency on PCL
+* cleanup naming of member variables
+* fix centroid refinement, fixes `#20 <https://github.com/mikeferguson/robot_calibration/issues/20>`_
+* Contributors: Michael Ferguson
+
 0.5.1 (2015-07-01)
 ------------------
 * store calibration output in unique file name

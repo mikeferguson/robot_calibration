@@ -2,6 +2,9 @@
 Changelog for package robot_calibration_msgs
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 0.5.1 (2015-07-01)
 ------------------
 
