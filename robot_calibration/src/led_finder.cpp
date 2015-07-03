@@ -437,18 +437,17 @@ bool LedFinder::CloudDifferenceTracker::isFound(
 
 bool LedFinder::CloudDifferenceTracker::getRefinedCentroid(
   const pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud,
-  geometry_msgs::PointStamped& point)
+  geometry_msgs::PointStamped& centroid)
 {
   // Get initial centroid
-  geometry_msgs::PointStamped p;
-  point.point.x = cloud->points[max_idx_].x;
-  point.point.y = cloud->points[max_idx_].y;
-  point.point.z = cloud->points[max_idx_].z;
+  centroid.point.x = cloud->points[max_idx_].x;
+  centroid.point.y = cloud->points[max_idx_].y;
+  centroid.point.z = cloud->points[max_idx_].z;
 
   // Do not accept NANs
-  if (isnan(point.point.x) ||
-      isnan(point.point.y) ||
-      isnan(point.point.z))
+  if (isnan(centroid.point.x) ||
+      isnan(centroid.point.y) ||
+      isnan(centroid.point.z))
   {
     return false;
   }
@@ -470,12 +469,12 @@ bool LedFinder::CloudDifferenceTracker::getRefinedCentroid(
     // Using highly likely points
     if (diff_[i] > (max_*0.75))
     {
-      double dx = cloud->points[i].x - p.point.x;
-      double dy = cloud->points[i].y - p.point.y;
-      double dz = cloud->points[i].z - p.point.z;
+      double dx = cloud->points[i].x - centroid.point.x;
+      double dy = cloud->points[i].y - centroid.point.y;
+      double dz = cloud->points[i].z - centroid.point.z;
 
       // That are less than 5mm from the max point
-      if ( (dx*dx) + (dy*dy) + (dz*dz) < 0.22 )
+      if ((dx*dx) + (dy*dy) + (dz*dz) < (0.05*0.05))
       {
         sum_x += cloud->points[i].x;
         sum_y += cloud->points[i].y;
@@ -487,15 +486,15 @@ bool LedFinder::CloudDifferenceTracker::getRefinedCentroid(
 
   if (points > 0)
   {
-    point.point.x = sum_x/points;
-    point.point.y = sum_y/points;
-    point.point.z = sum_z/points;
+    centroid.point.x = (centroid.point.x + sum_x)/(points+1);
+    centroid.point.y = (centroid.point.y + sum_y)/(points+1);
+    centroid.point.z = (centroid.point.z + sum_z)/(points+1);
   }
 
   /* Fill in the headers */
-  point.header.seq = cloud->header.seq;
-  point.header.frame_id = cloud->header.frame_id;
-  point.header.stamp.fromNSec(cloud->header.stamp * 1e3);  // from pcl_conversion
+  centroid.header.seq = cloud->header.seq;
+  centroid.header.frame_id = cloud->header.frame_id;
+  centroid.header.stamp.fromNSec(cloud->header.stamp * 1e3);  // from pcl_conversion
 
   return true;
 }
