@@ -25,6 +25,14 @@
 namespace robot_calibration
 {
 
+// We use a number of PC2 iterators, define the indexes here
+const unsigned X = 0;
+const unsigned Y = 1;
+const unsigned Z = 2;
+const unsigned R = 0;
+const unsigned G = 1;
+const unsigned B = 2;
+
 double distancePoints(
   const geometry_msgs::Point p1,
   const geometry_msgs::Point p2)
@@ -103,11 +111,11 @@ LedFinder::LedFinder(ros::NodeHandle& nh) :
   }
 }
 
-void LedFinder::cameraCallback(const pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud)
+void LedFinder::cameraCallback(const sensor_msgs::PointCloud2::ConstPtr& cloud)
 {
   if (waiting_)
   {
-    cloud_ptr_ = cloud;
+    cloud_ = *cloud;
     waiting_ = false;
   }
 }
@@ -141,7 +149,7 @@ bool LedFinder::find(robot_calibration_msgs::CalibrationData * msg)
   std::vector<geometry_msgs::PointStamped> rgbd;
   std::vector<geometry_msgs::PointStamped> world;
 
-  pcl::PointCloud<pcl::PointXYZRGB>::Ptr prev_cloud(new pcl::PointCloud<pcl::PointXYZRGB>);
+  sensor_msgs::PointCloud2 prev_cloud;
 
   robot_calibration_msgs::GripperLedCommandGoal command;
   command.led_code = 0;
@@ -153,12 +161,12 @@ bool LedFinder::find(robot_calibration_msgs::CalibrationData * msg)
   {
     return false;
   }
-  *prev_cloud = *cloud_ptr_;
+  prev_cloud = cloud_;
 
   // Initialize difference trackers
   for (size_t i = 0; i < trackers_.size(); ++i)
   {
-    trackers_[i].reset(cloud_ptr_->height, cloud_ptr_->width);
+    trackers_[i].reset(cloud_.height, cloud_.width);
   }
 
   int cycles = 0;
@@ -185,7 +193,7 @@ bool LedFinder::find(robot_calibration_msgs::CalibrationData * msg)
     bool done = true;
     for (size_t t = 0; t < trackers_.size(); ++t)
     {
-      done &= trackers_[t].isFound(cloud_ptr_, threshold_);
+      done &= trackers_[t].isFound(cloud_, threshold_);
     }
     // We want to break only if the LED is off, so that pixel is not washed out
     if (done && (weight == -1))
@@ -199,24 +207,25 @@ bool LedFinder::find(robot_calibration_msgs::CalibrationData * msg)
     led.header.frame_id = trackers_[tracker].frame_;
     try
     {
-      listener_.transformPoint(cloud_ptr_->header.frame_id, ros::Time(0), led,
+      listener_.transformPoint(cloud_.header.frame_id, ros::Time(0), led,
                                led.header.frame_id, led);
     }
     catch (const tf::TransformException& ex)
     {
-      ROS_ERROR_STREAM("Failed to transform feature to " << cloud_ptr_->header.frame_id);
+      ROS_ERROR_STREAM("Failed to transform feature to " << cloud_.header.frame_id);
       return false;
     }
 
     // Update the tracker
-    trackers_[tracker].process(cloud_ptr_, prev_cloud, led.point, max_error_, weight);
+    trackers_[tracker].process(cloud_, prev_cloud, led.point, max_error_, weight);
 
     if (++cycles > max_iterations_)
     {
+      ROS_ERROR("Failed to find features before using maximum iterations.");
       return false;
     }
 
-    *prev_cloud = *cloud_ptr_;
+    prev_cloud = cloud_;
 
     // Publish state of each tracker
     for (size_t i = 0; i < trackers_.size(); i++)
@@ -231,7 +240,7 @@ bool LedFinder::find(robot_calibration_msgs::CalibrationData * msg)
   cloud.width = 0;
   cloud.height = 0;
   cloud.header.stamp = ros::Time::now();
-  cloud.header.frame_id = cloud_ptr_->header.frame_id;
+  cloud.header.frame_id = cloud_.header.frame_id;
   sensor_msgs::PointCloud2Modifier cloud_mod(cloud);
   cloud_mod.setPointCloud2FieldsByString(1, "xyz");
   cloud_mod.resize(4);
@@ -247,7 +256,7 @@ bool LedFinder::find(robot_calibration_msgs::CalibrationData * msg)
     geometry_msgs::PointStamped world_pt;
 
     // Get point
-    if (!trackers_[t].getRefinedCentroid(cloud_ptr_, rgbd_pt))
+    if (!trackers_[t].getRefinedCentroid(cloud_, rgbd_pt))
     {
       ROS_ERROR_STREAM("No centroid for feature " << t);
       return false;
@@ -308,7 +317,7 @@ bool LedFinder::find(robot_calibration_msgs::CalibrationData * msg)
   // Add debug cloud to message
   if (output_debug_)
   {
-    pcl::toROSMsg(*cloud_ptr_, msg->observations[0].cloud);
+    msg->observations[0].cloud = cloud_;
   }
 
   // Publish results
@@ -349,17 +358,21 @@ void LedFinder::CloudDifferenceTracker::reset(size_t height, size_t width)
 
 // Weight should be +/- 1 typically
 bool LedFinder::CloudDifferenceTracker::process(
-  pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud,
-  pcl::PointCloud<pcl::PointXYZRGB>::Ptr prev,
+  sensor_msgs::PointCloud2& cloud,
+  sensor_msgs::PointCloud2& prev,
   geometry_msgs::Point& led_point,
   double max_distance,
   double weight)
 {
-  if (cloud->size() != diff_.size())
+  if ((cloud.width * cloud.height) != diff_.size())
   {
-    std::cerr << "Cloud size has changed." << std::endl;
+    ROS_ERROR("Cloud size has changed");
     return false;
   }
+
+  sensor_msgs::PointCloud2ConstIterator<float> xyz(cloud, "x");
+  sensor_msgs::PointCloud2ConstIterator<uint8_t> rgb(cloud, "rgb");
+  sensor_msgs::PointCloud2ConstIterator<uint8_t> prev_rgb(prev, "rgb");
 
   // We want to compare each point to the expected LED pose,
   // but when the LED is on, the points will be NAN,
@@ -367,18 +380,22 @@ bool LedFinder::CloudDifferenceTracker::process(
   double last_distance = 1000.0;
 
   // Update each point in the tracker
-  for (size_t i = 0; i < cloud->size(); i++)
+  const size_t num_points = cloud.data.size() / cloud.point_step;
+  int valid = 0;
+  int used = 0;
+  for (size_t i = 0; i < num_points; i++)
   {
     // If within range of LED pose...
     geometry_msgs::Point p;
-    p.x = cloud->points[i].x;
-    p.y = cloud->points[i].y;
-    p.z = cloud->points[i].z;
+    p.x = (xyz + i)[X];
+    p.y = (xyz + i)[Y];
+    p.z = (xyz + i)[Z];
     double distance = distancePoints(p, led_point);
 
     if (std::isfinite(distance))
     {
       last_distance = distance;
+      valid++;
     }
     else
     {
@@ -391,16 +408,18 @@ bool LedFinder::CloudDifferenceTracker::process(
     }
 
     // ...and has proper change in sign
-    double r = (double)(cloud->points[i].r) - (double)(prev->points[i].r);
-    double g = (double)(cloud->points[i].g) - (double)(prev->points[i].g);
-    double b = (double)(cloud->points[i].b) - (double)(prev->points[i].b);
+    double r = (double)((rgb + i)[R]) - (double)((prev_rgb + i)[R]);
+    double g = (double)((rgb + i)[G]) - (double)((prev_rgb + i)[G]);
+    double b = (double)((rgb + i)[B]) - (double)((prev_rgb + i)[B]);
     if (r > 0 && g > 0 && b > 0 && weight > 0)
     {
       diff_[i] += (r + g + b) * weight;
+      used++;
     }
     else if (r < 0 && g < 0 && b < 0 && weight < 0)
     {
       diff_[i] += (r + g + b) * weight;
+      used++;
     }
 
     // Is this a new max value?
@@ -415,7 +434,7 @@ bool LedFinder::CloudDifferenceTracker::process(
 }
 
 bool LedFinder::CloudDifferenceTracker::isFound(
-  const pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud,
+  const sensor_msgs::PointCloud2& cloud,
   double threshold)
 {
   // Returns true only if the max exceeds threshold
@@ -424,10 +443,14 @@ bool LedFinder::CloudDifferenceTracker::isFound(
     return false;
   }
 
+  // Access point in cloud
+  sensor_msgs::PointCloud2ConstIterator<float> point(cloud, "x");
+  point += max_idx_;
+
   // AND the current index is a valid point in the cloud.
-  if (isnan(cloud->points[max_idx_].x) ||
-      isnan(cloud->points[max_idx_].x) ||
-      isnan(cloud->points[max_idx_].x))
+  if (isnan(point[X]) ||
+      isnan(point[Y]) ||
+      isnan(point[Z]))
   {
     return false;
   }
@@ -436,13 +459,18 @@ bool LedFinder::CloudDifferenceTracker::isFound(
 }
 
 bool LedFinder::CloudDifferenceTracker::getRefinedCentroid(
-  const pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud,
+  const sensor_msgs::PointCloud2& cloud,
   geometry_msgs::PointStamped& centroid)
 {
+  // Access point in cloud
+  sensor_msgs::PointCloud2ConstIterator<float> iter(cloud, "x");
+  const size_t num_points = cloud.data.size() / cloud.point_step;
+
   // Get initial centroid
-  centroid.point.x = cloud->points[max_idx_].x;
-  centroid.point.y = cloud->points[max_idx_].y;
-  centroid.point.z = cloud->points[max_idx_].z;
+  centroid.header = cloud.header;
+  centroid.point.x = (iter + max_idx_)[X];
+  centroid.point.y = (iter + max_idx_)[Y];
+  centroid.point.z = (iter + max_idx_)[Z];
 
   // Do not accept NANs
   if (isnan(centroid.point.x) ||
@@ -457,28 +485,28 @@ bool LedFinder::CloudDifferenceTracker::getRefinedCentroid(
   double sum_x = 0.0;
   double sum_y = 0.0;
   double sum_z = 0.0;
-  for (size_t i = 0; i < cloud->size(); ++i)
+  for (size_t i = 0; i < num_points; i++)
   {
-    if (isnan(cloud->points[i].x) ||
-        isnan(cloud->points[i].y) ||
-        isnan(cloud->points[i].z))
-    {
-      continue;
-    }
+    sensor_msgs::PointCloud2ConstIterator<float> point = iter + i;
 
     // Using highly likely points
     if (diff_[i] > (max_*0.75))
     {
-      double dx = cloud->points[i].x - centroid.point.x;
-      double dy = cloud->points[i].y - centroid.point.y;
-      double dz = cloud->points[i].z - centroid.point.z;
+      if (isnan(point[X]) || isnan(point[Y]) || isnan(point[Z]))
+      {
+        continue;
+      }
 
-      // That are less than 5mm from the max point
+      double dx = point[X] - centroid.point.x;
+      double dy = point[Y] - centroid.point.y;
+      double dz = point[Z] - centroid.point.z;
+
+      // That are less than 1cm from the max point
       if ((dx*dx) + (dy*dy) + (dz*dz) < (0.05*0.05))
       {
-        sum_x += cloud->points[i].x;
-        sum_y += cloud->points[i].y;
-        sum_z += cloud->points[i].z;
+        sum_x += point[X];
+        sum_y += point[Y];
+        sum_z += point[Z];
         ++points;
       }
     }
@@ -490,11 +518,6 @@ bool LedFinder::CloudDifferenceTracker::getRefinedCentroid(
     centroid.point.y = (centroid.point.y + sum_y)/(points+1);
     centroid.point.z = (centroid.point.z + sum_z)/(points+1);
   }
-
-  /* Fill in the headers */
-  centroid.header.seq = cloud->header.seq;
-  centroid.header.frame_id = cloud->header.frame_id;
-  centroid.header.stamp.fromNSec(cloud->header.stamp * 1e3);  // from pcl_conversion
 
   return true;
 }
