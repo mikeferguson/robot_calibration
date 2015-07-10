@@ -188,7 +188,7 @@ int Optimizer::optimize(OptimizationParams& params,
           z_,
           offsets_.get(), data[i]);
 
-         if (progress_to_stdout)
+        if (progress_to_stdout)
         {
           double ** params = new double*[1];
           params[0] = free_params;
@@ -203,8 +203,8 @@ int Optimizer::optimize(OptimizationParams& params,
         }
 
         problem->AddResidualBlock(cost,
-                                   NULL /* squared loss */,
-                                   free_params);
+                                  NULL /* squared loss */,
+                                  free_params);
       }
       else if (params.error_blocks[j].type == "outrageous")
       {
