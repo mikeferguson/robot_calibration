@@ -27,11 +27,11 @@
 
 #include <robot_calibration/calibration_offset_parser.h>
 #include <robot_calibration/ceres/camera3d_to_arm_error.h>
+#include <robot_calibration/ceres/ground_plane_error.h>
 #include <robot_calibration/ceres/data_functions.h>
 #include <robot_calibration/ceres/outrageous_error.h>
 #include <robot_calibration/models/camera3d.h>
 #include <robot_calibration/models/chain.h>
-
 #include <boost/shared_ptr.hpp>
 #include <string>
 #include <map>
@@ -120,6 +120,7 @@ int Optimizer::optimize(OptimizationParams& params,
   for (int i = 0; i < offsets_->size(); ++i)
     free_params[i] = 0.0;
 
+  double z_ = 0;
   // Houston, we have a problem...
   ceres::Problem* problem = new ceres::Problem();
 
@@ -134,6 +135,8 @@ int Optimizer::optimize(OptimizationParams& params,
         // CheckboardFinder, or any other finder that can sample the pose
         // of one or more data points that are connected at a constant offset
         // from a link a kinematic chain (the "arm").
+
+    
         std::string camera_name = static_cast<std::string>(params.error_blocks[j].params["camera"]);
         std::string arm_name = static_cast<std::string>(params.error_blocks[j].params["arm"]);
 
@@ -170,6 +173,39 @@ int Optimizer::optimize(OptimizationParams& params,
                                    NULL /* squared loss */,
                                    free_params);
       }
+      else if (params.error_blocks[j].type =="camera3d_to_ground")
+      {
+        std::string camera_name = static_cast<std::string>(params.error_blocks[j].params["camera"]);
+        std::string ground_name = static_cast<std::string>(params.error_blocks[j].params["ground"]);
+
+        // Check that this sample has the required features/observations
+        if (!hasSensor(data[i], camera_name) || !hasSensor(data[i], ground_name))
+          continue;
+
+        // Create the block
+        ceres::CostFunction * cost = GroundPlaneError::Create(
+          dynamic_cast<Camera3dModel*>(models_[camera_name]),
+          z_,
+          offsets_.get(), data[i]);
+
+         if (progress_to_stdout)
+        {
+          double ** params = new double*[1];
+          params[0] = free_params;
+          double * residuals = new double[data[i].observations[0].features.size()];
+
+          cost->Evaluate(params, residuals, NULL);
+
+          std::cout << std::endl << "  z: ";
+          for (size_t k = 0; k < data[i].observations[0].features.size(); ++k)
+            std::cout << "  " << std::setw(10) << std::fixed << residuals[(k)];
+          std::cout << std::endl << std::endl;
+        }
+
+        problem->AddResidualBlock(cost,
+                                   NULL /* squared loss */,
+                                   free_params);
+      }
       else if (params.error_blocks[j].type == "outrageous")
       {
         // Outrageous error block requires no particular sensors, add to every sample
@@ -196,7 +232,7 @@ int Optimizer::optimize(OptimizationParams& params,
   options.linear_solver_type = ceres::DENSE_QR;
   options.max_num_iterations = 1000;
   options.minimizer_progress_to_stdout = progress_to_stdout;
-  //options.use_nonmonotonic_steps = true;
+  //  options.use_nonmonotonic_steps = true;
 
   if (progress_to_stdout)
     std::cout << "\nSolver output:" << std::endl;

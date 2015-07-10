@@ -25,12 +25,14 @@ import rospy
 import rosbag
 
 from sensor_msgs.msg import JointState
+from robot_calibration_msgs.msg import CaptureConfig
+
 
 class CapturePoses:
     last_state_ = None # last joint states
 
     def __init__(self):
-        self.last_state_ = JointState()
+        self.last_state_ = CaptureConfig()
 
         rospy.init_node('capture_calibration_poses')
         rospy.Subscriber("joint_states", JointState, self.stateCb)
@@ -60,11 +62,11 @@ class CapturePoses:
         """ Callback for joint_states messages """
         for joint, position in zip(msg.name, msg.position):
             try:
-                idx = self.last_state_.name.index(joint)
-                self.last_state_.position[idx] = position
+                idx = self.last_state_.joint_states.name.index(joint)
+                self.last_state_.joint_states.position[idx] = position
             except ValueError:
-                self.last_state_.name.append(joint)
-                self.last_state_.position.append(position)
+                self.last_state_.joint_states.name.append(joint)
+                self.last_state_.joint_states.position.append(position)
 
 if __name__=='__main__':
     CapturePoses()
