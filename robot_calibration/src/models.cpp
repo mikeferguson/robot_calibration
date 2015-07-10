@@ -168,6 +168,11 @@ std::vector<geometry_msgs::PointStamped> Camera3dModel::project(
   double camera_fy = data.observations[sensor_idx].ext_camera_info.camera_info.P[CAMERA_INFO_P_FY_INDEX];
   double camera_cx = data.observations[sensor_idx].ext_camera_info.camera_info.P[CAMERA_INFO_P_CX_INDEX];
   double camera_cy = data.observations[sensor_idx].ext_camera_info.camera_info.P[CAMERA_INFO_P_CY_INDEX];
+  double camera_distort_1 = data.observations[sensor_idx].ext_camera_info.camera_info.D[CAMERA_INFO_D_1];
+  double camera_distort_2 = data.observations[sensor_idx].ext_camera_info.camera_info.D[CAMERA_INFO_D_2];
+  double camera_distort_3 = data.observations[sensor_idx].ext_camera_info.camera_info.D[CAMERA_INFO_D_3];
+  double camera_distort_4 = data.observations[sensor_idx].ext_camera_info.camera_info.D[CAMERA_INFO_D_4];
+  double camera_distort_5 = data.observations[sensor_idx].ext_camera_info.camera_info.D[CAMERA_INFO_D_5];
 
   /*
    * z_scale and z_offset defined in openni2_camera/src/openni2_driver.cpp
@@ -193,6 +198,11 @@ std::vector<geometry_msgs::PointStamped> Camera3dModel::project(
   double new_camera_fy = camera_fy * (1.0 + offsets.get(name_+"_fy"));
   double new_camera_cx = camera_cx * (1.0 + offsets.get(name_+"_cx"));
   double new_camera_cy = camera_cy * (1.0 + offsets.get(name_+"_cy"));
+  double new_camera_distort_1 = camera_distort_1 + (offsets.get(name_+"_distort_1"));
+  double new_camera_distort_2 = camera_distort_2 + (offsets.get(name_+"_distort_2"));
+  double new_camera_distort_3 = camera_distort_3 + (offsets.get(name_+"_distort_3"));
+  double new_camera_distort_4 = camera_distort_4 + (offsets.get(name_+"_distort_4"));
+  double new_camera_distort_5 = camera_distort_5 + (offsets.get(name_+"_distort_5"));
   double new_z_offset = offsets.get(name_+"_z_offset");
   double new_z_scaling = 1.0 + offsets.get(name_+"_z_scaling");
 
@@ -215,10 +225,25 @@ std::vector<geometry_msgs::PointStamped> Camera3dModel::project(
 
     KDL::Frame pt(KDL::Frame::Identity());
 
+    // Undistort through new calibrated parameters
+    double u_ = (u - new_camera_cx) / new_camera_fx;
+    double v_ = (v - new_camera_cy) / new_camera_fy;
+
+    double r2 = u_ * u_ + v_ * v_;
+    double radial_distortion = 1 +
+                               new_camera_distort_1 * r2 +
+                               new_camera_distort_2 * pow(r2, 2) +
+                               new_camera_distort_5 * pow(r2, 3);
+    double tangential_x = 2 * new_camera_distort_3 * u_ * v_ + new_camera_distort_4 * (r2 + 2 * u_ * u_);
+    double tangential_y = 2 * new_camera_distort_4 * u_ * v_ + new_camera_distort_4 * (r2 + 2 * v_ * v_);
+
+    u = u_ * radial_distortion + tangential_x;
+    v = v_ * radial_distortion + tangential_y;
+
     // Reproject through new calibrated parameters
     pt.p.z((depth + new_z_offset) * new_z_scaling);
-    pt.p.x((u - new_camera_cx) * pt.p.z() / new_camera_fx);
-    pt.p.y((v - new_camera_cy) * pt.p.z() / new_camera_fy);
+    pt.p.x(u * pt.p.z());
+    pt.p.y(v * pt.p.z());
 
     // Project through fk
     pt = fk * pt;
