@@ -36,18 +36,18 @@ enum {CAMERA_INFO_K_FX_INDEX=0,
       CAMERA_INFO_K_CX_INDEX=2,
       CAMERA_INFO_K_CY_INDEX=5};
 
+enum {CAMERA_INFO_D_1=0,
+      CAMERA_INFO_D_2=1,
+      CAMERA_INFO_D_3=2,
+      CAMERA_INFO_D_4=3,
+      CAMERA_INFO_D_5=4};
+
 enum {CAMERA_PARAMS_CX_INDEX=0,
       CAMERA_PARAMS_CY_INDEX=1,
       CAMERA_PARAMS_FX_INDEX=2,
       CAMERA_PARAMS_FY_INDEX=3,
       CAMERA_PARAMS_Z_SCALE_INDEX=4,
       CAMERA_PARAMS_Z_OFFSET_INDEX=5};
-
-enum {CAMERA_INFO_D_1=0,
-      CAMERA_INFO_D_2=1,
-      CAMERA_INFO_D_3=2,
-      CAMERA_INFO_D_4=3,
-      CAMERA_INFO_D_5=4};
 
 
 /** @brief Update the camera calibration with the new offsets */

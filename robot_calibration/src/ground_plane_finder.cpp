@@ -37,6 +37,9 @@ GroundPlaneFinder::GroundPlaneFinder(ros::NodeHandle & nh) :
                             &GroundPlaneFinder::cameraCallback,
                             this);
 
+  nh.param<std::string>("camera_sensor_name", camera_sensor_name_, "camera");
+  nh.param<std::string>("chain_sensor_name", chain_sensor_name_, "ground");
+
   publisher_ = nh.advertise<sensor_msgs::PointCloud2>("ground_plane_points", 10);
   if (!depth_camera_manager_.init(nh))
   {
@@ -50,22 +53,6 @@ void GroundPlaneFinder::cameraCallback(const sensor_msgs::PointCloud2& cloud)
   if (waiting_)
   {
     cloud_ = cloud;
-    size_t j = 0;
-    for (size_t i = 0; i < cloud.data.size(); i++)
-    {
-      if (!std::isfinite(cloud.data[i]))
-        continue;
-      cloud_.data[j] = cloud.data[i];
-      j++;
-    }
-    if (j != cloud_.data.size ())
-    {
-      cloud_.data.resize(j);
-    }
-
-    cloud_.height = 1;
-    cloud_.width  = j;
-
     waiting_ = false;
   }
 }
@@ -102,6 +89,31 @@ bool GroundPlaneFinder::find(robot_calibration_msgs::CalibrationData * msg)
     return false;
   }
 
+  //  Remove NaNs in the point cloud
+  size_t num_points = cloud_.width * cloud_.height;
+  sensor_msgs::PointCloud2ConstIterator<float> xyz(cloud_, "x");
+  sensor_msgs::PointCloud2Iterator<float> iter(cloud_, "x");
+
+  size_t j = 0;
+  for (size_t i = 0; i < num_points; i++)
+  {
+    geometry_msgs::Point p;
+    p.x = (xyz + i)[X];
+    p.y = (xyz + i)[Y];
+    p.z = (xyz + i)[Z];
+
+    if (!std::isfinite(p.x) || !std::isfinite(p.y) || !std::isfinite(p.z))
+      continue;
+    (iter + j)[X] = (xyz + i)[X];
+    (iter + j)[Y] = (xyz + i)[Y];
+    (iter + j)[Z] = (xyz + i)[Z];
+    j++;
+  }
+
+  cloud_.height = 1;
+  cloud_.width  = j;
+  cloud_.data.resize(cloud_.width * cloud_.point_step);
+
   int points_total = 80;
 
   std::vector<cv::Point2f> points;
@@ -120,23 +132,21 @@ bool GroundPlaneFinder::find(robot_calibration_msgs::CalibrationData * msg)
 
   // Set msg size
   msg->observations.resize(2);
-  msg->observations[0].sensor_name = "camera";
+  msg->observations[0].sensor_name = camera_sensor_name_;
   msg->observations[0].features.resize(points_total);
-  msg->observations[1].sensor_name = "ground";
+  msg->observations[1].sensor_name = chain_sensor_name_;
   msg->observations[1].features.resize(points_total);
 
-  int step = cloud_.width/points_total;
-
+  size_t step = cloud_.width/points_total;
   size_t k = 0;
 
-  for (size_t i = step ; i < cloud_.width ; i = i+step)
+  for (size_t i = step; i < cloud_.width; i +=step)
   {
     points[k].x = i;
     k++;
   }
 
-  sensor_msgs::PointCloud2ConstIterator<float> xyz(cloud_, "x");
-  for (size_t i = 0 ; i < points.size() ; i++)
+  for (size_t i = 0; i < points.size(); i++)
   {
     // for ground plane world can just be zero as we are concerned only with z
     world.point.x = 0;
@@ -144,7 +154,7 @@ bool GroundPlaneFinder::find(robot_calibration_msgs::CalibrationData * msg)
     world.point.z = 0;
 
     // Get 3d point
-    int index = (int)points[i].x;
+    int index = static_cast<int>(points[i].x);
     rgbd.point.x = (xyz + index)[X];
     rgbd.point.y = (xyz + index)[Y];
     rgbd.point.z = (xyz + index)[Z];
