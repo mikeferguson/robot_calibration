@@ -170,7 +170,7 @@ int Optimizer::optimize(OptimizationParams& params,
         }
 
         problem->AddResidualBlock(cost,
-                                   NULL /* squared loss */,
+                                   NULL,//squared loss ,
                                    free_params);
       }
       else if (params.error_blocks[j].type =="camera3d_to_ground")

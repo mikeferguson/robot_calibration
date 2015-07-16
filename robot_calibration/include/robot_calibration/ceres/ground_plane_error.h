@@ -56,7 +56,7 @@ struct GroundPlaneError
     // Compute residuals
     for (size_t i = 0; i < camera_pts.size() ; ++i)
     {
-      residuals[i] = camera_pts[i].point.z - z_;  // if camera_pts is in base frame
+      residuals[i] = (camera_pts[i].point.z - z_) * (camera_pts[i].point.z - z_);  // if camera_pts is in base frame
     }
     return true;
   }
