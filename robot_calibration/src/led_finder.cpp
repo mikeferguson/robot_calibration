@@ -21,6 +21,9 @@
 #include <robot_calibration/capture/led_finder.h>
 #include <sensor_msgs/point_cloud2_iterator.h>
 #include <sensor_msgs/image_encodings.h>
+#include <opencv2/core/core.hpp>
+#include <opencv2/core/types_c.h>
+
 
 namespace robot_calibration
 {
@@ -251,7 +254,7 @@ bool LedFinder::find(robot_calibration_msgs::CalibrationData * msg)
   msg->observations[0].sensor_name = camera_sensor_name_;
   msg->observations[1].sensor_name = chain_sensor_name_;
   for (size_t t = 0; t < trackers_.size(); ++t)
-  {
+  { 
     geometry_msgs::PointStamped rgbd_pt;
     geometry_msgs::PointStamped world_pt;
 
@@ -314,6 +317,23 @@ bool LedFinder::find(robot_calibration_msgs::CalibrationData * msg)
     return false;
   }
 
+  cv::Mat rgb_points;
+  //std::cout << msg->observations[0].features.size() << std::endl;
+  for (size_t i = 0; i < msg->observations[0].features.size() - 1; i++)
+  {
+    cv::Vec3f V(msg->observations[0].features[i].point.x, msg->observations[0].features[i].point.y, msg->observations[0].features[i].point.z);
+    rgb_points.push_back(V);
+  }
+
+  cv::Vec3f normal = (rgb_points.at<cv::Vec3f>(2,0) - rgb_points.at<cv::Vec3f>(0,0)).cross(rgb_points.at<cv::Vec3f>(1,0)- rgb_points.at<cv::Vec3f>(0,0));
+
+  cv::Vec4f rgb_plane;
+  float distance = sqrt (normal[0] * normal[0] + normal[1] * normal[1] + normal[2] * normal[2]);
+  rgb_plane[0] = normal[0] / distance;
+  rgb_plane[1] = normal[1] / distance;
+  rgb_plane[2] = normal[2] /distance;
+  rgb_plane[3] = - (rgb_points.at<cv::Vec3f>(0,0)).dot(normal/distance); 
+ 
   // Add debug cloud to message
   if (output_debug_)
   {
