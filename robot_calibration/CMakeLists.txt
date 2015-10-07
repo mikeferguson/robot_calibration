@@ -34,6 +34,7 @@ find_package(catkin REQUIRED
     sensor_msgs
     std_msgs
     tf
+    opencv_candidate
 )
 
 catkin_package(
@@ -53,6 +54,7 @@ catkin_package(
     sensor_msgs
     std_msgs
     tf
+    opencv_candidate
   DEPENDS
     Boost
     Ceres
@@ -76,7 +78,8 @@ add_library(robot_calibration src/calibration_offset_parser.cpp
                               src/checkerboard_finder.cpp
                               src/feature_finder.cpp
                               src/led_finder.cpp
-                              src/ground_plane_finder.cpp	
+                              src/ground_plane_finder.cpp
+                              src/gripper_depth_finder.cpp	
                               src/models.cpp
                               src/optimization_params.cpp
                               src/optimizer.cpp)
