@@ -22,26 +22,34 @@
 #include <robot_calibration/capture/feature_finder.h>
 #include <robot_calibration_msgs/CalibrationData.h>
 #include <cv_bridge/cv_bridge.h>
+#include <tf/transform_listener.h>
+#include <sensor_msgs/Image.h>
+#include <sensor_msgs/PointCloud2.h>
+#include <geometry_msgs/PointStamped.h>
+#include <robot_calibration_msgs/CalibrationData.h>
+#include <robot_calibration_msgs/GripperLedCommandAction.h>
+#include <actionlib/client/simple_action_client.h>
 
 namespace robot_calibration
 {
 
 class GripperDepthFinder : public FeatureFinder
 {
+
 public:
   GripperDepthFinder(ros::NodeHandle & n);
 
   bool find(robot_calibration_msgs::CalibrationData * msg);
 
 private:
-  void cameraCallback(const sensor_msgs::ImageConstPtr& msg);
+  void cameraCallback(const sensor_msgs::ImageConstPtr& cloud);
   bool waitForCloud();
 
   ros::Subscriber subscriber_;
   ros::Publisher publisher_;
 
   bool waiting_;
-  sensor_msgs::PointCloud2 cloud_;
+  sensor_msgs::ImageConstPtr cloud_;
   DepthCameraInfoManager depth_camera_manager_;
 
   std::string camera_sensor_name_;
