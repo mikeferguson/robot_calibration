@@ -37,13 +37,13 @@ namespace robot_calibration
 
 GripperDepthFinder::GripperDepthFinder(ros::NodeHandle & nh) :
   FeatureFinder(nh),
-  waiting_(false)
+  waiting_(true)
 {
   std::string topic_name;
   nh.param<std::string>("topic", topic_name, "/image");
   subscriber_ = nh.subscribe(topic_name,
                             1,
-                            &GripperDepthFinder::cameraCallback,
+                           &GripperDepthFinder::cameraCallback,
                             this);
 
   //publisher_ = nh.advertise<sensor_msgs::PointCloud2>("ground_plane_points", 10);
@@ -54,27 +54,45 @@ GripperDepthFinder::GripperDepthFinder(ros::NodeHandle & nh) :
   }
 }
 
-void GripperDepthFinder::cameraCallback(const sensor_msgs::ImageConstPtr& msg)
+void GripperDepthFinder::cameraCallback(const sensor_msgs::ImageConstPtr& cloud)
 {
-cv_bridge::CvImagePtr cv_ptr;
+std::cout << "dunno what m doing here" << std::endl;
+
+  if (waiting_)
+  {
+    cloud_ = cloud;
+    waiting_ = false;
+  }
+
+} 
+
+//  publisher_.publish(cloud);
+//  return true;
+ 
+
+bool GripperDepthFinder::find(robot_calibration_msgs::CalibrationData * msg)
+{
+    cv_bridge::CvImagePtr cv_ptr;
     cv_bridge::CvImagePtr crap; 
     cv_bridge::CvImagePtr mgod;
     cv_bridge::CvImagePtr dgod;
     cv_bridge::CvImagePtr cluster;
+std::cout << "hello" << std::endl;
+//d::cout << cloud_.size() << std::endl;
 
     try
     {
-      crap = cv_bridge::toCvCopy(msg, "32FC1");
-      cv_ptr = cv_bridge::toCvCopy(msg, "32FC1");
-      mgod = cv_bridge::toCvCopy(msg, "32FC1");
-      dgod = cv_bridge::toCvCopy(msg, "32FC1");
-      cluster = cv_bridge::toCvCopy(msg, "32FC1");
+      crap = cv_bridge::toCvCopy(cloud_, "32FC1");
+      cv_ptr = cv_bridge::toCvCopy(cloud_, "32FC1");
+      mgod = cv_bridge::toCvCopy(cloud_, "32FC1");
+      dgod = cv_bridge::toCvCopy(cloud_, "32FC1");
+      cluster = cv_bridge::toCvCopy(cloud_, "32FC1");
 
     }
     catch (cv_bridge::Exception& e)
     {
       ROS_ERROR("cv_bridge exception: %s", e.what());
-      return;
+      return false;
     }
 
     // erode the image to break the connection between the gripper fingers and the gripper plane
@@ -280,11 +298,11 @@ cv_bridge::CvImagePtr cv_ptr;
     // color all the clusters differntly for better visualization
     cv::RNG rng(12345);
 
-    for (int i = 0; i < clusters.size(); i++)
+    for (size_t i = 0; i < clusters.size(); i++)
     { 
       cv::Scalar color = cv::Scalar( rng.uniform(0, 255), rng.uniform(0,255), rng.uniform(0,255) );
 
-      for (int j = 0; j < clusters[i].size(); j++)
+      for (size_t j = 0; j < clusters[i].size(); j++)
       {
         int  m = clusters[i][j] / cv_ptr->image.cols;
         int  n = clusters[i][j] % cv_ptr->image.cols;
@@ -350,9 +368,9 @@ cv_bridge::CvImagePtr cv_ptr;
     tf::TransformListener listener;
     try
     {
-      listener.waitForTransform( msg->header.frame_id, gripper_centroid.frame_id_,
+      listener.waitForTransform( cloud_->header.frame_id, gripper_centroid.frame_id_,
           ros::Time(0), ros::Duration(3.0)); 
-      listener.transformPoint( msg->header.frame_id, 
+      listener.transformPoint( cloud_->header.frame_id, 
           ros::Time(0),  gripper_centroid , gripper_centroid.frame_id_, gripper_centroid_transformed);
     }
     catch (tf::TransformException ex)
@@ -388,10 +406,10 @@ cv_bridge::CvImagePtr cv_ptr;
       point.setY( points_on_plane.at<cv::Vec3f>(i,0)[1]); 
       point.setZ( points_on_plane.at<cv::Vec3f>(i,0)[2]);  
       tf::Stamped<tf::Point> point_transformed;
-      listener.waitForTransform( msg->header.frame_id, point.frame_id_,// "/base_link", "/head_camera_depth_optical_frame",
+      listener.waitForTransform( cloud_->header.frame_id, point.frame_id_,// "/base_link", "/head_camera_depth_optical_frame",
                               ros::Time(0), ros::Duration(3.0));
    //listener.transformPoint("base_link", point , point_transformed);
-      listener.transformPoint( msg->header.frame_id,
+      listener.transformPoint( cloud_->header.frame_id,
           ros::Time(0),  point , point.frame_id_, point_transformed);
 
       cv::Vec3f point_transform;
@@ -426,7 +444,7 @@ std::cout << plane_transformed[0] << "\t" << plane_transformed[1] << "\t" << pla
     float min_distance = 1000;
     int closest_centroid= 1000;
     
-    for( int i = 0; i < centroids.rows; i++)
+    for( size_t i = 0; i < centroids.rows; i++)
     {
       float distance = pow((gripper_centroid_transform[0]-centroids.at<cv::Vec3f>(i,0)[0]) ,2) +
             pow((gripper_centroid_transform[1]-centroids.at<cv::Vec3f>(i,0)[1]) ,2) + 
@@ -439,9 +457,9 @@ std::cout << plane_transformed[0] << "\t" << plane_transformed[1] << "\t" << pla
         closest_centroid = i;
       }
     }
-    int count = 0;
+    
     float var_x = 0, var_y = 0;
-    for (int j = 0; j < clusters[closest_centroid].size(); j++)
+    for (size_t j = 0; j < clusters[closest_centroid].size(); j++)
     {
     
       int m = clusters[closest_centroid][j] /cv_ptr->image.cols;
@@ -481,7 +499,7 @@ std::cout << plane_transformed[0] << "\t" << plane_transformed[1] << "\t" << pla
     cv::Mat some_3 = cv::Mat::zeros( cv_ptr->image.size(), CV_32FC1);
     
     //display the closest cluster
-    for (int j = 0; j < clusters[closest_centroid].size(); j++)
+    for (size_t j = 0; j < clusters[closest_centroid].size(); j++)
     {
       int m = clusters[closest_centroid][j] / cv_ptr->image.cols;
       int n = clusters[closest_centroid][j] % cv_ptr->image.cols;
@@ -504,7 +522,7 @@ std::cout << plane_transformed[0] << "\t" << plane_transformed[1] << "\t" << pla
     }
   
     cv::Mat some[3];
-    for (int j = 0; j < clusters[closest_centroid].size();j++)
+    for (size_t j = 0; j < clusters[closest_centroid].size();j++)
     {
       int m = clusters[closest_centroid][j] /cv_ptr->image.cols;
       int n = clusters[closest_centroid][j] % cv_ptr->image.cols;
@@ -564,15 +582,29 @@ std::cout << plane_transformed[0] << "\t" << plane_transformed[1] << "\t" << pla
 
 
 
-} 
 
-//  publisher_.publish(cloud);
-//  return true;
-
-
-bool GripperDepthFinder::find(robot_calibration_msgs::CalibrationData * msg)
-{
+std::cout << "here" << std::endl;
 return true;
+}
+
+bool GripperDepthFinder::waitForCloud()
+{
+  ros::Duration(1/10.0).sleep();
+
+  waiting_ = true;
+  int count = 250;
+  while (--count)
+  {
+    if (!waiting_)
+    {
+      // success
+      return true;
+    }
+    ros::Duration(0.01).sleep();
+    ros::spinOnce();
+  }
+  ROS_ERROR("Failed to get cloud");
+  return !waiting_;
 }
 
 }  // namespace robot_calibration
