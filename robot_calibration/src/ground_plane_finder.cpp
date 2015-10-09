@@ -114,7 +114,7 @@ bool GroundPlaneFinder::find(robot_calibration_msgs::CalibrationData * msg)
   cloud_.width  = j;
   cloud_.data.resize(cloud_.width * cloud_.point_step);
 
-  int points_total = 80;
+  int points_total = 60;
 
   std::vector<cv::Point2f> points;
   points.resize(points_total);
@@ -137,10 +137,10 @@ bool GroundPlaneFinder::find(robot_calibration_msgs::CalibrationData * msg)
   msg->observations[1].sensor_name = chain_sensor_name_;
   msg->observations[1].features.resize(points_total);
 
-  size_t step = cloud_.width/points_total;
+  size_t step = cloud_.width/(1.5 * points_total);
   size_t k = 0;
 
-  for (size_t i = step; i < cloud_.width; i +=step)
+  for (size_t i = step; i < cloud_.width/1.5; i +=step)
   {
     points[k].x = i;
     k++;

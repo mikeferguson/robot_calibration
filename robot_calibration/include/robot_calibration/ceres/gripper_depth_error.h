@@ -28,9 +28,9 @@
 namespace robot_calibration
 {
 
-struct GroundPlaneError
+struct GripperDepthError
 {
-  GroundPlaneError(Camera3dModel* camera_model,
+  GripperDepthError(Camera3dModel* camera_model,
                    CalibrationOffsetParser* offsets,
                    robot_calibration_msgs::CalibrationData& data,
                    double z)
@@ -41,7 +41,7 @@ struct GroundPlaneError
     data_ = data;
   }
 
-  virtual ~GroundPlaneError() {}
+  virtual ~GripperDepthError() {}
 
   bool operator()(double const * const * free_params,
                   double* residuals) const
@@ -56,7 +56,7 @@ struct GroundPlaneError
     // Compute residuals
     for (size_t i = 0; i < camera_pts.size() ; ++i)
     {
-      residuals[i] = (camera_pts[i].point.z - z_) * (camera_pts[i].point.z - z_);  // if camera_pts is in base frame
+      residuals[i] = camera_pts[i].point.z - z_;  // if camera_pts is in base frame
     }
     return true;
   }
@@ -66,9 +66,9 @@ struct GroundPlaneError
                                      CalibrationOffsetParser* offsets,
                                      robot_calibration_msgs::CalibrationData& data)
   {
-    ceres::DynamicNumericDiffCostFunction<GroundPlaneError> * func;
-    func = new ceres::DynamicNumericDiffCostFunction<GroundPlaneError>(
-                    new GroundPlaneError(camera_model, offsets, data, z));
+    ceres::DynamicNumericDiffCostFunction<GripperDepthError> * func;
+    func = new ceres::DynamicNumericDiffCostFunction<GripperDepthError>(
+                    new GripperDepthError(camera_model, offsets, data, z));
     func->AddParameterBlock(offsets->size());
     func->SetNumResiduals(data.observations[0].features.size());
 

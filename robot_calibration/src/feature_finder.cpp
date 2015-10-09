@@ -20,6 +20,7 @@
 #include <robot_calibration/capture/led_finder.h>
 #include <robot_calibration/capture/checkerboard_finder.h>
 #include <robot_calibration/capture/ground_plane_finder.h>
+#include <robot_calibration/capture/gripper_depth_finder.h>
 
 namespace robot_calibration
 {
@@ -55,7 +56,7 @@ bool loadFeatureFinders(ros::NodeHandle& nh,
     // Get name(space) of this finder
     std::string name = static_cast<std::string>(it->first);
     ros::NodeHandle finder_handle(nh, "features/"+name);
-
+    //std::cout << "features/"+name << std::endl;
     // Get finder type
     std::string type;
     if (!finder_handle.getParam("type", type))
@@ -70,7 +71,9 @@ bool loadFeatureFinders(ros::NodeHandle& nh,
     if (type == "robot_calibration/LedFinder")
     {
       ROS_INFO("  New robot_calibration/LedFinder: %s", name.c_str());
-      finder.reset(new robot_calibration::LedFinder(finder_handle));
+//      finder.reset(new robot_calibration::LedFinder(finder_handle));
+      ros::NodeHandle finder_handle(nh, "features/gripper_depth_finder");
+      finder.reset(new robot_calibration::GripperDepthFinder(finder_handle));
     }
     else if (type == "robot_calibration/GroundPlaneFinder")
     {

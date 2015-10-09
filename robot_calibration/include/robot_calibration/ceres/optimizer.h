@@ -30,6 +30,7 @@
 #include <robot_calibration/ceres/optimization_params.h>
 #include <robot_calibration/ceres/camera3d_to_arm_error.h>
 #include <robot_calibration/ceres/ground_plane_error.h>
+#include <robot_calibration/ceres/gripper_depth_error.h>
 #include <robot_calibration/ceres/data_functions.h>
 #include <robot_calibration/ceres/outrageous_error.h>
 #include <robot_calibration/models/camera3d.h>

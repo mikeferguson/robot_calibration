@@ -49,7 +49,6 @@ enum {CAMERA_PARAMS_CX_INDEX=0,
       CAMERA_PARAMS_Z_SCALE_INDEX=4,
       CAMERA_PARAMS_Z_OFFSET_INDEX=5};
 
-
 /** @brief Update the camera calibration with the new offsets */
 inline sensor_msgs::CameraInfo updateCameraInfo(double camera_fx, double camera_fy,
                                                 double camera_cx, double camera_cy,

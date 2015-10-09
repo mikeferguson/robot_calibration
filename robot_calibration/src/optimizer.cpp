@@ -15,8 +15,6 @@
  * limitations under the License.
  */
 
-// Author: Michael Ferguson
-
 #include <robot_calibration/ceres/optimizer.h>
 
 #include <ceres/ceres.h>
@@ -28,6 +26,7 @@
 #include <robot_calibration/calibration_offset_parser.h>
 #include <robot_calibration/ceres/camera3d_to_arm_error.h>
 #include <robot_calibration/ceres/ground_plane_error.h>
+#include <robot_calibration/ceres/gripper_depth_error.h>
 #include <robot_calibration/ceres/data_functions.h>
 #include <robot_calibration/ceres/outrageous_error.h>
 #include <robot_calibration/models/camera3d.h>
@@ -156,7 +155,7 @@ int Optimizer::optimize(OptimizationParams& params,
           params[0] = free_params;
           double * residuals = new double[data[i].observations[0].features.size() * 3];  // TODO: should check that all features are same length?
 
-          cost->Evaluate(params, residuals, NULL);
+        cost->Evaluate(params, residuals, NULL);
           std::cout << "INITIAL COST (" << i << ")" << std::endl << "  x: ";
           for (size_t k = 0; k < data[i].observations[0].features.size(); ++k)
             std::cout << "  " << std::setw(10) << std::fixed << residuals[(3*k + 0)];
@@ -170,7 +169,7 @@ int Optimizer::optimize(OptimizationParams& params,
         }
 
         problem->AddResidualBlock(cost,
-                                   NULL /* squared loss */,
+                                   NULL,//squared loss ,
                                    free_params);
       }
       else if (params.error_blocks[j].type =="camera3d_to_ground")
@@ -239,8 +238,32 @@ int Optimizer::optimize(OptimizationParams& params,
   summary_.reset(new ceres::Solver::Summary());
   ceres::Solve(options, problem, summary_.get());
   if (progress_to_stdout)
-    std::cout << "\n" << summary_->BriefReport() << std::endl;
+    std::cout << "\n" << summary_->FullReport() << std::endl;
 
+for (size_t i = 0; i < data.size(); ++i)
+  {
+    for (size_t j = 0; j < params.error_blocks.size(); ++j)
+    {
+
+   if (params.error_blocks[j].type == "camera3d_to_arm")
+{
+double ** params = new double*[1];
+          params[0] = free_params;
+          double * residuals = new double[data[i].observations[0].features.size() * 3];  // TODO: should check that all features are same length?
+
+//          cost->Evaluate(params, residuals, NULL);
+          std::cout << "INITIAL COST (" << i << ")" << std::endl << "  x: ";
+          for (size_t k = 0; k < data[i].observations[0].features.size(); ++k)
+            std::cout << "  " << std::setw(10) << std::fixed << residuals[(3*k + 0)];
+          std::cout << std::endl << "  y: ";
+          for (size_t k = 0; k < data[i].observations[0].features.size(); ++k)
+            std::cout << "  " << std::setw(10) << std::fixed << residuals[(3*k + 1)];
+          std::cout << std::endl << "  z: ";
+          for (size_t k = 0; k < data[i].observations[0].features.size(); ++k)
+            std::cout << "  " << std::setw(10) << std::fixed << residuals[(3*k + 2)];
+          std::cout << std::endl << std::endl;
+
+}}}
   // TODO output stats
   /*if (progress_to_stdout)
   {
