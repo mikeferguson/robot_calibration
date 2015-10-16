@@ -28,6 +28,7 @@
 #include <geometry_msgs/PointStamped.h>
 #include <robot_calibration_msgs/CalibrationData.h>
 #include <robot_calibration_msgs/GripperLedCommandAction.h>
+#include <robot_calibration_msgs/Plane.h>
 #include <actionlib/client/simple_action_client.h>
 
 namespace robot_calibration
@@ -42,16 +43,21 @@ public:
   bool find(robot_calibration_msgs::CalibrationData * msg);
 
 private:
-  void cameraCallback(const sensor_msgs::ImageConstPtr& cloud);
+  void cameraCallback(const sensor_msgs::ImageConstPtr& image);
+  void cameraInfoCallback(const sensor_msgs::CameraInfo::ConstPtr& msg);
   bool waitForCloud();
 
   ros::Subscriber subscriber_;
+  ros::Subscriber camera_info_sub_;
   ros::Publisher publisher_;
 
   bool waiting_;
-  sensor_msgs::ImageConstPtr cloud_;
+  sensor_msgs::ImageConstPtr image_;
   DepthCameraInfoManager depth_camera_manager_;
 
+  boost::mutex mutex_K_;
+  cv::Mat K_;
+ 
   std::string camera_sensor_name_;
   std::string chain_sensor_name_;
 };

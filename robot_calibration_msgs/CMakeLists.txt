@@ -22,6 +22,7 @@ add_message_files(
     CaptureConfig.msg
     ExtendedCameraInfo.msg
     Observation.msg
+    Plane.msg
 )
 
 generate_messages(

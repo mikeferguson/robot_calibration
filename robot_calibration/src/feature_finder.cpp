@@ -71,9 +71,7 @@ bool loadFeatureFinders(ros::NodeHandle& nh,
     if (type == "robot_calibration/LedFinder")
     {
       ROS_INFO("  New robot_calibration/LedFinder: %s", name.c_str());
-//      finder.reset(new robot_calibration::LedFinder(finder_handle));
-      ros::NodeHandle finder_handle(nh, "features/gripper_depth_finder");
-      finder.reset(new robot_calibration::GripperDepthFinder(finder_handle));
+      finder.reset(new robot_calibration::LedFinder(finder_handle));
     }
     else if (type == "robot_calibration/GroundPlaneFinder")
     {
@@ -84,6 +82,11 @@ bool loadFeatureFinders(ros::NodeHandle& nh,
     {
       ROS_INFO("  New robot_calibration/CheckerboardFinder: %s", name.c_str());
       finder.reset(new robot_calibration::CheckerboardFinder(finder_handle));
+    }
+    else if (type == "robot_calibration/GripperDepthFinder")
+    {
+      ROS_INFO("  New robot_calibration/GripperDepthFinder: %s", name.c_str());
+      finder.reset(new robot_calibration::GripperDepthFinder(finder_handle));
     }
     else
     {

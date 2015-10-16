@@ -51,20 +51,23 @@ Optimizer::~Optimizer()
 // Determine if a sample of data has an observation from
 // the desired sensor
 bool hasSensor(
-  const robot_calibration_msgs::CalibrationData& msg,
-  const std::string& sensor)
+    const robot_calibration_msgs::CalibrationData& msg,
+    const std::string& sensor)
 {
   for (size_t i = 0; i < msg.observations.size(); i++)
   {
     if (msg.observations[i].sensor_name == sensor)
+    {
+      std::cout << msg.observations[i].sensor_name << std::endl;
       return true;
+    }
   }
   return false;
 }
 
 int Optimizer::optimize(OptimizationParams& params,
-                        std::vector<robot_calibration_msgs::CalibrationData> data,
-                        bool progress_to_stdout)
+    std::vector<robot_calibration_msgs::CalibrationData> data,
+    bool progress_to_stdout)
 {
   // Load KDL from URDF
   if (!kdl_parser::treeFromUrdfModel(model_, tree_))
@@ -79,15 +82,15 @@ int Optimizer::optimize(OptimizationParams& params,
     if (params.models[i].type == "chain")
     {
       ROS_INFO_STREAM("Creating chain '" << params.models[i].name << "' from " <<
-                                            params.base_link << " to " <<
-                                            params.models[i].params["frame"]);
+          params.base_link << " to " <<
+          params.models[i].params["frame"]);
       ChainModel* model = new ChainModel(params.models[i].name, tree_, params.base_link, params.models[i].params["frame"]);
       models_[params.models[i].name] = model;
     }
     else if (params.models[i].type == "camera3d")
     {
       ROS_INFO_STREAM("Creating camera3d '" << params.models[i].name << "' in frame " <<
-                                               params.models[i].params["frame"]);
+          params.models[i].params["frame"]);
       Camera3dModel* model = new Camera3dModel(params.models[i].name, tree_, params.base_link, params.models[i].params["frame"]);
       models_[params.models[i].name] = model;
     }
@@ -106,12 +109,12 @@ int Optimizer::optimize(OptimizationParams& params,
   for (size_t i = 0; i < params.free_frames.size(); ++i)
   {
     offsets_->addFrame(params.free_frames[i].name,
-                       params.free_frames[i].x,
-                       params.free_frames[i].y,
-                       params.free_frames[i].z,
-                       params.free_frames[i].roll,
-                       params.free_frames[i].pitch,
-                       params.free_frames[i].yaw);
+        params.free_frames[i].x,
+        params.free_frames[i].y,
+        params.free_frames[i].z,
+        params.free_frames[i].roll,
+        params.free_frames[i].pitch,
+        params.free_frames[i].yaw);
   }
 
   // Allocate space
@@ -135,7 +138,7 @@ int Optimizer::optimize(OptimizationParams& params,
         // of one or more data points that are connected at a constant offset
         // from a link a kinematic chain (the "arm").
 
-    
+
         std::string camera_name = static_cast<std::string>(params.error_blocks[j].params["camera"]);
         std::string arm_name = static_cast<std::string>(params.error_blocks[j].params["arm"]);
 
@@ -145,9 +148,9 @@ int Optimizer::optimize(OptimizationParams& params,
 
         // Create the block
         ceres::CostFunction * cost = Camera3dToArmError::Create(
-          dynamic_cast<Camera3dModel*>(models_[camera_name]),
-          models_[arm_name],
-          offsets_.get(), data[i]);
+            dynamic_cast<Camera3dModel*>(models_[camera_name]),
+            models_[arm_name],
+            offsets_.get(), data[i]);
 
         if (progress_to_stdout)
         {
@@ -155,7 +158,7 @@ int Optimizer::optimize(OptimizationParams& params,
           params[0] = free_params;
           double * residuals = new double[data[i].observations[0].features.size() * 3];  // TODO: should check that all features are same length?
 
-        cost->Evaluate(params, residuals, NULL);
+          cost->Evaluate(params, residuals, NULL);
           std::cout << "INITIAL COST (" << i << ")" << std::endl << "  x: ";
           for (size_t k = 0; k < data[i].observations[0].features.size(); ++k)
             std::cout << "  " << std::setw(10) << std::fixed << residuals[(3*k + 0)];
@@ -169,8 +172,8 @@ int Optimizer::optimize(OptimizationParams& params,
         }
 
         problem->AddResidualBlock(cost,
-                                   NULL,//squared loss ,
-                                   free_params);
+            NULL,//squared loss ,
+            free_params);
       }
       else if (params.error_blocks[j].type =="camera3d_to_ground")
       {
@@ -183,11 +186,11 @@ int Optimizer::optimize(OptimizationParams& params,
 
         // Create the block
         ceres::CostFunction * cost = GroundPlaneError::Create(
-          dynamic_cast<Camera3dModel*>(models_[camera_name]),
-          z_,
-          offsets_.get(), data[i]);
+            dynamic_cast<Camera3dModel*>(models_[camera_name]),
+            z_,
+            offsets_.get(), data[i]);
 
-         if (progress_to_stdout)
+        if (progress_to_stdout)
         {
           double ** params = new double*[1];
           params[0] = free_params;
@@ -202,20 +205,61 @@ int Optimizer::optimize(OptimizationParams& params,
         }
 
         problem->AddResidualBlock(cost,
-                                   NULL /* squared loss */,
-                                   free_params);
+            NULL /* squared loss */,
+            free_params);
+      }
+      else if (params.error_blocks[j].type =="camera3d_to_gripper")
+      {
+        std::string camera_name = static_cast<std::string>(params.error_blocks[j].params["camera"]);
+        std::string gripper_name = static_cast<std::string>(params.error_blocks[j].params["gripper"]);
+        //  std::cout << camera_name << std::endl;
+        //  std::cout << gripper_name <<std::endl;
+        //  std::cout <<"before error block" << std::endl;
+        // Check that this sample has the required features/observations
+        // if (!hasSensor(data[i], camera_name) || !hasSensor(data[i], gripper_name))
+        // continue;
+        //std::cout << "error block" << std::endl;
+        // Create the block
+        ceres::CostFunction * cost = GripperDepthError::Create(
+            dynamic_cast<Camera3dModel*>(models_[camera_name]),
+            models_[gripper_name],
+            offsets_.get(), data[i]);
+
+        if (progress_to_stdout)
+        {
+          double ** params = new double*[1];
+          params[0] = free_params;
+          double * residuals = new double[data[i].observations[0].features.size() * 3];  // TODO: should check that all features are same length?
+          // std::cout << data[i].observations[1].features.size() << std::endl;
+          cost->Evaluate(params, residuals, NULL);
+          /*          std::cout << "INITIAL COST (" << i << ")" << std::endl << "  x: ";
+                      for (size_t k = 0; k < data[i].observations[0].features.size(); ++k)
+                      std::cout << "  " << std::setw(10) << std::fixed << residuals[(3*k + 0)];
+                      std::cout << std::endl << "  y: ";
+                      for (size_t k = 0; k < data[i].observations[0].features.size(); ++k)
+                      std::cout << "  " << std::setw(10) << std::fixed << residuals[(3*k + 1)];
+                      std::cout << std::endl << "  z: ";
+                      for (size_t k = 0; k < data[i].observations[0].features.size(); ++k)
+                      std::cout << "  " << std::setw(10) << std::fixed << residuals[(3*k + 2)];
+                      std::cout << std::endl << std::endl;
+           */
+        }
+
+        problem->AddResidualBlock(cost,
+            NULL /* squared loss */,
+            free_params);
       }
       else if (params.error_blocks[j].type == "outrageous")
       {
         // Outrageous error block requires no particular sensors, add to every sample
         problem->AddResidualBlock(
-          OutrageousError::Create(offsets_.get(),
-                                  params.error_blocks[j].name,
-                                  static_cast<double>(params.error_blocks[j].params["joint_scale"]),
-                                  static_cast<double>(params.error_blocks[j].params["position_scale"]),
-                                  static_cast<double>(params.error_blocks[j].params["rotation_scale"])),
-          NULL, // squared loss
-          free_params);
+            OutrageousError::Create(offsets_.get(),
+              params.error_blocks[j].name,
+              static_cast<double>(params.error_blocks[j].params["joint_scale"]),
+              static_cast<double>(params.error_blocks[j].params["position_scale"]),
+              static_cast<double>(params.error_blocks[j].params["rotation_scale"])),
+            NULL, // squared loss
+            free_params);
       }
       else
       {
@@ -239,43 +283,43 @@ int Optimizer::optimize(OptimizationParams& params,
   ceres::Solve(options, problem, summary_.get());
   if (progress_to_stdout)
     std::cout << "\n" << summary_->FullReport() << std::endl;
+  /*
+     for (size_t i = 0; i < data.size(); ++i)
+     {
+     for (size_t j = 0; j < params.error_blocks.size(); ++j)
+     {
 
-for (size_t i = 0; i < data.size(); ++i)
-  {
-    for (size_t j = 0; j < params.error_blocks.size(); ++j)
-    {
+     if (params.error_blocks[j].type == "camera3d_to_arm")
+     {
+     double ** params = new double*[1];
+     params[0] = free_params;
+     double * residuals = new double[data[i].observations[0].features.size() * 3];  // TODO: should check that all features are same length?
 
-   if (params.error_blocks[j].type == "camera3d_to_arm")
-{
-double ** params = new double*[1];
-          params[0] = free_params;
-          double * residuals = new double[data[i].observations[0].features.size() * 3];  // TODO: should check that all features are same length?
+  //          cost->Evaluate(params, residuals, NULL);
+  std::cout << "INITIAL COST (" << i << ")" << std::endl << "  x: ";
+  for (size_t k = 0; k < data[i].observations[0].features.size(); ++k)
+  std::cout << "  " << std::setw(10) << std::fixed << residuals[(3*k + 0)];
+  std::cout << std::endl << "  y: ";
+  for (size_t k = 0; k < data[i].observations[0].features.size(); ++k)
+  std::cout << "  " << std::setw(10) << std::fixed << residuals[(3*k + 1)];
+  std::cout << std::endl << "  z: ";
+  for (size_t k = 0; k < data[i].observations[0].features.size(); ++k)
+  std::cout << "  " << std::setw(10) << std::fixed << residuals[(3*k + 2)];
+  std::cout << std::endl << std::endl;
 
-//          cost->Evaluate(params, residuals, NULL);
-          std::cout << "INITIAL COST (" << i << ")" << std::endl << "  x: ";
-          for (size_t k = 0; k < data[i].observations[0].features.size(); ++k)
-            std::cout << "  " << std::setw(10) << std::fixed << residuals[(3*k + 0)];
-          std::cout << std::endl << "  y: ";
-          for (size_t k = 0; k < data[i].observations[0].features.size(); ++k)
-            std::cout << "  " << std::setw(10) << std::fixed << residuals[(3*k + 1)];
-          std::cout << std::endl << "  z: ";
-          for (size_t k = 0; k < data[i].observations[0].features.size(); ++k)
-            std::cout << "  " << std::setw(10) << std::fixed << residuals[(3*k + 2)];
-          std::cout << std::endl << std::endl;
-
-}}}
+  }}} */
   // TODO output stats
   /*if (progress_to_stdout)
-  {
+    {
     CalibrationOffsetParser no_offsets;
     offsets_->update(free_params);
     for (size_t i = 0; i < data.size(); ++i)
     {
-      std::cout << "Sample " << i << std::endl;
-      printSimpleDistanceError(arm_model_, camera_model_, &no_offsets, offsets_, data[i]);
-      printComparePoints(arm_model_, camera_model_, &no_offsets, offsets_, data[i]);
+    std::cout << "Sample " << i << std::endl;
+    printSimpleDistanceError(arm_model_, camera_model_, &no_offsets, offsets_, data[i]);
+    printComparePoints(arm_model_, camera_model_, &no_offsets, offsets_, data[i]);
     }
-  }*/
+    }*/
 
   // Note: the error blocks will be managed by scoped_ptr in cost functor
   //       which takes ownership, and so we do not need to delete them here

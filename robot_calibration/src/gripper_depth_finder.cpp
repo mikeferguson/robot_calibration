@@ -40,12 +40,15 @@ GripperDepthFinder::GripperDepthFinder(ros::NodeHandle & nh) :
   waiting_(true)
 {
   std::string topic_name;
-  nh.param<std::string>("topic", topic_name, "/image");
-  subscriber_ = nh.subscribe(topic_name,
+  //  nh.param<std::string>("/head_camera/depth/image");//"topic", topic_name, "/image");
+  subscriber_ = nh.subscribe("/head_camera/depth/image",//topic_name,
       1,
       &GripperDepthFinder::cameraCallback,
       this);
 
+  camera_info_sub_ = nh.subscribe<sensor_msgs::CameraInfo>(
+      "/head_camera/depth/camera_info",
+      10, &GripperDepthFinder::cameraInfoCallback, this);
   publisher_ = nh.advertise<robot_calibration_msgs::Plane>("plane_depth", 10);
   if (!depth_camera_manager_.init(nh))
   {
@@ -53,6 +56,42 @@ GripperDepthFinder::GripperDepthFinder(ros::NodeHandle & nh) :
     throw;
   }
 }
+
+
+void GripperDepthFinder::cameraInfoCallback(
+    const sensor_msgs::CameraInfo::ConstPtr& msg)
+{
+  // Lock mutex before updating K
+  boost::unique_lock<boost::mutex> lock(mutex_K_);
+
+  float focal_pixels_ = msg->P[0];
+  float center_x_ = msg->P[2];
+  float center_y_ = msg->P[6];
+
+  if (msg->binning_x == msg->binning_y)
+  {
+    if (msg->binning_x > 0)
+    {
+      K_ = (cv::Mat_<double>(3, 3) <<
+          focal_pixels_/msg->binning_x, 0.0, center_x_/msg->binning_x,
+          0.0, focal_pixels_/msg->binning_x, center_y_/msg->binning_x,
+          0.0, 0.0, 1.0);
+    }
+    else
+    {
+      K_ = (cv::Mat_<double>(3, 3) <<
+          focal_pixels_, 0.0, center_x_,
+          0.0, focal_pixels_, center_y_,
+          0.0, 0.0, 1.0);
+    }
+  }
+  else
+  {
+    ROS_ERROR("binning_x is not equal to binning_y");
+  }
+}
+
+
 
 void GripperDepthFinder::cameraCallback(const sensor_msgs::ImageConstPtr& image)
 {
@@ -309,9 +348,9 @@ bool GripperDepthFinder::find(robot_calibration_msgs::CalibrationData * msg)
   }
 
   // convert the image into 3d points
-  cv::Mat K_ = (cv::Mat_<double>(3, 3) <<
-      557.7233725919907, 0, 319.6929001020021, 0, 550.2601417321275, 225.9973984128593,
-      0.0, 0.0, 1.0);
+  //  cv::Mat K_ = (cv::Mat_<double>(3, 3) <<
+  //      557.7233725919907, 0, 319.6929001020021, 0, 550.2601417321275, 225.9973984128593,
+  //      0.0, 0.0, 1.0);
   cv::Mat points3d;
 
   cv::depthTo3d(cv_ptr->image , K_, points3d);
@@ -358,12 +397,12 @@ bool GripperDepthFinder::find(robot_calibration_msgs::CalibrationData * msg)
   gripper_centroid.frame_id_ = "/wrist_roll_link";
   tf::Stamped<tf::Point> gripper_centroid_transformed;
   tf::TransformListener listener;
-  ros::Time time = ros::Time::now();
+  ros::Time time = ros::Time(0);
   try
   {
-    listener.waitForTransform( image_->header.frame_id, gripper_centroid.frame_id_,
+    listener.waitForTransform( "/head_camera_depth_optical_frame" /*image_->header.frame_id*/, gripper_centroid.frame_id_,
         time, ros::Duration(3.0)); 
-    listener.transformPoint( image_->header.frame_id, 
+    listener.transformPoint(  "/head_camera_depth_optical_frame"/*image_->header.frame_id*/, 
         time,  gripper_centroid , gripper_centroid.frame_id_, gripper_centroid_transformed);
   }
   catch (tf::TransformException ex)
@@ -376,18 +415,43 @@ bool GripperDepthFinder::find(robot_calibration_msgs::CalibrationData * msg)
   gripper_centroid_transform[1] = gripper_centroid_transformed.y();
   gripper_centroid_transform[2] = gripper_centroid_transformed.z();
 
-  cv::Vec3f point_on_plane_1( 0.06, 0 , 0.035);
-  cv::Vec3f point_on_plane_2( 0.04, -0.01, 0.035);
-  cv::Vec3f point_on_plane_3( 0.07, 0.01, 0.035);
+  //  cv::Vec3f point_on_plane_1( 0.06, 0 , 0.035);
+  //  cv::Vec3f point_on_plane_2( 0.04, -0.01, 0.035);
+  //  cv::Vec3f point_on_plane_3( 0.07, 0.01, 0.035);
 
+  cv::Vec3f point_on_plane_1( -5.25, 1.5, 0.035);
+  cv::Vec3f point_on_plane_2( 5.25, 1.5, 0.035);
+  cv::Vec3f point_on_plane_3( 5.25, 10.5, 0.035);
+  cv::Vec3f point_on_plane_4(-5.25, 10.5, 0.035);
   cv::Mat points_on_plane;
   points_on_plane.push_back(point_on_plane_1);
   points_on_plane.push_back(point_on_plane_2);
   points_on_plane.push_back(point_on_plane_3);
+  points_on_plane.push_back(point_on_plane_4);
 
+  //  std::cout << "***" <<camera_sensor_name_ << std::endl;
+  //  std::cout << "***" <<chain_sensor_name_ << std::endl;
+  // std::cout << "blah" << std::endl;
+  msg->observations.resize(2);
+  msg->observations[0].sensor_name = "cameradepth";//camera_sensor_name_;//"cameradepth";//camera_sensor_name_;
+  msg->observations[1].sensor_name = "arm";//chain_sensor_name_;//"arm";//chain_sensor_name_;
+  //  std::cout <<camera_sensor_name_ << std::endl;
+  //  std::cout << chain_sensor_name_ << std::endl;
   // transform them to the base frame
   cv::Mat points_on_plane_transformed;
   tf::StampedTransform transform;
+
+  for(size_t i=0; i< points_on_plane.rows;i++)
+  {
+    geometry_msgs::PointStamped rgbd_pt;
+    rgbd_pt.point.x = points_on_plane.at<cv::Vec3f>(i,0)[0];
+    rgbd_pt.point.y = points_on_plane.at<cv::Vec3f>(i,0)[1];
+    rgbd_pt.point.z = points_on_plane.at<cv::Vec3f>(i,0)[2];
+    rgbd_pt.header.frame_id = "/wrist_roll_link"; 
+
+    std::cout << points_on_plane.at<cv::Vec3f>(i,0)[0] << std::endl;
+    msg->observations[1].features.push_back(rgbd_pt);
+  }
 
   try
   {
@@ -400,10 +464,10 @@ bool GripperDepthFinder::find(robot_calibration_msgs::CalibrationData * msg)
       point.setZ( points_on_plane.at<cv::Vec3f>(i,0)[2]);  
       tf::Stamped<tf::Point> point_transformed;
       //    ros::Time time;
-      listener.waitForTransform( image_->header.frame_id, point.frame_id_,// "/base_link", "/head_camera_depth_optical_frame",
+      listener.waitForTransform(  "/head_camera_depth_optical_frame"/*image_->header.frame_id*/, point.frame_id_,// "/base_link", "/head_camera_depth_optical_frame",
           time, ros::Duration(3.0));
       //listener.transformPoint("base_link", point , point_transformed);
-      listener.transformPoint( image_->header.frame_id,
+      listener.transformPoint(  "/head_camera_depth_optical_frame", //image_->header.frame_id,
           time,  point , point.frame_id_, point_transformed);
 
       cv::Vec3f point_transform;
@@ -432,6 +496,17 @@ bool GripperDepthFinder::find(robot_calibration_msgs::CalibrationData * msg)
   plane_transformed[1] = normal[1] / distance;
   plane_transformed[2] = normal[2] /distance;
   plane_transformed[3] = - V0.dot(normal/distance);
+
+  //geometry_msgs::PointStamped rgbd;
+  //  geometry_msgs::PointStamped world;
+
+  //  msg->observations.resize(2);
+  //  msg->observations[0].sensor_name = "camera";//camera_sensor_name_;
+  //  msg->observations[1].sensor_name = "gripper";//chain_sensor_name_;
+
+
+
+  //  msg->observations[1].features.push_back(plane_transformed);
 
   std::cout << plane_transformed[0] << "\t" << plane_transformed[1] << "\t" << plane_transformed[2] << "\t" << plane_transformed[3] << std::endl;
   // find the closest cluster centroid to the gripper centroid
@@ -503,6 +578,16 @@ bool GripperDepthFinder::find(robot_calibration_msgs::CalibrationData * msg)
     //some[2].push_back(channels[2].at<float>(m,n));
     if(!isnan(channels[0].at<float>(m,n)) && !isnan(channels[1].at<float>(m,n)) && !isnan(channels[2].at<float>(m,n)))
     {
+      geometry_msgs::PointStamped rgbd_pt;
+      rgbd_pt.point.x = channels[0].at<float>(m,n);
+      rgbd_pt.point.y = channels[1].at<float>(m,n);
+      rgbd_pt.point.z = channels[2].at<float>(m,n);
+      rgbd_pt.header.frame_id = "/wrist_roll_link";
+
+      msg->observations[0].features.push_back(rgbd_pt);
+
+
+
       some_1.at<float>(m,n) = channels[0].at<float>(m,n);
       some_2.at<float>(m,n) = channels[1].at<float>(m,n);
       some_3.at<float>(m,n) = channels[2].at<float>(m,n);
@@ -515,6 +600,7 @@ bool GripperDepthFinder::find(robot_calibration_msgs::CalibrationData * msg)
 
   }
 
+  msg->observations[0].ext_camera_info = depth_camera_manager_.getDepthCameraInfo();
   cv::Mat some[3];
   for (size_t j = 0; j < clusters[closest_centroid].size();j++)
   {
@@ -579,6 +665,10 @@ bool GripperDepthFinder::find(robot_calibration_msgs::CalibrationData * msg)
       //        depth_plane.plane_equation.push_back(plane_coefficients[i][j]);
     }
   }
+
+  //  msg->observations[0].features.push_back(plane_coefficients);
+  //  msg->observations[0].ext_camera_info = depth_camera_manager_.getDepthCameraInfo();
+
   publisher_.publish(depth_plane); 
 
   std::cout << "here" << std::endl;
