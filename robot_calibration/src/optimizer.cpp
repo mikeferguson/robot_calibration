@@ -216,8 +216,8 @@ int Optimizer::optimize(OptimizationParams& params,
         //  std::cout << gripper_name <<std::endl;
         //  std::cout <<"before error block" << std::endl;
         // Check that this sample has the required features/observations
-        // if (!hasSensor(data[i], camera_name) || !hasSensor(data[i], gripper_name))
-        // continue;
+        if (!hasSensor(data[i], camera_name) || !hasSensor(data[i], gripper_name))
+          continue;
         //std::cout << "error block" << std::endl;
         // Create the block
         ceres::CostFunction * cost = GripperDepthError::Create(

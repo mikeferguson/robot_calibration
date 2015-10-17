@@ -449,7 +449,7 @@ bool GripperDepthFinder::find(robot_calibration_msgs::CalibrationData * msg)
     rgbd_pt.point.z = points_on_plane.at<cv::Vec3f>(i,0)[2];
     rgbd_pt.header.frame_id = "/wrist_roll_link"; 
 
-    std::cout << points_on_plane.at<cv::Vec3f>(i,0)[0] << std::endl;
+ //   std::cout << points_on_plane.at<cv::Vec3f>(i,0)[0] << std::endl;
     msg->observations[1].features.push_back(rgbd_pt);
   }
 
@@ -508,7 +508,7 @@ bool GripperDepthFinder::find(robot_calibration_msgs::CalibrationData * msg)
 
   //  msg->observations[1].features.push_back(plane_transformed);
 
-  std::cout << plane_transformed[0] << "\t" << plane_transformed[1] << "\t" << plane_transformed[2] << "\t" << plane_transformed[3] << std::endl;
+//  std::cout << plane_transformed[0] << "\t" << plane_transformed[1] << "\t" << plane_transformed[2] << "\t" << plane_transformed[3] << std::endl;
   // find the closest cluster centroid to the gripper centroid
   float min_distance = 1000;
   int closest_centroid= 1000;
@@ -549,11 +549,11 @@ bool GripperDepthFinder::find(robot_calibration_msgs::CalibrationData * msg)
       }
     }
   }
-  std::cout << var_x <<"\t" << var_y << std::endl;
+  //std::cout << var_x <<"\t" << var_y << std::endl;
 
   if (var_x > 0.09 || var_y > 0.09)
   { 
-    std::cout << "invalid cluster" << std::endl;
+  //  std::cout << "invalid cluster" << std::endl;
   } 
 
   //  std::cout << centroids.at<cv::Vec3f>(closest_centroid,0)[0] << "\t" << centroids.at<cv::Vec3f>(closest_centroid,0)[1] << "\t" << centroids.at<cv::Vec3f>(closest_centroid,0)[2] << std::endl;
@@ -584,7 +584,14 @@ bool GripperDepthFinder::find(robot_calibration_msgs::CalibrationData * msg)
       rgbd_pt.point.z = channels[2].at<float>(m,n);
       rgbd_pt.header.frame_id = "/wrist_roll_link";
 
+      if (var_x > 0.09 || var_y > 0.09)
+      {
+                //  std::cout << "invalid cluster" << std::endl;
+      }
+      else
+      {
       msg->observations[0].features.push_back(rgbd_pt);
+      }
 
 
 
@@ -649,7 +656,7 @@ bool GripperDepthFinder::find(robot_calibration_msgs::CalibrationData * msg)
   std::vector<cv::Vec4f> plane_coefficients;
   (*plane_estimator_)(gripper_points_,  planes_mask, plane_coefficients);
 
-  std::cout << "number of planes" <<plane_coefficients.size() << std::endl;
+//  std::cout << "number of planes" <<plane_coefficients.size() << std::endl;
 
   robot_calibration_msgs::Plane depth_plane;
 
@@ -671,7 +678,7 @@ bool GripperDepthFinder::find(robot_calibration_msgs::CalibrationData * msg)
 
   publisher_.publish(depth_plane); 
 
-  std::cout << "here" << std::endl;
+//  std::cout << "here" << std::endl;
   return true;
 }
 
