@@ -301,6 +301,9 @@ bool GripperDepthFinder::find(robot_calibration_msgs::CalibrationData * msg)
             if ((m+x) < 0 || (n+y) < 0 || (m+x)>=cv_ptr->image.rows ||(n+y)>=cv_ptr->image.cols)
               continue;                     
 
+            if (mgod->image.at<float>(m+x,n+y) >0.5)
+              continue;
+
             if (checked[k])                         
               continue;
 
@@ -554,6 +557,8 @@ bool GripperDepthFinder::find(robot_calibration_msgs::CalibrationData * msg)
   if (var_x > 0.09 || var_y > 0.09)
   { 
   //  std::cout << "invalid cluster" << std::endl;
+    std::cout <<"variance exceeds the allowed limit" << std::endl;
+    return false;
   } 
 
   //  std::cout << centroids.at<cv::Vec3f>(closest_centroid,0)[0] << "\t" << centroids.at<cv::Vec3f>(closest_centroid,0)[1] << "\t" << centroids.at<cv::Vec3f>(closest_centroid,0)[2] << std::endl;
@@ -584,14 +589,14 @@ bool GripperDepthFinder::find(robot_calibration_msgs::CalibrationData * msg)
       rgbd_pt.point.z = channels[2].at<float>(m,n);
       rgbd_pt.header.frame_id = "/wrist_roll_link";
 
-      if (var_x > 0.09 || var_y > 0.09)
-      {
+//      if (var_x > 0.09 || var_y > 0.09)
+ //     {
                 //  std::cout << "invalid cluster" << std::endl;
-      }
-      else
-      {
+ //     }
+ //     else
+   //   {
       msg->observations[0].features.push_back(rgbd_pt);
-      }
+     // }
 
 
 
