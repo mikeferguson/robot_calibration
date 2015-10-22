@@ -422,10 +422,16 @@ bool GripperDepthFinder::find(robot_calibration_msgs::CalibrationData * msg)
   //  cv::Vec3f point_on_plane_2( 0.04, -0.01, 0.035);
   //  cv::Vec3f point_on_plane_3( 0.07, 0.01, 0.035);
 
-  cv::Vec3f point_on_plane_1( -5.25, 1.5, 0.035);
-  cv::Vec3f point_on_plane_2( 5.25, 1.5, 0.035);
-  cv::Vec3f point_on_plane_3( 5.25, 10.5, 0.035);
-  cv::Vec3f point_on_plane_4(-5.25, 10.5, 0.035);
+//  cv::Vec3f point_on_plane_1( -5.25, 1.5, 0.035);
+//  cv::Vec3f point_on_plane_2( 5.25, 1.5, 0.035);
+//  cv::Vec3f point_on_plane_3( 5.25, 10.5, 0.035);
+//  cv::Vec3f point_on_plane_4(-5.25, 10.5, 0.035);
+
+  cv::Vec3f point_on_plane_1( 0, -6.25, 0.0396);
+  cv::Vec3f point_on_plane_2( 0, 6.25, 0.0396);
+  cv::Vec3f point_on_plane_3( 12, 6.25, 0.0396);
+  cv::Vec3f point_on_plane_4( 12, -6.25, 0.0396);
+
   cv::Mat points_on_plane;
   points_on_plane.push_back(point_on_plane_1);
   points_on_plane.push_back(point_on_plane_2);
@@ -653,7 +659,7 @@ bool GripperDepthFinder::find(robot_calibration_msgs::CalibrationData * msg)
     // Image/cloud height/width must be multiple of block size
     plane_estimator_->set("block_size", 1);
     // Distance a point can be from plane and still be part of it
-    plane_estimator_->set("threshold", 0.002);//observations_threshold_);
+    plane_estimator_->set("threshold", 0.003);//observations_threshold_);
     // Minimum cluster size to be a plane
     plane_estimator_->set("min_size", some[0].rows/2);
   }
