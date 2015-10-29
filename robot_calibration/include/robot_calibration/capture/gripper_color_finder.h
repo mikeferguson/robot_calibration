@@ -73,7 +73,8 @@ class GripperColorFinder : public FeatureFinder
     // Get an image of tracker status
 //    sensor_msgs::Image getImage();
 
-    std::vector< std::vector<double> > diff_;
+   // std::vector< std::vector<double> > diff_;
+    std::vector<double> diff_;
     double max_;
     int max_idx_;
     int max_idy_;
