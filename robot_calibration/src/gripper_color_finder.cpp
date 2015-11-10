@@ -37,7 +37,7 @@ GripperColorFinder::GripperColorFinder(ros::NodeHandle& nh) :
 
   // Setup subscriber
   //nh.param<std::string>("topic", topic_name, "/points");
-  subscriber_ = nh.subscribe("/head_camera/rgb/image",
+  subscriber_ = nh.subscribe("/head_camera/rgb/image_raw",
       1,
       &GripperColorFinder::cameraCallback,
       this);
@@ -121,9 +121,32 @@ void GripperColorFinder::cameraCallback(const sensor_msgs::ImageConstPtr& image)
   if (waiting_)
   {
     image_ = *image;
+    //std::cout << image_ << std::endl;
     waiting_ = false;
   }
 }
+
+bool GripperColorFinder::waitForCloud()
+{
+  // Initial wait cycle so that camera is definitely up to date.
+  ros::Duration(1/10.0).sleep();
+
+  waiting_ = true;
+  int count = 250;
+  while (--count)
+  {
+    if (!waiting_)
+    {
+      // success
+      return true;
+    }
+    ros::Duration(0.01).sleep();
+    ros::spinOnce();
+  }
+  ROS_ERROR("Failed to get cloud");
+  return !waiting_;
+}
+
 
 bool GripperColorFinder::find(robot_calibration_msgs::CalibrationData * msg)
 {
@@ -132,6 +155,16 @@ bool GripperColorFinder::find(robot_calibration_msgs::CalibrationData * msg)
   std::vector<geometry_msgs::PointStamped> rgbd;
   std::vector<geometry_msgs::PointStamped> world;
 
+  /* cv_bridge::CvImagePtr cv_ptr;
+     try
+     {
+     cv_ptr = cv_bridge::toCvCopy(image_, "BGR8");
+     }
+     catch (cv_bridge::Exception& e)
+     {
+     ROS_ERROR("cv_bridge exception: %s", e.what());
+     return false;
+     } */
   robot_calibration_msgs::GripperLedCommandGoal command;
   command.led_code = 0;
   client_->sendGoal(command);
@@ -139,15 +172,34 @@ bool GripperColorFinder::find(robot_calibration_msgs::CalibrationData * msg)
 
   sensor_msgs::Image prev_image;
 
+  if (!waitForCloud())
+  {
+    return false;
+  }
+  prev_image = image_;
+
   // Initialize difference trackers
   for (size_t i = 0; i < trackers_.size(); ++i)
   {
+    //std::cout << "***********" << image_.height << "***" << image_.width<< std::endl;
     trackers_[i].reset(image_.height, image_.width);
+    //  trackers_[i].reset(cv_ptr->image.rows, cv_ptr->image.cols);
   }
 
   int cycles = 0;
   while (true)
-  {  
+  {
+    // Toggle LED to next state
+    code_idx = (code_idx + 1) % 8;
+    command.led_code = codes_[code_idx];
+    client_->sendGoal(command);
+    client_->waitForResult(ros::Duration(10.0));
+
+    if(!waitForCloud())
+    {
+      return false;
+    }
+
     // Commands are organized as On-Off for each led.
     int tracker = code_idx/2;
     // Even indexes are turning on, Odd are turning off
@@ -167,8 +219,9 @@ bool GripperColorFinder::find(robot_calibration_msgs::CalibrationData * msg)
 
     geometry_msgs::PointStamped led;
     led.point = trackers_[tracker].point_;
-    led.header.frame_id = trackers_[tracker].frame_;
+    led.header.frame_id = "wrist_roll_link";//trackers_[tracker].frame_;
 
+    //d::cout << "tracker " << tracker << std::endl;
     trackers_[tracker].process(image_, prev_image, max_error_, weight);
 
     if (++cycles > max_iterations_)
@@ -178,16 +231,17 @@ bool GripperColorFinder::find(robot_calibration_msgs::CalibrationData * msg)
     }
 
     prev_image = image_;
-
+  }
     // Export results
     msg->observations.resize(2);
-    msg->observations[0].sensor_name = camera_sensor_name_;
-    msg->observations[1].sensor_name = chain_sensor_name_;
+    msg->observations[0].sensor_name = "camerargb";//camera_sensor_name_;
+    msg->observations[1].sensor_name = "arm";//chain_sensor_name_;
 
     for (size_t t = 0; t < trackers_.size(); ++t)
     {
       geometry_msgs::PointStamped rgbd_pt;
       geometry_msgs::PointStamped world_pt;
+      geometry_msgs::PointStamped world_point;
 
       // rgbd_pt.x  = trackers_[t];
       if (!trackers_[t].getRefinedCentroid(image_, rgbd_pt))
@@ -198,31 +252,39 @@ bool GripperColorFinder::find(robot_calibration_msgs::CalibrationData * msg)
 
       msg->observations[0].features.push_back(rgbd_pt);
       msg->observations[0].ext_camera_info = depth_camera_manager_.getDepthCameraInfo();
+  //    std::cout << "point" << rgbd_pt.point.x << "\t" << rgbd_pt.point.y << "\t" << rgbd_pt.point.z << std::endl;
+      world_point.point = trackers_[t].point_;
+      world_point.header.frame_id = "/wrist_roll_link";
+      //std::cout <<world_point.point.x << std::endl;
 
-      world_pt.point = trackers_[t].point_;
       tf::TransformListener listener;
       try
       {
-        listener.waitForTransform("head_camera_rgb_optical_frame" , "gripper_roll_link " , ros::Time(0), ros::Duration(3.0));
-        listener.transformPoint("head_camera_rgb_optical_frame", ros::Time(0), world_pt, "gripper_roll_link", world_pt);
+        listener.waitForTransform("/wrist_roll_link","/head_camera_rgb_optical_frame" , ros::Time(0), ros::Duration(3.0)); //std::cout << "done" << std::endl;
+        listener.transformPoint("/head_camera_rgb_optical_frame", ros::Time(0), world_point , "/wrist_roll_link", world_pt);
+        //std::cout<< "done2" << std::endl;
       }
       catch(const tf::TransformException &ex)
       {
         ROS_ERROR_STREAM("Failed to transform feature to " << trackers_[t].frame_);
         return false;
       }
-      double u = K_.at<float>(0,0) * world_pt.point.x/world_pt.point.z + K_.at<float>(0,2);
-      double v = K_.at<float>(0.4) * world_pt.point.y/world_pt.point.z + K_.at<float>(0,5);
-
-      world_pt.point.x = u;
-      world_pt.point.y = v;
-      world_pt.point.z = 0;  
+      //std::cout << world_pt.point.x << "\t" << world_pt.point.y << "\t" << world_pt.point.z << "\t" << std::endl;
+      double u = 574.052 * world_pt.point.x/world_pt.point.z + 319.5;
+      double v = 574.052 * world_pt.point.y/world_pt.point.z + 239.5;
+     
+    //  std::cout << "gripper" <<std::endl;
+    //  std::cout << "u" << "\t" << u << "\t" << "v" <<"\t" << v << std::endl; 
+      //world_pt.point.x = u;
+      //world_pt.point.y = v;
+      //world_pt.point.z = 0;  
       msg->observations[1].features.push_back(world_pt);
-
+      msg->observations[1].ext_camera_info = depth_camera_manager_.getDepthCameraInfo();
+      
     } 
-  }
+  
 
-
+return true;
 }
 
 GripperColorFinder::CloudDifferenceTracker::CloudDifferenceTracker(
@@ -248,9 +310,10 @@ void GripperColorFinder::CloudDifferenceTracker::reset(size_t height, size_t wid
   // Pixel this was observed in
   max_idx_ = -1;
   max_idy_ = -1;
-
+  //std::cout << height << "\t" << width <<"******"<<std::endl;
   // Setup difference tracker
   diff_.resize(height * width);
+  //std::cout << diff_.size() << "in reset" << std::endl;
   for (std::vector<double>::iterator it = diff_.begin(); it != diff_.end(); ++it)
   {
     *it = 0.0;
@@ -267,10 +330,10 @@ bool GripperColorFinder::CloudDifferenceTracker::process(
   if ((image.width * image.height) != diff_.size())
   {
     ROS_ERROR("Cloud size has changed");
-    std::cout << diff_.size() <<std::endl;
+    //std::cout << diff_.size()<< "\t" << image.width << "\t" << image.height <<std::endl;
     return false;
   }
-  std::cout <<"wth" << std::endl;
+  //std::cout <<"wth" << std::endl;
 
   // We want to compare each point to the expected LED pose,
   // but when the LED is on, the points will be NAN,
@@ -290,11 +353,12 @@ bool GripperColorFinder::CloudDifferenceTracker::process(
 
   std::vector<cv::Mat> color;
   cv::split(cv_ptr->image , color);
-
+  //std::cout << color.size() << std::endl;
+  //std::cout << color[0].size() << std::endl;
   std::vector<cv::Mat> prev_color;
   cv::split(cv_ptr_prev->image , prev_color);
 
-  double last_distance = 1000.0;
+  //double last_distance = 1000.0;
 
   // Update each point in the tracker
   //const size_t num_points = cloud.data.size() / cloud.point_step;
@@ -302,38 +366,57 @@ bool GripperColorFinder::CloudDifferenceTracker::process(
   int used = 0;
   for (size_t i = 0; i < (image.height*image.width); i++)
   {
-    for(size_t j = 0; j< image.width;j++)
+    //    for(size_t j = 0; j< image.width;j++)
+    //  {
+    // If within range of LED pose... do this later
+    //
+    double m = i/image.width;
+    double n = i%image.width;
+    //std::cout << color[0].at<float>(m,n) << "\t" << color[1].at<float>(m,n) << "\t" << color[2].at<float>(m,n) << std::endl;
+
+    //double m = i/image.width;
+    //double n = i%image.height;
+    double b = (double)(color[0].at<float>(m,n)) - (double)(prev_color[0].at<float>(m,n));
+    double g = (double)(color[1].at<float>(m,n)) - (double)(prev_color[1].at<float>(m,n));
+    double r = (double)(color[2].at<float>(m,n)) - (double)(prev_color[2].at<float>(m,n));
+/*
+    if (r> 0)
     {
-      // If within range of LED pose... do this later
+      std::cout << "red" << std::endl;
+    }
 
+    if(b>0)
+    {
+      std::cout << "blue" << std::endl;
+    }
 
-      double m = i;//i/image.width;
-      double n = j;//i%image.height;
-      double b = (double)(color[0].at<float>(m,n)) - (double)(prev_color[0].at<float>(m,n));
-      double g = (double)(color[1].at<float>(m,n)) - (double)(prev_color[1].at<float>(m,n));
-      double r = (double)(color[2].at<float>(m,n)) - (double)(prev_color[2].at<float>(m,n));
+    if(g>0)
+    {
+      std::cout<< "green" <<std::endl;
+    }
+*/
+    if (r > 0 && g > 0 && b > 0 && weight > 0)
+    {// if (r>0 && weight>0)
+    
+      diff_[i] += (r+b+g ) * weight;
+      used++;
+    }
+    else if (r < 0 && g < 0 && b < 0 && weight < 0)
+    {
+      diff_[i] += (r+b+g ) * weight;
+      used++;
+    }
 
-
-      if (r > 0 && g > 0 && b > 0 && weight > 0)
-      {
-        diff_[i] += (r + g + b) * weight;
-        used++;
-      }
-      else if (r < 0 && g < 0 && b < 0 && weight < 0)
-      {
-        diff_[i] += (r + g + b) * weight;
-        used++;
-      }
-
-      // Is this a new max value?
-      if (diff_[i] > max_)
-      {
-        max_ = diff_[i];//[j];
-        max_idx_ = i * image.width +j;
-        //max_idy_ = j;
-      }
+    // Is this a new max value?
+    if (diff_[i] > max_)
+    {
+      max_ = diff_[i];//[j];
+      max_idx_ = i;// * image.width +j;
+      //max_idy_ = j;
+      //std::cout << max_ << std::endl;
     }
   }
+  // }
   return true;
 
 
@@ -347,7 +430,9 @@ bool GripperColorFinder::CloudDifferenceTracker::getRefinedCentroid(
   centroid.header = image.header;
   centroid.point.x =  max_idx_ / image.width;
   centroid.point.y =  max_idx_ % image.width;
-
+  std::cout << "centroid" << std::endl;
+  std::cout << centroid.point.x << std::endl;
+  std::cout << centroid.point.y << std::endl;
   // Get a better centroid
   int points = 0;
   double sum_x = 0.0;
@@ -362,15 +447,18 @@ bool GripperColorFinder::CloudDifferenceTracker::getRefinedCentroid(
     if (diff_[i] > (max_*0.75))
     {
       double m = i/image.width;
-      double n = i%image.height;
+      double n = i%image.width;
+     // std::cout << "m" << m << "n" << n << std::endl;
       double dx = m - centroid.point.x;
       double dy = n - centroid.point.y;
 
       // That are less than 1cm--- verify from the max point 
       if ((dx*dx) + (dy*dy) < (10))
       {
-        sum_x += max_idx_;
-        sum_y += max_idy_;
+ //       std::cout << "m" << m << "n" << n << std::endl;
+
+        sum_x += m;//max_idx_;
+        sum_y += n;//max_idy_;
         ++points;
       }
     }
@@ -394,10 +482,10 @@ bool GripperColorFinder::CloudDifferenceTracker::isFound(
   // Returns true only if the max exceeds threshold
   if (max_ < threshold)
   {
+  //  std::cout << "max" << max_ << std::endl;
     return false;
   }
 
   return true;
 }
-
-}  
+} 

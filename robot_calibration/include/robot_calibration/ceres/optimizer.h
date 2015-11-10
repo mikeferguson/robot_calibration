@@ -34,6 +34,7 @@
 #include <robot_calibration/ceres/data_functions.h>
 #include <robot_calibration/ceres/outrageous_error.h>
 #include <robot_calibration/models/camera3d.h>
+#include <robot_calibration/models/camera2d.h>
 #include <robot_calibration/models/chain.h>
 #include <boost/shared_ptr.hpp>
 #include <string>

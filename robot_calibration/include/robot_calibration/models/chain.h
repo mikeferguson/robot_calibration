@@ -126,6 +126,11 @@ public:
     const robot_calibration_msgs::CalibrationData& data,
     const CalibrationOffsetParser& offsets);
 
+  virtual std::vector<geometry_msgs::PointStamped> project_(
+    const robot_calibration_msgs::CalibrationData& data,
+    const CalibrationOffsetParser& offsets);
+
+
   /**
    *  \brief Compute the forward kinematics of the chain, based on the
    *         offsets and the joint positions of the state message.
@@ -133,8 +138,12 @@ public:
   KDL::Frame getChainFK(const CalibrationOffsetParser& offsets,
                         const sensor_msgs::JointState& state);
 
+  KDL::Frame getChainFKcam(const CalibrationOffsetParser& offsets,
+                              const sensor_msgs::JointState& state);
+
 private:
   KDL::Chain chain_;
+  KDL::Chain chaincam_;
 
 protected:
   std::string root_;

@@ -19,6 +19,7 @@
 
 #include <robot_calibration/models/chain.h>
 #include <robot_calibration/models/camera3d.h>
+#include <robot_calibration/models/camera2d.h>
 
 namespace robot_calibration
 {
@@ -43,6 +44,9 @@ ChainModel::ChainModel(const std::string& name, KDL::Tree model, std::string roo
   // Create a KDL::Chain
   if (!model.getChain(root, tip, chain_))
     std::cerr << "Failed to get chain" << std::endl;
+  if (!model.getChain(root, "head_camera_rgb_optical_frame", chaincam_))
+    std::cerr << "Failed to get chain" << std::endl;
+
 }
 
 std::vector<geometry_msgs::PointStamped> ChainModel::project(
@@ -82,6 +86,8 @@ std::vector<geometry_msgs::PointStamped> ChainModel::project(
     p.p.y(data.observations[sensor_idx].features[i].point.y);
     p.p.z(data.observations[sensor_idx].features[i].point.z);
 
+    //std::cout << p.p.x() << "\t" << p.p.y() < "\t" << p.p.z() << std::endl;
+    //std::cout << data.observations[sensor_idx].features[i].point.x << "\t" << data.observations[sensor_idx].features[i].point.y << "\t" << data.observations[sensor_idx].features[i].point.z << std::endl;
     if (data.observations[sensor_idx].features[i].header.frame_id != tip_)
     {
       KDL::Frame p2(KDL::Frame::Identity());
@@ -91,6 +97,33 @@ std::vector<geometry_msgs::PointStamped> ChainModel::project(
       }
     }
 
+    p = fk * p;
+
+    points[i].point.x = p.p.x();
+    points[i].point.y = p.p.y();
+    points[i].point.z = p.p.z();
+  }
+
+  KDL::Frame fk1 = getChainFK(offsets, data.joint_states);
+
+  for (size_t i = 0; i < points.size(); ++i)
+  {
+    points[i].header.frame_id = "head_camera_rgb_optical_frame";  // fk returns point in root_ frame
+
+    KDL::Frame p(KDL::Frame::Identity());
+    p.p.x(points[i].point.x);//data.observations[sensor_idx].features[i].point.x);
+    p.p.y(points[i].point.y);//data.observations[sensor_idx].features[i].point.y);
+    p.p.z(points[i].point.z);//data.observations[sensor_idx].features[i].point.z);
+
+    if (data.observations[sensor_idx].features[i].header.frame_id != tip_)
+    {
+      KDL::Frame p2(KDL::Frame::Identity());
+      if (offsets.getFrame(data.observations[sensor_idx].features[i].header.frame_id, p2))
+      {
+        p = p2 * p;
+      }
+    }
+    fk = fk1.Inverse();
     p = fk * p;
 
     points[i].point.x = p.p.x();
@@ -130,6 +163,126 @@ KDL::Frame ChainModel::getChainFK(const CalibrationOffsetParser& offsets,
   }
   return p_out;
 }
+
+KDL::Frame ChainModel::getChainFKcam(const CalibrationOffsetParser& offsets,
+                                  const sensor_msgs::JointState& state)
+{
+  // FK from root to tip
+  KDL::Frame p_out = KDL::Frame::Identity();
+
+  // Step through joints
+  for (size_t i = 0; i < chaincam_.getNrOfSegments(); ++i)
+  {
+    std::string name = chaincam_.getSegment(i).getJoint().getName();
+    KDL::Frame correction;
+
+    // Apply any frame calibration
+    if (offsets.getFrame(name, correction))
+      p_out = p_out * correction;
+
+    // Apply any joint offset calibration
+    if (chaincam_.getSegment(i).getJoint().getType() != KDL::Joint::None)
+    {
+      double p = positionFromMsg(name, state) + offsets.get(name);
+      p_out = p_out * chaincam_.getSegment(i).pose(p);
+    }
+    else
+    {
+      p_out = p_out * chaincam_.getSegment(i).pose(0.0);
+    }
+  }
+  return p_out;
+}
+
+
+std::vector<geometry_msgs::PointStamped> ChainModel::project_(
+    const robot_calibration_msgs::CalibrationData& data,
+    const CalibrationOffsetParser& offsets)
+{
+  std::vector<geometry_msgs::PointStamped> points;
+
+  // Determine which observation to use
+  int sensor_idx = -1;
+  for (size_t obs = 0; obs < data.observations.size(); obs++)
+  {
+    if (data.observations[obs].sensor_name == name_)
+    {
+      sensor_idx = obs;
+      break;
+      std::cout << obs << "\t" << name_ << std::endl;
+    }
+  }
+
+  if (sensor_idx < 0)
+  {
+    // TODO: any sort of error message?
+    return points;
+  }
+
+  // Resize to match # of features
+  points.resize(data.observations[sensor_idx].features.size());
+
+  KDL::Frame fk = getChainFK(offsets, data.joint_states);
+
+  for (size_t i = 0; i < points.size(); ++i)
+  {
+    points[i].header.frame_id = "head_camera_rgb_optical_frame";//root_;  // fk returns point in root_ frame
+
+    KDL::Frame p(KDL::Frame::Identity());
+    p.p.x(data.observations[sensor_idx].features[i].point.x);
+    p.p.y(data.observations[sensor_idx].features[i].point.y);
+    p.p.z(data.observations[sensor_idx].features[i].point.z);
+
+    if (data.observations[sensor_idx].features[i].header.frame_id != tip_)
+    {
+      std::cout << "tip" << tip_ << std::endl;
+      std::cout << data.observations[sensor_idx].features[i].header.frame_id << std::endl;
+      KDL::Frame p2(KDL::Frame::Identity());
+      if (offsets.getFrame(data.observations[sensor_idx].features[i].header.frame_id, p2))
+      {
+        p = p2 * p;
+      }
+    }
+
+    p = fk * p;
+
+    
+
+   points[i].point.x = p.p.x();
+   points[i].point.y = p.p.y();
+   points[i].point.z = p.p.z();
+  }
+
+  KDL::Frame fk1 = getChainFKcam(offsets, data.joint_states);
+
+  for (size_t i = 0; i < points.size(); ++i)
+  {
+    //points[i].header.frame_id = "head_camera_rgb_optical_frame";  // fk returns point in root_ frame
+
+    KDL::Frame p(KDL::Frame::Identity());
+    p.p.x(points[i].point.x);
+    p.p.y(points[i].point.y);
+    p.p.z(points[i].point.z);
+
+    if (data.observations[sensor_idx].features[i].header.frame_id != "head_camera_rgb_optical_frame")//tip_)
+    {
+      KDL::Frame p2(KDL::Frame::Identity());
+      if (offsets.getFrame("head_camera_rgb_optical_frame", p2))//data.observations[sensor_idx].features[i].header.frame_id, p2))
+      {
+        p = p2 * p;
+      }
+    }
+    fk = fk1.Inverse();
+    p = fk * p;
+
+    points[i].point.x = p.p.x();//* new_camera_fx/p.p.z() + new_camera_cx;
+    points[i].point.y = p.p.y();//* new_camera_fy/p.p.z() + new_camera_cy;
+    points[i].point.z = p.p.z();///new_z_scaling - new_z_offset;
+  }
+
+  return points;
+}
+
 
 Camera3dModel::Camera3dModel(const std::string& name, KDL::Tree model, std::string root, std::string tip) :
     ChainModel(name, model, root, tip)
@@ -232,6 +385,118 @@ std::vector<geometry_msgs::PointStamped> Camera3dModel::project(
   return points;
 }
 
+Camera2dModel::Camera2dModel(const std::string& name, KDL::Tree model, std::string root, std::string tip) :
+      ChainModel(name, model, root, tip)
+{
+    // TODO add additional parameters for unprojecting observations using initial parameters
+    // 
+}
+    
+std::vector<geometry_msgs::PointStamped> Camera2dModel::project_(
+    const robot_calibration_msgs::CalibrationData& data,
+    std::vector<geometry_msgs::PointStamped> arm_pts,
+    const CalibrationOffsetParser& offsets)
+{
+  std::vector<geometry_msgs::PointStamped> points;
+
+  // Determine which observation to use
+  int sensor_idx = -1;
+  for (size_t obs = 0; obs < data.observations.size(); obs++)
+  {
+    if (data.observations[obs].sensor_name == name_)
+    {
+      sensor_idx = obs;
+      break;
+    }
+  }
+
+  if (sensor_idx < 0)
+  {
+    // TODO: any sort of error message?
+    return points;
+  }
+
+  // Get existing camera info
+  if (data.observations[sensor_idx].ext_camera_info.camera_info.P.size() != 12)
+    std::cerr << "Unexpected CameraInfo projection matrix size" << std::endl;
+
+  double camera_fx = data.observations[sensor_idx].ext_camera_info.camera_info.P[CAMERA_INFO_P_FX_INDEX];
+  double camera_fy = data.observations[sensor_idx].ext_camera_info.camera_info.P[CAMERA_INFO_P_FY_INDEX];
+  double camera_cx = data.observations[sensor_idx].ext_camera_info.camera_info.P[CAMERA_INFO_P_CX_INDEX];
+  double camera_cy = data.observations[sensor_idx].ext_camera_info.camera_info.P[CAMERA_INFO_P_CY_INDEX];
+
+  /*
+   * z_scale and z_offset defined in openni2_camera/src/openni2_driver.cpp
+   * new_depth_mm = (depth_mm + z_offset_mm) * z_scale
+   * NOTE: these work on integer values not floats
+   */
+  double z_offset = 0.0;
+  double z_scaling = 1.0;
+  for (size_t i = 0; i < data.observations[sensor_idx].ext_camera_info.parameters.size(); i++)
+  {
+    if (data.observations[sensor_idx].ext_camera_info.parameters[i].name == "z_scaling")
+    {
+      z_scaling = data.observations[sensor_idx].ext_camera_info.parameters[i].value;
+    }
+    else if (data.observations[sensor_idx].ext_camera_info.parameters[i].name == "z_offset_mm")
+    {
+      z_offset = data.observations[sensor_idx].ext_camera_info.parameters[i].value / 1000.0;  // (mm -> m)
+    }
+  }
+
+  // Get calibrated camera info
+  double new_camera_fx = camera_fx * (1.0 + offsets.get(name_+"_fx"));
+  double new_camera_fy = camera_fy * (1.0 + offsets.get(name_+"_fy"));
+  double new_camera_cx = camera_cx * (1.0 + offsets.get(name_+"_cx"));
+  double new_camera_cy = camera_cy * (1.0 + offsets.get(name_+"_cy"));
+  double new_z_offset = offsets.get(name_+"_z_offset");
+  double new_z_scaling = 1.0 + offsets.get(name_+"_z_scaling");
+
+  points.resize(data.observations[sensor_idx].features.size());
+
+  // Get position of camera frame
+  KDL::Frame fk = getChainFK(offsets, data.joint_states);
+
+  for (size_t i = 0; i < points.size(); ++i)
+  {
+    // TODO: warn if frame_id != tip?
+    double x = arm_pts[i].point.x;//data.observations[sensor_idx].features[i].point.x;
+    double y = arm_pts[i].point.y;//data.observations[sensor_idx].features[i].point.y;
+    double z = arm_pts[i].point.z;//data.observations[sensor_idx].features[i].point.z;
+
+    // Unproject through parameters stored at runtime
+//  double u = x * camera_fx / z + camera_cx;
+//  double v = y * camera_fy / z + camera_cy;
+//  double depth = z/z_scaling - z_offset;
+
+    KDL::Frame pt(KDL::Frame::Identity());
+
+    // Reproject through new calibrated parameters
+//  pt.p.z((depth + new_z_offset) * new_z_scaling);
+//  pt.p.x((u - new_camera_cx) * pt.p.z() / new_camera_fx);
+//  pt.p.y((v - new_camera_cy) * pt.p.z() / new_camera_fy);
+
+    pt.p.x(x);//arm_pts[i].point.x);
+    pt.p.y(y);//arm_pts[i].point.y);
+    pt.p.z(z);//arm_pts[i].point.z);
+    
+    // Project through fk
+    pt = fk * pt;
+
+    double depth = pt.p.z()/new_z_scaling - z_offset;
+    double u = pt.p.x() * new_camera_fx / pt.p.z() + camera_cx;
+    double v = pt.p.y() * new_camera_fy / pt.p.z() + camera_cy;
+
+
+
+    points[i].point.x = u;//pt.p.x();
+    points[i].point.y = v;//pt.p.y();
+    points[i].point.z = depth;//pt.p.z();
+    points[i].header.frame_id = root_;
+  }
+
+  return points;
+}
 KDL::Rotation rotation_from_axis_magnitude(const double x, const double y, const double z)
 {
   double magnitude = sqrt(x*x + y*y + z*z);

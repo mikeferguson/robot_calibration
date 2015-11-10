@@ -85,16 +85,14 @@ bool loadFeatureFinders(ros::NodeHandle& nh,
       finder.reset(new robot_calibration::CheckerboardFinder(finder_handle));
     }
     else if (type == "robot_calibration/GripperDepthFinder")
-    {std::cout << "buzzzz" << std::endl;
+    {  
       ROS_INFO("  New robot_calibration/GripperDepthFinder: %s", name.c_str());
       finder.reset(new robot_calibration::GripperDepthFinder(finder_handle));
     }
     else if (type == "robot_calibration/GripperColorFinder")
     {
       ROS_INFO("  New robot_calibration/GripperColorFinder: %s", name.c_str());
-      std::cout << "hi" << std::endl;
       finder.reset(new robot_calibration::GripperColorFinder(finder_handle));
-      std::cout << "hi1" << std::endl;
     }
     else
     {
