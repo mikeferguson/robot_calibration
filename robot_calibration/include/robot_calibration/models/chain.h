@@ -139,7 +139,7 @@ public:
                         const sensor_msgs::JointState& state);
 
   KDL::Frame getChainFKcam(const CalibrationOffsetParser& offsets,
-                              const sensor_msgs::JointState& state);
+                           const sensor_msgs::JointState& state);
 
 private:
   KDL::Chain chain_;

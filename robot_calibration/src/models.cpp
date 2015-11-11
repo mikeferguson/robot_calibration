@@ -25,7 +25,7 @@ namespace robot_calibration
 {
 
 double positionFromMsg(const std::string& name,
-                       const sensor_msgs::JointState& msg)
+    const sensor_msgs::JointState& msg)
 {
   for (size_t i = 0; i < msg.name.size(); ++i)
   {
@@ -39,7 +39,7 @@ double positionFromMsg(const std::string& name,
 }
 
 ChainModel::ChainModel(const std::string& name, KDL::Tree model, std::string root, std::string tip) :
-    root_(root), tip_(tip), name_(name)
+  root_(root), tip_(tip), name_(name)
 {
   // Create a KDL::Chain
   if (!model.getChain(root, tip, chain_))
@@ -135,7 +135,7 @@ std::vector<geometry_msgs::PointStamped> ChainModel::project(
 }
 
 KDL::Frame ChainModel::getChainFK(const CalibrationOffsetParser& offsets,
-                                  const sensor_msgs::JointState& state)
+    const sensor_msgs::JointState& state)
 {
   // FK from root to tip
   KDL::Frame p_out = KDL::Frame::Identity();
@@ -165,7 +165,7 @@ KDL::Frame ChainModel::getChainFK(const CalibrationOffsetParser& offsets,
 }
 
 KDL::Frame ChainModel::getChainFKcam(const CalibrationOffsetParser& offsets,
-                                  const sensor_msgs::JointState& state)
+    const sensor_msgs::JointState& state)
 {
   // FK from root to tip
   KDL::Frame p_out = KDL::Frame::Identity();
@@ -246,11 +246,11 @@ std::vector<geometry_msgs::PointStamped> ChainModel::project_(
 
     p = fk * p;
 
-    
 
-   points[i].point.x = p.p.x();
-   points[i].point.y = p.p.y();
-   points[i].point.z = p.p.z();
+
+    points[i].point.x = p.p.x();
+    points[i].point.y = p.p.y();
+    points[i].point.z = p.p.z();
   }
 
   KDL::Frame fk1 = getChainFKcam(offsets, data.joint_states);
@@ -285,7 +285,7 @@ std::vector<geometry_msgs::PointStamped> ChainModel::project_(
 
 
 Camera3dModel::Camera3dModel(const std::string& name, KDL::Tree model, std::string root, std::string tip) :
-    ChainModel(name, model, root, tip)
+  ChainModel(name, model, root, tip)
 {
   // TODO add additional parameters for unprojecting observations using initial parameters
 }
@@ -386,12 +386,12 @@ std::vector<geometry_msgs::PointStamped> Camera3dModel::project(
 }
 
 Camera2dModel::Camera2dModel(const std::string& name, KDL::Tree model, std::string root, std::string tip) :
-      ChainModel(name, model, root, tip)
+  ChainModel(name, model, root, tip)
 {
-    // TODO add additional parameters for unprojecting observations using initial parameters
-    // 
+  // TODO add additional parameters for unprojecting observations using initial parameters
+  // 
 }
-    
+
 std::vector<geometry_msgs::PointStamped> Camera2dModel::project_(
     const robot_calibration_msgs::CalibrationData& data,
     std::vector<geometry_msgs::PointStamped> arm_pts,
@@ -465,21 +465,21 @@ std::vector<geometry_msgs::PointStamped> Camera2dModel::project_(
     double z = arm_pts[i].point.z;//data.observations[sensor_idx].features[i].point.z;
 
     // Unproject through parameters stored at runtime
-//  double u = x * camera_fx / z + camera_cx;
-//  double v = y * camera_fy / z + camera_cy;
-//  double depth = z/z_scaling - z_offset;
+    //  double u = x * camera_fx / z + camera_cx;
+    //  double v = y * camera_fy / z + camera_cy;
+    //  double depth = z/z_scaling - z_offset;
 
     KDL::Frame pt(KDL::Frame::Identity());
 
     // Reproject through new calibrated parameters
-//  pt.p.z((depth + new_z_offset) * new_z_scaling);
-//  pt.p.x((u - new_camera_cx) * pt.p.z() / new_camera_fx);
-//  pt.p.y((v - new_camera_cy) * pt.p.z() / new_camera_fy);
+    //  pt.p.z((depth + new_z_offset) * new_z_scaling);
+    //  pt.p.x((u - new_camera_cx) * pt.p.z() / new_camera_fx);
+    //  pt.p.y((v - new_camera_cy) * pt.p.z() / new_camera_fy);
 
     pt.p.x(x);//arm_pts[i].point.x);
     pt.p.y(y);//arm_pts[i].point.y);
     pt.p.z(z);//arm_pts[i].point.z);
-    
+
     // Project through fk
     pt = fk * pt;
 
@@ -505,9 +505,9 @@ KDL::Rotation rotation_from_axis_magnitude(const double x, const double y, const
     return KDL::Rotation::Quaternion(0.0, 0.0, 0.0, 1.0);
 
   return KDL::Rotation::Quaternion(x/magnitude * sin(magnitude/2.0),
-                                   y/magnitude * sin(magnitude/2.0),
-                                   z/magnitude * sin(magnitude/2.0),
-                                   cos(magnitude/2.0));
+      y/magnitude * sin(magnitude/2.0),
+      z/magnitude * sin(magnitude/2.0),
+      cos(magnitude/2.0));
 }
 
 void axis_magnitude_from_rotation(const KDL::Rotation& r, double& x, double& y, double& z)
