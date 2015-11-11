@@ -198,7 +198,7 @@ std::vector<geometry_msgs::PointStamped> ChainModel::project_(
 
   for (size_t i = 0; i < points.size(); ++i)
   {
-    points[i].header.frame_id = "head_camera_rgb_optical_frame";//root_;  // fk returns point in root_ frame
+    points[i].header.frame_id = "base_link";//"head_camera_rgb_optical_frame";//root_;  // fk returns point in root_ frame
     //std::cout << data.observations[sensor_idx].features[i].point.x << "\t" << data.observations[sensor_idx].features[i].point.y << "\t" << data.observations[sensor_idx].features[i].point.z << std::endl;
     KDL::Frame p(KDL::Frame::Identity());
     p.p.x(data.observations[sensor_idx].features[i].point.x);
@@ -236,17 +236,25 @@ std::vector<geometry_msgs::PointStamped> ChainModel::project_(
     p.p.y(points[i].point.y);
     p.p.z(points[i].point.z);
 
-    if (data.observations[sensor_idx].features[i].header.frame_id != "head_camera_rgb_optical_frame")//tip_)
+    fk = fk1.Inverse();
+    p = fk * p;
+
+    KDL::Frame p1(KDL::Frame::Identity());
+
+    //if (data.observations[sensor_idx].features[i].header.frame_id != "head_camera_rgb_optical_frame")//tip_)
+    if(points[i].header.frame_id != "head_camera_rgb_optical_frame")
     {
       KDL::Frame p2(KDL::Frame::Identity());
       if (offsets.getFrame("head_camera_rgb_optical_frame", p2))//data.observations[sensor_idx].features[i].header.frame_id, p2))
       {
-        p = p2 * p;
+        p1 = p2 * p1;
       }
     }
-    fk = fk1.Inverse();
-    p = fk * p;
-
+    //fk = fk1.Inverse();
+    //p = fk * p;
+    p1 = p1.Inverse();
+    p = p1 * p;
+    points[i].header.frame_id = "head_camera_rgb_optical_frame";
     points[i].point.x = p.p.x();//* new_camera_fx/p.p.z() + new_camera_cx;
     points[i].point.y = p.p.y();//* new_camera_fy/p.p.z() + new_camera_cy;
     points[i].point.z = p.p.z();///new_z_scaling - new_z_offset;
