@@ -55,7 +55,7 @@ class GripperColorFinder : public FeatureFinder
      */
     bool process(sensor_msgs::Image& image,
                  sensor_msgs::Image& prev,
-                 //geometry_msgs::Point& led_point,
+                 geometry_msgs::PointStamped led_point,
                  double max_distance,
                  double weight);
 
