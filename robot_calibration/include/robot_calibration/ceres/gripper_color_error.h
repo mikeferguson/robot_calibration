@@ -67,10 +67,6 @@ struct GripperColorError
     // Update calibration offsets based on free params
     offsets_->update(free_params[0]);
 
-    // Project the camera observations
-    //std::vector<geometry_msgs::PointStamped> camera_pts =
-    //    camera_model_->project(data_, *offsets_);
-
     // Project the arm estimation
     std::vector<geometry_msgs::PointStamped> arm_pts =
         arm_model_->project_(data_, *offsets_);
@@ -79,27 +75,14 @@ struct GripperColorError
     std::vector<geometry_msgs::PointStamped> camera_pts =
          camera_model_->project_(data_,arm_pts, *offsets_);
 
-//    if (camera_pts.size() != arm_pts.size())
-//    {
-//      std::cerr << "Camera observation does not match arm estimation in size." << std::endl;
-//      return false;
-//    }
-    //std::cout << "x" << camera_pts[1].point.x << "\t" << data_.observations[0].features[1].point.x << std::endl;
-    //std::cout << "y" << camera_pts[1].point.y << "\t" << data_.observations[0].features[1].point.y << std::endl;
-
     // Compute residuals
     for (size_t i = 0; i < camera_pts.size(); ++i)
     {
-//      if (camera_pts[i].header.frame_id != arm_pts[i].header.frame_id)
-//        std::cerr << "Projected observation frame_id does not match projected estimate." << std::endl;
-     // std::cout << "x" << camera_pts[i].point.x << "\t" << data_.observations[0].features[i].point.x << std::endl;
-     // std::cout << "y" << camera_pts[i].point.y << "\t" << data_.observations[0].features[i].point.y << std::endl;
 
+      //std::cout << "x" << camera_pts[i].point.x << "\t" << data_.observations[0].features[i].point.x << std::endl;
+      //std::cout << "y" << camera_pts[i].point.y << "\t" << data_.observations[0].features[i].point.y << std::endl;
       residuals[(2*i)+0] = camera_pts[i].point.x - data_.observations[0].features[i].point.x;
-      
-      //arm_pts[i].point.x;      
-      residuals[(2*i)+1] = camera_pts[i].point.y - data_.observations[0].features[i].point.y;//arm_pts[i].point.y;
-//      residuals[(3*i)+2] = camera_pts[i].point.z - arm_pts[i].point.z;
+      residuals[(2*i)+1] = camera_pts[i].point.y - data_.observations[0].features[i].point.y;
     }
 
     return true;  // always return true
