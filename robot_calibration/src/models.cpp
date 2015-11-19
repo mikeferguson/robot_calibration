@@ -86,7 +86,8 @@ std::vector<geometry_msgs::PointStamped> ChainModel::project(
     p.p.x(data.observations[sensor_idx].features[i].point.x);
     p.p.y(data.observations[sensor_idx].features[i].point.y);
     p.p.z(data.observations[sensor_idx].features[i].point.z);
-
+    std::cout << "BEFORE" << std::endl;
+    std:: cout << p.p.x() << "\t" << p.p.y() << "\t" << p.p.z() << std::endl;
 //    std::cout << "tip" << tip_ << std::endl;
 //    std::cout << data.observations[sensor_idx].features[i].header.frame_id << std::endl;
     if (data.observations[sensor_idx].features[i].header.frame_id != tip_)
@@ -100,7 +101,8 @@ std::vector<geometry_msgs::PointStamped> ChainModel::project(
         p = p2 * p;
       }
     }
-
+    std::cout << "AFTER" << std::endl;
+    std:: cout << p.p.x() << "\t" << p.p.y() << "\t" << p.p.z() << std::endl;
     p = fk * p;
 
     points[i].point.x = p.p.x();
@@ -213,6 +215,8 @@ std::vector<geometry_msgs::PointStamped> ChainModel::project_(
     p.p.y(data.observations[sensor_idx].features[i].point.y);
     p.p.z(data.observations[sensor_idx].features[i].point.z);
 
+//    std::cout << "BEFORE" << std::endl;
+
     if (data.observations[sensor_idx].features[i].header.frame_id != tip_)
     {
       std::cout << "tip" << tip_ << std::endl;
@@ -252,16 +256,20 @@ std::vector<geometry_msgs::PointStamped> ChainModel::project_(
     p = fk * p;
 
     KDL::Frame p1(KDL::Frame::Identity());
+    //std::cout << "before" << "\t" << p1.p.x() << "\t" << p1.p.y() << "\t" << p1.p.z() << std::endl;
 
     //if (data.observations[sensor_idx].features[i].header.frame_id != "head_camera_rgb_optical_frame")//tip_)
     if(points[i].header.frame_id != "head_camera_rgb_optical_frame")
-    {
+    { //std::cout << "hi" << std::endl;
       KDL::Frame p2(KDL::Frame::Identity());
-      if (offsets.getFrame("head_camera_rgb_optical_frame", p2))//data.observations[sensor_idx].features[i].header.frame_id, p2))
+      if (offsets.getFrame("head_camera_rgb_joint", p2))//data.observations[sensor_idx].features[i].header.frame_id, p2))
       {
+       // std::cout << p2.p.x() << "\t" << p2.p.y() << "\t" << p2.p.z() << std::endl;
+
         p1 = p2 * p1;
       }
     }
+    //std::cout << "after" << "\t" << p1.p.x() << "\t" << p1.p.y() << "\t" << p1.p.z() << std::endl;
     //fk = fk1.Inverse();
     //p = fk * p;
     p1 = p1.Inverse();
@@ -460,31 +468,31 @@ std::vector<geometry_msgs::PointStamped> Camera2dModel::project_(
     double x = arm_pts[i].point.x;//data.observations[sensor_idx].features[i].point.x;
     double y = arm_pts[i].point.y;//data.observations[sensor_idx].features[i].point.y;
     double z = arm_pts[i].point.z;//data.observations[sensor_idx].features[i].point.z;
-
+    //std::cout << x << "\t" << y << "\t" << z << std::endl;
     // Unproject through parameters stored at runtime
-    //  double u = x * camera_fx / z + camera_cx;
-    //  double v = y * camera_fy / z + camera_cy;
-    //  double depth = z/z_scaling - z_offset;
+      double u = x * new_camera_fx / z + new_camera_cx;
+      double v = y * new_camera_fy / z + new_camera_cy;
+      double depth = z/new_z_scaling - new_z_offset;
 
     KDL::Frame pt(KDL::Frame::Identity());
-
+/*
     // Reproject through new calibrated parameters
-    //  pt.p.z((depth + new_z_offset) * new_z_scaling);
-    //  pt.p.x((u - new_camera_cx) * pt.p.z() / new_camera_fx);
-    //  pt.p.y((v - new_camera_cy) * pt.p.z() / new_camera_fy);
+      pt.p.z((depth + new_z_offset) * new_z_scaling);
+      pt.p.x((u - new_camera_cx) * pt.p.z() / new_camera_fx);
+      pt.p.y((v - new_camera_cy) * pt.p.z() / new_camera_fy);
 
-    pt.p.x(x);//arm_pts[i].point.x);
-    pt.p.y(y);//arm_pts[i].point.y);
-    pt.p.z(z);//arm_pts[i].point.z);
+    //pt.p.x(x);//arm_pts[i].point.x);
+    //pt.p.y(y);//arm_pts[i].point.y);
+    //pt.p.z(z);//arm_pts[i].point.z);
 
     // Project through fk
-    pt = fk * pt;
+    //pt = fk.Inverse() * pt;
+    
 
-    double depth = pt.p.z()/z_scaling - z_offset;
-    double u = pt.p.x() * new_camera_fx / pt.p.z() + new_camera_cx;
-    double v = pt.p.y() * new_camera_fy / pt.p.z() + new_camera_cy;
-
-
+     depth = pt.p.z()/z_scaling - z_offset;
+     u = pt.p.x() * new_camera_fx / pt.p.z() + new_camera_cx;
+     v = pt.p.y() * new_camera_fy / pt.p.z() + new_camera_cy;
+*/
 
     points[i].point.x = u;//pt.p.x();
     points[i].point.y = v;//pt.p.y();

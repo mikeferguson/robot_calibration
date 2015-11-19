@@ -371,8 +371,8 @@ bool GripperColorFinder::CloudDifferenceTracker::process(
   {
     // If within range of LED pose... do this later
     
-    double m = i/image.width;
-    double n = i%image.width;
+    double m = i / image.width;
+    double n = i % image.width;
     //std::cout << world_pt.point.x << "\t" << world_pt.point.y << "\t" << world_pt.point.z << "\t" << std::endl;
     //double u = 574.052 * world_pt.point.x/world_pt.point.z + 319.5;
     //double v = 574.052 * world_pt.point.y/world_pt.point.z + 239.5;
@@ -387,15 +387,17 @@ bool GripperColorFinder::CloudDifferenceTracker::process(
 
     //double m = i/image.width;
     //double n = i%image.height;
-    if ( distance_x < 1000 && distance_y <1000)
-    {
-      double b = (double)(color[0].at<float>(m,n)) - (double)(prev_color[0].at<float>(m,n));
-      double g = (double)(color[1].at<float>(m,n)) - (double)(prev_color[1].at<float>(m,n));
-      double r = (double)(color[2].at<float>(m,n)) - (double)(prev_color[2].at<float>(m,n));
 
-      //double b = (double)(color[0].at<uint8_t>(m,n)) - (double)(prev_color[0].at<uint8_t>(m,n));
-      //double g = (double)(color[1].at<uint8_t>(m,n)) - (double)(prev_color[1].at<uint8_t>(m,n));
-      //double r = (double)(color[2].at<uint8_t>(m,n)) - (double)(prev_color[2].at<uint8_t>(m,n));
+    //appx 15 pixel radius
+    if ( distance_x < 250 && distance_y <250)
+    {
+//      double b = (double)(color[0].at<float>(m,n)) - (double)(prev_color[0].at<float>(m,n));
+//      double g = (double)(color[1].at<float>(m,n)) - (double)(prev_color[1].at<float>(m,n));
+//      double r = (double)(color[2].at<float>(m,n)) - (double)(prev_color[2].at<float>(m,n));
+
+      double b = (double)(color[0].at<uint8_t>(m,n)) - (double)(prev_color[0].at<uint8_t>(m,n));
+      double g = (double)(color[1].at<uint8_t>(m,n)) - (double)(prev_color[1].at<uint8_t>(m,n));
+      double r = (double)(color[2].at<uint8_t>(m,n)) - (double)(prev_color[2].at<uint8_t>(m,n));
       //std::cout << cv_ptr->image.at<float>(m,n) << std::endl; 
       /*std::cout << m << ',' << n << " \t "
         << (double)(color[0].at<uint8_t>(m,n)) << '\t'
@@ -460,8 +462,8 @@ bool GripperColorFinder::CloudDifferenceTracker::getRefinedCentroid(
       double dx = m - centroid.point.x;
       double dy = n - centroid.point.y;
       std::cout << "dx" << dx << "dy" << dy << std::endl;
-      // That are less than appx 30 pixels from the max point 
-      if ((dx*dx) <1000 && (dy*dy) < 1000)
+      // That are less than appx 3 pixels from the max point 
+      if ((dx*dx) <10 && (dy*dy) < 10)
       {
         //std::cout << "m" << m << "n" << n << std::endl;
 

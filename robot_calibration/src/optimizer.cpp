@@ -98,7 +98,7 @@ int Optimizer::optimize(OptimizationParams& params,
     }
     else if (params.models[i].type == "camera2d")
     {
-      ROS_INFO_STREAM("Creating camera3d '" << params.models[i].name << "' in frame " <<
+      ROS_INFO_STREAM("Creating camera2d '" << params.models[i].name << "' in frame " <<
           params.models[i].params["frame"]);
       Camera2dModel* model = new Camera2dModel(params.models[i].name, tree_, params.base_link, params.models[i].params["frame"]);
       models_[params.models[i].name] = model;
