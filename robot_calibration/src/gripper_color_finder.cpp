@@ -20,8 +20,8 @@
 #include <sensor_msgs/point_cloud2_iterator.h>
 #include <sensor_msgs/image_encodings.h>
 
-//namespace robot_calibration
-//{
+namespace robot_calibration
+{
 
 GripperColorFinder::GripperColorFinder(ros::NodeHandle& nh) :
   FeatureFinder(nh),
@@ -197,10 +197,10 @@ bool GripperColorFinder::find(robot_calibration_msgs::CalibrationData * msg)
     bool done = true;
     for (size_t t = 0; t < trackers_.size(); ++t)
     {
-      done &= trackers_[t].isFound(image_, threshold_);
+      done = done && trackers_[t].isFound(image_, 300);
     }
     // We want to break only if the LED is off, so that pixel is not washed out
-    if (done && (weight == -1))
+    if (done && (weight < 0))
     {
       break;
     }
@@ -213,7 +213,7 @@ bool GripperColorFinder::find(robot_calibration_msgs::CalibrationData * msg)
     tf::TransformListener listener;
     ros::Time time_;
     time_ = ros::Time(0);
-    
+
     try
     {
       listener.waitForTransform("/wrist_roll_link","/head_camera_rgb_optical_frame" , time_, ros::Duration(3.0));
@@ -224,10 +224,10 @@ bool GripperColorFinder::find(robot_calibration_msgs::CalibrationData * msg)
       ROS_ERROR_STREAM("Failed to transform feature to " );//<< trackers_[t].frame_);
       return false;
     }
-    
+
     double u = 574.052 * world_pt.point.x/world_pt.point.z + 319.5;
     double v = 574.052 * world_pt.point.y/world_pt.point.z + 239.5;
-    std::cout << u << "\t" << v << std::endl;
+//    std::cout << u << "\t" << v << std::endl;
     led.point.x = u;
     led.point.y = v;
     led.point.z = 0;
@@ -238,7 +238,7 @@ bool GripperColorFinder::find(robot_calibration_msgs::CalibrationData * msg)
       ROS_ERROR("Failed to find features before using maximum iterations.");
       return false;
     }
-
+    
     prev_image = image_;
   }
   // Export results
@@ -251,22 +251,59 @@ bool GripperColorFinder::find(robot_calibration_msgs::CalibrationData * msg)
     geometry_msgs::PointStamped rgbd_pt;
     geometry_msgs::PointStamped world_pt;
     geometry_msgs::PointStamped world_point;
-
+//std::cout << "t" << t << std::endl;
     // rgbd_pt.x  = trackers_[t];
     if (!trackers_[t].getRefinedCentroid(image_, rgbd_pt))
     {
       ROS_ERROR_STREAM("No centroid for feature " << t);
       return false;
     }
+  
+    geometry_msgs::PointStamped led;
+    led.point = trackers_[t].point_;
+    led.header.frame_id = "wrist_roll_link";//trackers_[tracker].frame_;
+
+  //  geometry_msgs::PointStamped world_pt;
+    tf::TransformListener listener;
+    ros::Time time_;
+    time_ = ros::Time(0);
+
+    try
+    {
+      listener.waitForTransform("/wrist_roll_link","/head_camera_rgb_optical_frame" , time_, ros::Duration(3.0));
+      listener.transformPoint("/head_camera_rgb_optical_frame", time_, led , "/wrist_roll_link", world_pt);
+    }
+    catch(const tf::TransformException &ex)
+    {
+      ROS_ERROR_STREAM("Failed to transform feature to " );//<< trackers_[t].frame_);
+      return false;
+    }
+
+    double u = 574.052 * world_pt.point.x/world_pt.point.z + 319.5;
+    double v = 574.052 * world_pt.point.y/world_pt.point.z + 239.5;
+
+//std::cout << "u" << u << "rgbd_pt.point.x" << rgbd_pt.point.x << std::endl;
+    float distance_x = sqrt((rgbd_pt.point.x - v) * (rgbd_pt.point.x - v));
+    float distance_y = sqrt((rgbd_pt.point.y - u) * (rgbd_pt.point.y - u));
+    if (distance_x > 30 || distance_y > 30)
+    {  
+      ROS_ERROR_STREAM("Feature was too far away from expected pose in"  << distance_x << "\t" << distance_y);
+      return false;
+   }
 
     msg->observations[0].features.push_back(rgbd_pt);
     msg->observations[0].ext_camera_info = depth_camera_manager_.getDepthCameraInfo();
-    
+
     world_point.point = trackers_[t].point_;
     world_point.header.frame_id = "wrist_roll_link";
-  
+
     msg->observations[1].features.push_back(world_point);
     msg->observations[1].ext_camera_info = depth_camera_manager_.getDepthCameraInfo();
+
+    std::cout << "u" << (rgbd_pt.point.y - u) << std::endl;
+    std::cout << "v" << (rgbd_pt.point.x - v) << std::endl;
+    //std::cout << rgbd_pt.point.x << std::endl;
+    //std::cout << rgbd_pt.point.y << std::endl;
 
   } 
   return true;
@@ -319,7 +356,7 @@ bool GripperColorFinder::CloudDifferenceTracker::process(
   // We want to compare each point to the expected LED pose,
   // but when the LED is on, the points will be NAN,
   // fall back on most recent distance for these points
-  std::cout << "image" << std::endl; 
+ 
   cv_bridge::CvImagePtr cv_ptr;
   cv_bridge::CvImagePtr cv_ptr_prev;
   try
@@ -340,23 +377,23 @@ bool GripperColorFinder::CloudDifferenceTracker::process(
   //double last_distance = 1000.0;
 
   // Update each point in the tracker
-  
+
   int valid = 0;
   int used = 0;
   for (size_t i = 0; i < (image.height*image.width); i++)
   {
     // If within range of LED pose... do this later
-    
+
     double m = i / image.width;
     double n = i % image.width;
-   
+
     double u = led_point.point.x;
     double v = led_point.point.y;
     double distance_x = (u - n) * (u-n);
     double distance_y = (v-m) * (v-m);
-    
+
     //appx 15 pixel radius
-    if ( distance_x < 250 && distance_y <250)
+    if ( distance_x < 1000 && distance_y <1000)
     {
       double b = (double)(color[0].at<uint8_t>(m,n)) - (double)(prev_color[0].at<uint8_t>(m,n));
       double g = (double)(color[1].at<uint8_t>(m,n)) - (double)(prev_color[1].at<uint8_t>(m,n));
@@ -378,7 +415,7 @@ bool GripperColorFinder::CloudDifferenceTracker::process(
       {
         max_ = diff_[i];
         max_idx_ = i;
-        std::cout << "max" << max_ << std::endl;
+ //       std::cout << "max" << max_ << std::endl;
       }
     }}
   return true;
@@ -392,9 +429,9 @@ bool GripperColorFinder::CloudDifferenceTracker::getRefinedCentroid(
   centroid.header = image.header;
   centroid.point.x =  max_idx_ / image.width;
   centroid.point.y =  max_idx_ % image.width;
-  std::cout << "centroid" << std::endl;
-  std::cout << centroid.point.x << std::endl;
-  std::cout << centroid.point.y << std::endl;
+  //std::cout << "centroid" << std::endl;
+  //std::cout << centroid.point.x << std::endl;
+  //std::cout << centroid.point.y << std::endl;
   // Get a better centroid
   int points = 0;
   double sum_x = 0.0;
@@ -407,10 +444,10 @@ bool GripperColorFinder::CloudDifferenceTracker::getRefinedCentroid(
     {
       double m = i/image.width;
       double n = i%image.width;
- 
+
       double dx = m - centroid.point.x;
       double dy = n - centroid.point.y;
-      std::cout << "dx" << dx << "dy" << dy << std::endl;
+      //std::cout << "dx" << dx << "dy" << dy << std::endl;
       // That are less than appx 3 pixels from the max point 
       if ((dx*dx) <10 && (dy*dy) < 10)
       {

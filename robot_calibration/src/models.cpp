@@ -233,7 +233,7 @@ std::vector<geometry_msgs::PointStamped> ChainModel::project_(
     fk = fk1.Inverse();
     p = fk * p;
 
-    KDL::Frame p1(KDL::Frame::Identity());
+/*    KDL::Frame p1(KDL::Frame::Identity());
 
     if(points[i].header.frame_id != "head_camera_rgb_optical_frame")
     { 
@@ -245,7 +245,7 @@ std::vector<geometry_msgs::PointStamped> ChainModel::project_(
     }
 
     p1 = p1.Inverse();
-    p = p1 * p;
+    p = p1 * p;*/
     points[i].header.frame_id = "head_camera_rgb_optical_frame";
     points[i].point.x = p.p.x();
     points[i].point.y = p.p.y();
@@ -320,7 +320,7 @@ std::vector<geometry_msgs::PointStamped> Camera3dModel::project(
   double new_camera_cy = camera_cy * (1.0 + offsets.get(name_+"_cy"));
   double new_z_offset = offsets.get(name_+"_z_offset");
   double new_z_scaling = 1.0 + offsets.get(name_+"_z_scaling");
-
+  std::cout << "name" << name_ << std::endl;
   points.resize(data.observations[sensor_idx].features.size());
 
   // Get position of camera frame
@@ -425,7 +425,7 @@ std::vector<geometry_msgs::PointStamped> Camera2dModel::project_(
   double new_camera_cy = camera_cy * (1.0 + offsets.get(name_+"_cy"));
   double new_z_offset = offsets.get(name_+"_z_offset");
   double new_z_scaling = 1.0 + offsets.get(name_+"_z_scaling");
-
+  //std::cout << "name" << name_ << std::endl;
   points.resize(data.observations[sensor_idx].features.size());
 
   // Get position of camera frame

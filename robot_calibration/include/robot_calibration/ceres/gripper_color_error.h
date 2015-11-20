@@ -78,11 +78,11 @@ struct GripperColorError
     // Compute residuals
     for (size_t i = 0; i < camera_pts.size(); ++i)
     {
-
-      //std::cout << "x" << camera_pts[i].point.x << "\t" << data_.observations[0].features[i].point.x << std::endl;
-      //std::cout << "y" << camera_pts[i].point.y << "\t" << data_.observations[0].features[i].point.y << std::endl;
-      residuals[(2*i)+0] = camera_pts[i].point.x - data_.observations[0].features[i].point.x;
-      residuals[(2*i)+1] = camera_pts[i].point.y - data_.observations[0].features[i].point.y;
+//      std::cout <<"camera_pts" << camera_pts.size() << std::endl;
+     // std::cout << "x" << camera_pts[i].point.x << "\t" << data_.observations[0].features[i].point.x << std::endl;
+     // std::cout << "y" << camera_pts[i].point.y << "\t" << data_.observations[0].features[i].point.y << std::endl;
+      residuals[(2*i)+0] = camera_pts[i].point.x - data_.observations[0].features[i].point.y;
+      residuals[(2*i)+1] = camera_pts[i].point.y - data_.observations[0].features[i].point.x;
     }
 
     return true;  // always return true
