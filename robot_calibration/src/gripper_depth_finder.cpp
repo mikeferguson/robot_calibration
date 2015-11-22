@@ -128,7 +128,7 @@ bool GripperDepthFinder::find(robot_calibration_msgs::CalibrationData * msg)
 
   // erode the image to break the connection between the gripper fingers and the gripper plane
   cv::erode(cv_ptr->image, cv_ptr->image, cv::Mat(), cv::Point(-1, -1), 10);
-
+  std::cout << "depth" << std::endl;
   float dx;
   float dy;
 
@@ -427,10 +427,10 @@ bool GripperDepthFinder::find(robot_calibration_msgs::CalibrationData * msg)
 //  cv::Vec3f point_on_plane_3( 5.25, 10.5, 0.035);
 //  cv::Vec3f point_on_plane_4(-5.25, 10.5, 0.035);
 
-  cv::Vec3f point_on_plane_1( 0, -6.25, 0.0396);
-  cv::Vec3f point_on_plane_2( 0, 6.25, 0.0396);
-  cv::Vec3f point_on_plane_3( 12, 6.25, 0.0396);
-  cv::Vec3f point_on_plane_4( 12, -6.25, 0.0396);
+  cv::Vec3f point_on_plane_1( 0, -0.0625, 0.0396);
+  cv::Vec3f point_on_plane_2( 0, 0.0625, 0.0396);
+  cv::Vec3f point_on_plane_3( 0.12, 0.0625, 0.0396);
+  cv::Vec3f point_on_plane_4( 0.12, -0.0625, 0.0396);
 
   cv::Mat points_on_plane;
   points_on_plane.push_back(point_on_plane_1);
@@ -460,6 +460,7 @@ bool GripperDepthFinder::find(robot_calibration_msgs::CalibrationData * msg)
 
  //   std::cout << points_on_plane.at<cv::Vec3f>(i,0)[0] << std::endl;
     msg->observations[1].features.push_back(rgbd_pt);
+  //  std::cout << rgbd_pt.point.x << "\t" << rgbd_pt.point.y << "\t" << rgbd_pt.point.z << std::endl;
   }
 
   try
@@ -602,6 +603,8 @@ bool GripperDepthFinder::find(robot_calibration_msgs::CalibrationData * msg)
  //     else
    //   {
       msg->observations[0].features.push_back(rgbd_pt);
+    //      std::cout << rgbd_pt.point.x << "\t" << rgbd_pt.point.y << "\t" << rgbd_pt.point.z << std::endl;
+
      // }
 
 

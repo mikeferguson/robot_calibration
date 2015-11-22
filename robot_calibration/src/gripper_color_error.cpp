@@ -47,17 +47,9 @@ GripperColorFinder::GripperColorFinder(ros::NodeHandle& nh) :
   // Publish where LEDs were seen
   publisher_ = nh.advertise<sensor_msgs::PointCloud2>("led_points", 10);
 
-  // Maximum distance LED can be from expected pose
- // nh.param<double>("max_error", max_error_, 0.1);
-  // Maximum relative difference between two LEDs
-//  nh.param<double>("max_inconsistency", max_inconsistency_, 0.01);
-
   // Parameters for detection
   nh.param<double>("threshold", threshold_, 1000.0);
   nh.param<int>("max_iterations", max_iterations_, 50);
-
-  // Should we output debug image/cloud
- // nh.param<bool>("debug", output_debug_, false);
 
   // Get sensor names
   nh.param<std::string>("camera_sensor_name", camera_sensor_name_, "camera");

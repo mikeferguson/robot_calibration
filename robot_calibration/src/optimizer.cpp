@@ -230,8 +230,8 @@ int Optimizer::optimize(OptimizationParams& params,
       {
         std::string camera_name = static_cast<std::string>(params.error_blocks[j].params["camera"]);
         std::string gripper_name = static_cast<std::string>(params.error_blocks[j].params["gripper"]);
-        //  std::cout << camera_name << std::endl;
-        //  std::cout << gripper_name <<std::endl;
+          std::cout << camera_name << std::endl;
+          std::cout << gripper_name <<std::endl;
         //  std::cout <<"before error block" << std::endl;
         // Check that this sample has the required features/observations
         if (!hasSensor(data[i], camera_name) || !hasSensor(data[i], gripper_name))
@@ -271,8 +271,8 @@ int Optimizer::optimize(OptimizationParams& params,
       {
         std::string camera_name = static_cast<std::string>(params.error_blocks[j].params["camera"]);
         std::string gripper_name = static_cast<std::string>(params.error_blocks[j].params["gripper"]);
-        //std::cout << camera_name << std::endl;
-        //std::cout << gripper_name <<std::endl;
+        std::cout << camera_name << std::endl;
+        std::cout << gripper_name <<std::endl;
         //std::cout <<"before error block" << std::endl;
         // Check that this sample has the required features/observations
         if (!hasSensor(data[i], camera_name) || !hasSensor(data[i], gripper_name))

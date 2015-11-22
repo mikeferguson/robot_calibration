@@ -325,10 +325,10 @@ int main(int argc, char** argv)
     depth_name << "/tmp/depth_" << datecode << ".yaml";
     camera_calibration_parsers::writeCalibration(depth_name.str(), "",
         robot_calibration::updateCameraInfo(
-                         opt.getOffsets()->get("camerargb_fx"),
-                         opt.getOffsets()->get("camerargb_fy"),
-                         opt.getOffsets()->get("camerargb_cx"),
-                         opt.getOffsets()->get("camerargb_cy"),
+                         opt.getOffsets()->get("cameradepth_fx"),
+                         opt.getOffsets()->get("cameradepth_fy"),
+                         opt.getOffsets()->get("cameradepth_cx"),
+                         opt.getOffsets()->get("cameradepth_cy"),
                          data[0].observations[0].ext_camera_info.camera_info));  // TODO avoid hardcoding index
 
     std::stringstream rgb_name;

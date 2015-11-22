@@ -62,7 +62,7 @@ std::vector<geometry_msgs::PointStamped> ChainModel::project(
     if (data.observations[obs].sensor_name == name_)
     {
       sensor_idx = obs;
-      std::cout << "sensor_idx" << sensor_idx <<  std::endl;
+//      std::cout << "sensor_idx" << sensor_idx <<  std::endl;
       break;
     }
   }
@@ -212,7 +212,7 @@ std::vector<geometry_msgs::PointStamped> ChainModel::project_(
       {
         p = p2 * p;
       }
-    }
+    } 
 
     p = fk * p;
 
@@ -320,7 +320,7 @@ std::vector<geometry_msgs::PointStamped> Camera3dModel::project(
   double new_camera_cy = camera_cy * (1.0 + offsets.get(name_+"_cy"));
   double new_z_offset = offsets.get(name_+"_z_offset");
   double new_z_scaling = 1.0 + offsets.get(name_+"_z_scaling");
-  std::cout << "name" << name_ << std::endl;
+ // std::cout << "name" << name_ << std::endl;
   points.resize(data.observations[sensor_idx].features.size());
 
   // Get position of camera frame
@@ -337,7 +337,7 @@ std::vector<geometry_msgs::PointStamped> Camera3dModel::project(
     double u = x * camera_fx / z + camera_cx;
     double v = y * camera_fy / z + camera_cy;
     double depth = z/z_scaling - z_offset;
-
+    //std::cout << "before " << "\t" << x << "\t" << y << "\t" << z << std::endl;
     KDL::Frame pt(KDL::Frame::Identity());
 
     // Reproject through new calibrated parameters
@@ -347,6 +347,7 @@ std::vector<geometry_msgs::PointStamped> Camera3dModel::project(
 
     // Project through fk
     pt = fk * pt;
+    //std::cout << "after " << "\t" << pt.p.x() << "\t" << pt.p.y() << "\t" << pt.p.z() << std::endl;
 
     points[i].point.x = pt.p.x();
     points[i].point.y = pt.p.y();
