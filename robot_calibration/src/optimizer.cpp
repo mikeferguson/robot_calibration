@@ -235,8 +235,11 @@ int Optimizer::optimize(OptimizationParams& params,
         //  std::cout <<"before error block" << std::endl;
         // Check that this sample has the required features/observations
         if (!hasSensor(data[i], camera_name) || !hasSensor(data[i], gripper_name))
+        { std::cout << "buzz" << std::endl;
+          std::cout <<data[i].observations[0].sensor_name << std::endl;
+          std::cout <<  data[i].observations[1].sensor_name << std::endl;
           continue;
-        //std::cout << "error block" << std::endl;
+        }//std::cout << "error block" << std::endl;
         // Create the block
         ceres::CostFunction * cost = GripperDepthError::Create(
             dynamic_cast<Camera3dModel*>(models_[camera_name]),
@@ -271,13 +274,19 @@ int Optimizer::optimize(OptimizationParams& params,
       {
         std::string camera_name = static_cast<std::string>(params.error_blocks[j].params["camera"]);
         std::string gripper_name = static_cast<std::string>(params.error_blocks[j].params["gripper"]);
-        std::cout << camera_name << std::endl;
-        std::cout << gripper_name <<std::endl;
+      //  std::cout << camera_name << std::endl;
+      //  std::cout << gripper_name <<std::endl;
         //std::cout <<"before error block" << std::endl;
         // Check that this sample has the required features/observations
         if (!hasSensor(data[i], camera_name) || !hasSensor(data[i], gripper_name))
+        {
+          std::cout << "buzz" << std::endl;
+          std::cout <<data[i].observations[0].sensor_name << std::endl;
+          std::cout <<  data[i].observations[1].sensor_name << std::endl;
           continue;
+        }
         //std::cout << "error block" << std::endl;
+        std::cout << "its ok" << std::endl;
         // Create the block
         ceres::CostFunction * cost = GripperColorError::Create(
             dynamic_cast<Camera2dModel*>(models_[camera_name]),

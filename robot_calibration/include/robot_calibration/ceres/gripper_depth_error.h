@@ -52,7 +52,7 @@ struct GripperDepthError
     // Update calibration offsets based on free params
     offsets_->update(free_params[0]);
 
-//    std::cout <<  data_.observations[0].features.size() <<std::endl;
+//    std::cout <<  data_.observations[0].features[0].point.x <<std::endl;
 //    std::cout <<  data_.observations[1].features.size() <<std::endl;
 //    std::cout <<  data_.observations[0].sensor_name <<std::endl;
 //    std::cout <<  data_.observations[1].sensor_name <<std::endl;
@@ -115,15 +115,42 @@ struct GripperDepthError
             min_dist = distance;
             closest_point = hull[j];
           }
+          else
+          {
+            closest_point.x = 0;
+            closest_point.y = 0;
+            camera_pts[i].point.x = 0;
+            camera_pts[i].point.y = 0;
+            camera_pts[i].point.z = 0;
+
+          }
         }
       } 
+     /* else
+      {
+        closest_point.x = 0;
+        closest_point.y = 0;
+        camera_pts[i].point.x = 0;
+        camera_pts[i].point.y = 0;
+        camera_pts[i].point.z = 0;
 
+      } */
       
+      if(isnan(camera_pts[i].point.x) || isnan(camera_pts[i].point.y) || isnan(camera_pts[i].point.z))
+      {
+        camera_pts[i].point.x = 0;
+        camera_pts[i].point.y = 0;
+        camera_pts[i].point.z = 0;
+      }
+      //std::cout << camera_pts[i].point.x << "\t" << closest_point.x << std::endl;
+      //std::cout << camera_pts[i].point.y << "\t" << closest_point.y << std::endl;
+
       residuals[(3*i)+0] = camera_pts[i].point.x - closest_point.x;
       residuals[(3*i)+1] = camera_pts[i].point.y - closest_point.y;
       residuals[(3*i)+2] = (camera_pts[i].point.x*plane[0] + camera_pts[i].point.y*plane[1] + camera_pts[i].point.z*plane[2] + plane[3]);// / sqrt(pow(plane[0],2) + pow(plane[1],2) + pow(plane[2],2));
   //    std::cout <<dist<<std::endl;
         // if camera_pts is in base frame
+//        residuals[i] = (camera_pts[i].point.x*plane[0] + camera_pts[i].point.y*plane[1] + camera_pts[i].point.z*plane[2] + plane[3]);
     }
     return true;
   }
