@@ -111,7 +111,7 @@ bool CheckerboardFinder::findInternal(robot_calibration_msgs::CalibrationData * 
   geometry_msgs::PointStamped world;
 
   // Get cloud
-  if(!waitForCloud())
+  if (!waitForCloud())
   {
     ROS_ERROR("No point cloud data");
     return false;
@@ -172,11 +172,15 @@ bool CheckerboardFinder::findInternal(robot_calibration_msgs::CalibrationData * 
     sensor_msgs::PointCloud2Iterator<float> iter_cloud(cloud_, "x");
 
     // Set msg size
-    msg->observations.resize(2);
-    msg->observations[0].sensor_name = camera_sensor_name_;
-    msg->observations[0].features.resize(points_x_ * points_y_);
-    msg->observations[1].sensor_name = chain_sensor_name_;
-    msg->observations[1].features.resize(points_x_ * points_y_);
+    int idx_cam = msg->observations.size() + 0;
+    int idx_chain = msg->observations.size() + 1;
+    msg->observations.resize(msg->observations.size() + 2);
+    msg->observations[idx_cam].sensor_name = camera_sensor_name_;
+    msg->observations[idx_chain].sensor_name = chain_sensor_name_;
+         
+    msg->observations[idx_cam].features.resize(points_x_ * points_y_);
+    msg->observations[idx_chain].features.resize(points_x_ * points_y_);
+
 
     // Fill in the headers
     rgbd.header = cloud_.header;

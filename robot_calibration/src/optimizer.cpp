@@ -136,7 +136,7 @@ int Optimizer::optimize(OptimizationParams& params,
         // of one or more data points that are connected at a constant offset
         // from a link a kinematic chain (the "arm").
 
-    
+
         std::string camera_name = static_cast<std::string>(params.error_blocks[j].params["camera"]);
         std::string arm_name = static_cast<std::string>(params.error_blocks[j].params["arm"]);
 
@@ -146,32 +146,47 @@ int Optimizer::optimize(OptimizationParams& params,
 
         // Create the block
         ceres::CostFunction * cost = Camera3dToArmError::Create(
-          dynamic_cast<Camera3dModel*>(models_[camera_name]),
-          models_[arm_name],
-          offsets_.get(), data[i]);
+            dynamic_cast<Camera3dModel*>(models_[camera_name]),
+            models_[arm_name],
+            offsets_.get(), data[i]);
 
+        int index = -1;
+        for (size_t k =0; k < data[i].observations.size() ; k++)
+        {
+           if (data[i].observations[k].sensor_name == camera_name)
+          {
+            index = k;
+            break;
+          }
+        }
+
+        if(index == -1)
+        {
+          std::cerr << "Sensor name doesn't exist" << std::endl;
+          return 0;
+        }
         if (progress_to_stdout)
         {
           double ** params = new double*[1];
           params[0] = free_params;
-          double * residuals = new double[data[i].observations[0].features.size() * 3];  // TODO: should check that all features are same length?
+          double * residuals = new double[data[i].observations[index].features.size() * 3];  // TODO: should check that all features are same length?
 
           cost->Evaluate(params, residuals, NULL);
           std::cout << "INITIAL COST (" << i << ")" << std::endl << "  x: ";
-          for (size_t k = 0; k < data[i].observations[0].features.size(); ++k)
+          for (size_t k = 0; k < data[i].observations[index].features.size(); ++k)
             std::cout << "  " << std::setw(10) << std::fixed << residuals[(3*k + 0)];
           std::cout << std::endl << "  y: ";
-          for (size_t k = 0; k < data[i].observations[0].features.size(); ++k)
+          for (size_t k = 0; k < data[i].observations[index].features.size(); ++k)
             std::cout << "  " << std::setw(10) << std::fixed << residuals[(3*k + 1)];
           std::cout << std::endl << "  z: ";
-          for (size_t k = 0; k < data[i].observations[0].features.size(); ++k)
+          for (size_t k = 0; k < data[i].observations[index].features.size(); ++k)
             std::cout << "  " << std::setw(10) << std::fixed << residuals[(3*k + 2)];
           std::cout << std::endl << std::endl;
         }
 
         problem->AddResidualBlock(cost,
-                                   NULL /* squared loss */,
-                                   free_params);
+                                  NULL,  // squared loss
+                                  free_params);
       }
       else if (params.error_blocks[j].type =="camera3d_to_ground")
       {
@@ -188,16 +203,32 @@ int Optimizer::optimize(OptimizationParams& params,
           z_,
           offsets_.get(), data[i]);
 
+        int index = -1;
+        for (size_t k =0; k < data[i].observations.size() ; k++)
+        {
+          if ( data[i].observations[k].sensor_name == camera_name)
+          {
+            index = k;
+            break;
+          }
+        }
+        
+        if(index == -1)
+        {
+          std::cerr << "Sensor name doesn't exist" << std::endl;
+          return 0;
+        }
+
         if (progress_to_stdout)
         {
           double ** params = new double*[1];
           params[0] = free_params;
-          double * residuals = new double[data[i].observations[0].features.size()];
+          double * residuals = new double[data[i].observations[index].features.size()];
 
           cost->Evaluate(params, residuals, NULL);
 
           std::cout << std::endl << "  z: ";
-          for (size_t k = 0; k < data[i].observations[0].features.size(); ++k)
+          for (size_t k = 0; k < data[i].observations[index].features.size(); ++k)
             std::cout << "  " << std::setw(10) << std::fixed << residuals[(k)];
           std::cout << std::endl << std::endl;
         }
@@ -243,16 +274,16 @@ int Optimizer::optimize(OptimizationParams& params,
 
   // TODO output stats
   /*if (progress_to_stdout)
-  {
+    {
     CalibrationOffsetParser no_offsets;
     offsets_->update(free_params);
     for (size_t i = 0; i < data.size(); ++i)
     {
-      std::cout << "Sample " << i << std::endl;
-      printSimpleDistanceError(arm_model_, camera_model_, &no_offsets, offsets_, data[i]);
-      printComparePoints(arm_model_, camera_model_, &no_offsets, offsets_, data[i]);
+    std::cout << "Sample " << i << std::endl;
+    printSimpleDistanceError(arm_model_, camera_model_, &no_offsets, offsets_, data[i]);
+    printComparePoints(arm_model_, camera_model_, &no_offsets, offsets_, data[i]);
     }
-  }*/
+    }*/
 
   // Note: the error blocks will be managed by scoped_ptr in cost functor
   //       which takes ownership, and so we do not need to delete them here

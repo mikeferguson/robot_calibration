@@ -66,11 +66,27 @@ struct GroundPlaneError
                                      CalibrationOffsetParser* offsets,
                                      robot_calibration_msgs::CalibrationData& data)
   {
+    int index = -1;
+    for (size_t k =0; k < data.observations.size() ; k++)
+    {
+      if ( data.observations[k].sensor_name == "cameraground")
+      {
+        index = k;
+        break;
+      }
+    }
+
+    if (index == -1)
+    {
+      std::cerr << "Sensor name doesn't match any of the existing finders" << std::endl;
+      return 0;
+    }
+
     ceres::DynamicNumericDiffCostFunction<GroundPlaneError> * func;
     func = new ceres::DynamicNumericDiffCostFunction<GroundPlaneError>(
                     new GroundPlaneError(camera_model, offsets, data, z));
     func->AddParameterBlock(offsets->size());
-    func->SetNumResiduals(data.observations[0].features.size());
+    func->SetNumResiduals(data.observations[index].features.size());
 
     return static_cast<ceres::CostFunction*>(func);
   }

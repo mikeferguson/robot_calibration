@@ -106,11 +106,27 @@ struct Camera3dToArmError
                                      CalibrationOffsetParser* offsets,
                                      robot_calibration_msgs::CalibrationData& data)
   {
+    int index = -1;
+    for (size_t k = 0; k < data.observations.size() ; k++)
+    {
+      if ( data.observations[k].sensor_name == "camera")
+      {
+        index = k;
+        break;
+      }
+    }
+    
+    if (index == -1)
+    {
+      std::cerr << "Sensor name doesn't match any of the existing finders" << std::endl;
+      return 0;
+    }
+
     ceres::DynamicNumericDiffCostFunction<Camera3dToArmError> * func;
     func = new ceres::DynamicNumericDiffCostFunction<Camera3dToArmError>(
                     new Camera3dToArmError(camera_model, arm_model, offsets, data));
     func->AddParameterBlock(offsets->size());
-    func->SetNumResiduals(data.observations[0].features.size() * 3);
+    func->SetNumResiduals(data.observations[index].features.size() * 3);
 
     return static_cast<ceres::CostFunction*>(func);
   }
