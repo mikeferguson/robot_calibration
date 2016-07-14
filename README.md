@@ -84,5 +84,5 @@ package has an example python script for installing the updated files.
 
 # Status
 
- * Devel Job Status: [![Devel Job Status](http://jenkins.ros.org/buildStatus/icon?job=devel-indigo-robot_calibration)](http://jenkins.ros.org/job/devel-indigo-robot_calibration/)
- * AMD64 Debian Job Status: [![Build Status](http://jenkins.ros.org/buildStatus/icon?job=ros-indigo-robot-calibration_binarydeb_trusty_amd64)](http://jenkins.ros.org/job/ros-indigo-robot-calibration_binarydeb_trusty_amd64/)
+ * Devel Job Status: [![Build Status](http://build.ros.org/buildStatus/icon?job=Idev__robot_calibration__ubuntu_trusty_amd64)](http://build.ros.org/job/Idev__robot_calibration__ubuntu_trusty_amd64/)
+ * AMD64 Debian Job Status: [![Build Status](http://build.ros.org/buildStatus/icon?job=Ibin_uT64__robot_calibration__ubuntu_trusty_amd64__binary)](http://build.ros.org/job/Ibin_uT64__robot_calibration__ubuntu_trusty_amd64__binary/)
