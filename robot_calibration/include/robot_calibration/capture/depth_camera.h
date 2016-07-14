@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 Fetch Robotics Inc.
+ * Copyright (C) 2015-2016 Fetch Robotics Inc.
  * Copyright (C) 2013-2014 Unbounded Robotics Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -37,7 +37,10 @@ public:
 
   bool init(ros::NodeHandle& n)
   {
-    camera_info_subscriber_ = n.subscribe("/head_camera/depth/camera_info",
+    std::string topic_name;
+    n.param<std::string>("camera_info_topic", topic_name, "/head_camera/depth/camera_info");
+
+    camera_info_subscriber_ = n.subscribe(topic_name,
                                           1,
                                           &DepthCameraInfoManager::cameraInfoCallback,
                                           this);
@@ -46,11 +49,10 @@ public:
     if (!n.getParam("/head_camera/driver/z_offset_mm", z_offset_mm_) ||
         !n.getParam("/head_camera/driver/z_scaling", z_scaling_))
     {
-      ROS_FATAL("/head_camera/driver is not set, are drivers running?");
-      return false;
+      ROS_ERROR("/head_camera/driver is not set, are drivers running?");
+      z_offset_mm_ = 0;
+      z_scaling_ = 1;
     }
-
-    // TODO: should we warn about any particular configurations of offset/scaling?
 
     // Wait for camera_info
     int count = 25;

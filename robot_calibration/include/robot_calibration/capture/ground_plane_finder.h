@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2015 Fetch Robotics Inc.
+ * Copyright (C) 2014-2016 Fetch Robotics Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,6 +46,8 @@ private:
 
   std::string camera_sensor_name_;
   std::string chain_sensor_name_;
+  double points_max_;
+  double max_z_;
 };
 
 }  // namespace robot_calibration

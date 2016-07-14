@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2015 Fetch Robotics Inc.
+ * Copyright (C) 2014-2016 Fetch Robotics Inc.
  * Copyright (C) 2013-2014 Unbounded Robotics Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -40,32 +40,36 @@ ChainManager::ChainManager(ros::NodeHandle& nh, double wait_time)
   {
     std::string name, topic, group;
     name = static_cast<std::string>(chains[i]["name"]);
-    topic = static_cast<std::string>(chains[i]["topic"]);
     group = static_cast<std::string>(chains[i]["planning_group"]);
-
-    boost::shared_ptr<ChainController> controller(new ChainController(name, topic, group));
-
-    for (int j = 0; j < chains[i]["joints"].size(); ++j)
+    
+    if (chains[i].hasMember("topic"))
     {
-      controller->joint_names.push_back(static_cast<std::string>(chains[i]["joints"][j]));
-    }
+      topic = static_cast<std::string>(chains[i]["topic"]);
+ 
+      boost::shared_ptr<ChainController> controller(new ChainController(name, topic, group));
 
-    ROS_INFO("Waiting for %s...", topic.c_str());
-    if (!controller->client.waitForServer(ros::Duration(wait_time)))
-    {
-      ROS_WARN("Failed to connect to %s", topic.c_str());
-    }
-
-    if (controller->shouldPlan() && (!move_group_))
-    {
-      move_group_.reset(new MoveGroupClient("move_group", true));
-      if (!move_group_->waitForServer(ros::Duration(wait_time)))
+      for (int j = 0; j < chains[i]["joints"].size(); ++j)
       {
-        ROS_WARN("Failed to connect to move_group");
+        controller->joint_names.push_back(static_cast<std::string>(chains[i]["joints"][j]));
       }
-    }
 
-    controllers_.push_back(controller);
+      ROS_INFO("Waiting for %s...", topic.c_str());
+      if (!controller->client.waitForServer(ros::Duration(wait_time)))
+      {
+        ROS_WARN("Failed to connect to %s", topic.c_str());
+      }
+
+      if (controller->shouldPlan() && (!move_group_))
+      {
+        move_group_.reset(new MoveGroupClient("move_group", true));
+        if (!move_group_->waitForServer(ros::Duration(wait_time)))
+        {
+          ROS_WARN("Failed to connect to move_group");
+        }
+      }
+
+      controllers_.push_back(controller);
+    }
   }
 
   // Parameter to set movement time
@@ -152,7 +156,7 @@ bool ChainManager::moveToState(const sensor_msgs::JointState& state)
   double max_duration = duration_;
 
   // Split into different controllers
-  for(size_t i = 0; i < controllers_.size(); ++i)
+  for (size_t i = 0; i < controllers_.size(); ++i)
   {
     control_msgs::FollowJointTrajectoryGoal goal;
     goal.trajectory.joint_names = controllers_[i]->joint_names;
