@@ -99,8 +99,13 @@ bool CheckerboardFinder::find(robot_calibration_msgs::CalibrationData * msg)
   // Try up to 50 frames
   for (int i = 0; i < 50; ++i)
   {
-    if (findInternal(msg))
+    // temporary copy of msg, so we throw away all changes if findInternal() returns false
+    robot_calibration_msgs::CalibrationData tmp_msg(*msg);
+    if (findInternal(&tmp_msg))
+    {
+      *msg = tmp_msg;
       return true;
+    }
   }
   return false;
 }
