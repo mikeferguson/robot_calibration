@@ -69,7 +69,7 @@ struct GroundPlaneError
     int index = -1;
     for (size_t k =0; k < data.observations.size() ; k++)
     {
-      if ( data.observations[k].sensor_name == "cameraground")
+      if ( data.observations[k].sensor_name == camera_model->name())
       {
         index = k;
         break;
