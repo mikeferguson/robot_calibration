@@ -211,10 +211,6 @@ int main(int argc, char** argv)
       else
       {
         // Capture only the intended features for this sample
-        // NOTE: while you can capture multiple sensors at once for a single
-        //       pose, such things probably won't currently calibrate. Most
-        //       of the existing finders will override the entire observation
-        //       vector
         for (size_t i = 0; i < poses[pose_idx].features.size(); i++)
         {
           std::string feature = poses[pose_idx].features[i];

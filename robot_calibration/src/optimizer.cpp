@@ -151,7 +151,7 @@ int Optimizer::optimize(OptimizationParams& params,
             offsets_.get(), data[i]);
 
         int index = -1;
-        for (size_t k =0; k < data[i].observations.size() ; k++)
+        for (size_t k = 0; k < data[i].observations.size(); k++)
         {
            if (data[i].observations[k].sensor_name == camera_name)
           {
@@ -160,11 +160,12 @@ int Optimizer::optimize(OptimizationParams& params,
           }
         }
 
-        if(index == -1)
+        if (index == -1)
         {
           std::cerr << "Sensor name doesn't exist" << std::endl;
           return 0;
         }
+
         if (progress_to_stdout)
         {
           double ** params = new double*[1];
@@ -204,9 +205,9 @@ int Optimizer::optimize(OptimizationParams& params,
           offsets_.get(), data[i]);
 
         int index = -1;
-        for (size_t k =0; k < data[i].observations.size() ; k++)
+        for (size_t k =0; k < data[i].observations.size(); k++)
         {
-          if ( data[i].observations[k].sensor_name == camera_name)
+          if (data[i].observations[k].sensor_name == camera_name)
           {
             index = k;
             break;
