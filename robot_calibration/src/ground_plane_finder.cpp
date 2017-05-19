@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2016 Fetch Robotics Inc.
+ * Copyright (C) 2015-2017 Fetch Robotics Inc.
  * Copyright (C) 2013-2014 Unbounded Robotics Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -119,7 +119,7 @@ bool GroundPlaneFinder::find(robot_calibration_msgs::CalibrationData * msg)
   cloud_.width  = j;
   cloud_.data.resize(cloud_.width * cloud_.point_step);
 
-  int points_total = std::min(static_cast<size_t>(points_max_), j);
+  size_t points_total = std::min(static_cast<size_t>(points_max_), j);
   std::vector<cv::Point2f> points;
   points.resize(points_total);
 
@@ -140,14 +140,14 @@ bool GroundPlaneFinder::find(robot_calibration_msgs::CalibrationData * msg)
   msg->observations.resize(msg->observations.size() + 2);
   msg->observations[idx_cam].sensor_name = camera_sensor_name_;
   msg->observations[idx_chain].sensor_name = chain_sensor_name_;
-  
+
   msg->observations[idx_cam].features.resize(points_total);
   msg->observations[idx_chain].features.resize(points_total);
 
   size_t step = cloud_.width/(points_total);
   size_t k = 0;
 
-  for (size_t i = step; i < cloud_.width && k < points_total; i +=step)
+  for (size_t i = step; i < cloud_.width && k < points_total; i += step)
   {
     points[k].x = i;
     k++;
