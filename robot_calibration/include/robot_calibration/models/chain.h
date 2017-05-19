@@ -133,6 +133,8 @@ public:
   KDL::Frame getChainFK(const CalibrationOffsetParser& offsets,
                         const sensor_msgs::JointState& state);
 
+  std::string name() const;
+
 private:
   KDL::Chain chain_;
 
@@ -147,6 +149,11 @@ KDL::Rotation rotation_from_axis_magnitude(const double x, const double y, const
 
 /** \brief Converts from KDL::Rotation to angle-axis-with-integrated-magnitude */
 void axis_magnitude_from_rotation(const KDL::Rotation& r, double& x, double& y, double& z);
+
+inline std::string ChainModel::name() const
+{
+  return name_;
+}
 
 }  // namespace robot_calibration
 

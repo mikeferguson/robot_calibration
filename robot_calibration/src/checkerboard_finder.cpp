@@ -99,8 +99,13 @@ bool CheckerboardFinder::find(robot_calibration_msgs::CalibrationData * msg)
   // Try up to 50 frames
   for (int i = 0; i < 50; ++i)
   {
-    if (findInternal(msg))
+    // temporary copy of msg, so we throw away all changes if findInternal() returns false
+    robot_calibration_msgs::CalibrationData tmp_msg(*msg);
+    if (findInternal(&tmp_msg))
+    {
+      *msg = tmp_msg;
       return true;
+    }
   }
   return false;
 }
@@ -210,9 +215,9 @@ bool CheckerboardFinder::findInternal(robot_calibration_msgs::CalibrationData * 
         return false;
       }
 
-      msg->observations[0].features[i] = rgbd;
-      msg->observations[0].ext_camera_info = depth_camera_manager_.getDepthCameraInfo();
-      msg->observations[1].features[i] = world;
+      msg->observations[idx_cam].features[i] = rgbd;
+      msg->observations[idx_cam].ext_camera_info = depth_camera_manager_.getDepthCameraInfo();
+      msg->observations[idx_chain].features[i] = world;
 
       // Visualize
       iter_cloud[0] = rgbd.point.x;
@@ -224,7 +229,7 @@ bool CheckerboardFinder::findInternal(robot_calibration_msgs::CalibrationData * 
     // Add debug cloud to message
     if (output_debug_)
     {
-      msg->observations[0].cloud = cloud_;
+      msg->observations[idx_cam].cloud = cloud_;
     }
 
     // Publish results
