@@ -136,7 +136,6 @@ int Optimizer::optimize(OptimizationParams& params,
         // of one or more data points that are connected at a constant offset
         // from a link a kinematic chain (the "arm").
 
-
         std::string camera_name = static_cast<std::string>(params.error_blocks[j].params["camera"]);
         std::string arm_name = static_cast<std::string>(params.error_blocks[j].params["arm"]);
 
@@ -245,7 +244,6 @@ int Optimizer::optimize(OptimizationParams& params,
         // of one or more data points in two camera frames.
         // This also finds the a plane that fits the points and minimizes
         // over the normals
-
         std::string camera1_name = static_cast<std::string>(params.error_blocks[j].params["camera1"]);
         std::string camera2_name = static_cast<std::string>(params.error_blocks[j].params["camera2"]);
 
@@ -255,17 +253,26 @@ int Optimizer::optimize(OptimizationParams& params,
             dynamic_cast<Camera3dModel*>(models_[camera2_name]),
             offsets_.get(), data[i]);
 
-        int index = -1;
+        int index_1 = -1;
+        int index_2 = -1;
+
         for (size_t k = 0; k < data[i].observations.size(); k++)
         {
           if (data[i].observations[k].sensor_name == camera1_name)
           {
-            index = k;
+            index_1 = k;
+          }
+          if (data[i].observations[k].sensor_name == camera2_name)
+          {
+            index_2 = k;
+          }
+          if (index_1 == -1 && index_2 == -1)
+          {
             break;
           }
         }
 
-        if (index == -1)
+        if (index_1 == -1 || index_2 == -1)
         {
           std::cerr << "Sensor name doesn't exist" << std::endl;
           return 0;

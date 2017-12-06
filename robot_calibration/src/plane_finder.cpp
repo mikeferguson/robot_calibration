@@ -43,10 +43,12 @@ PlaneFinder::PlaneFinder(ros::NodeHandle & nh) :
 
   nh.param<std::string>("camera_sensor_name", camera_sensor_name_, "camera");
   nh.param<double>("points_max", points_max_, 60);
-  nh.param<double>("min_y", min_y_, 0);
-  nh.param<double>("max_y", max_y_, 0);
-  nh.param<double>("min_z", min_z_, 0);
-  nh.param<double>("max_z", max_z_, 0);
+  nh.param<double>("min_x", min_x_, -2.0);
+  nh.param<double>("max_x", max_x_, 2.0);
+  nh.param<double>("min_y", min_y_, -2.0);
+  nh.param<double>("max_y", max_y_, 2.0);
+  nh.param<double>("min_z", min_z_, 0.0);
+  nh.param<double>("max_z", max_z_, 2.0);
   nh.param<std::string>("transform_frame", transform_frame_, "base_link");
 
   publisher_ = nh.advertise<sensor_msgs::PointCloud2>("plane_points", 10);
@@ -108,7 +110,6 @@ bool PlaneFinder::find(robot_calibration_msgs::CalibrationData * msg)
   geometry_msgs::TransformStamped transformStamped;
   try
   {
-
     transformStamped = tfBuffer.lookupTransform("base_link", cloud_.header.frame_id,
                              ros::Time(0), ros::Duration(10.0));
   }
@@ -143,13 +144,14 @@ bool PlaneFinder::find(robot_calibration_msgs::CalibrationData * msg)
     if (!std::isfinite(p.point.x) || !std::isfinite(p.point.y) || !std::isfinite(p.point.z))
       continue;
 
-    // Remove the points immediately in front of te camera in the point cloud
+    // Remove the points immediately in front of the camera in the point cloud
     // NOTE : This is to handle sensors that publish zeros instead of NaNs in the point cloud
     if (p.point.z == 0)
       continue;
 
     // Transformed point in the transformed frame (default is base_link))
-    if (p_out.point.z < min_z_ or p_out.point.z > max_z_ or p_out.point.y < min_y or p_out.point.y > max_y)
+    if (p_out.point.x < min_x_ || p_out.point.x > max_x_ || p_out.point.y < min_y_ || p_out.point.y > max_y_ ||
+        p_out.point.z < min_z_ || p_out.point.z > max_z_)
     {
       continue;
     }

@@ -46,11 +46,13 @@ private:
 
   std::string camera_sensor_name_;
   double points_max_;
-  double min_z_;
-  double max_z_;
+  double min_x_;
+  double max_x_;
   double min_y_;
   double max_y_;
-  double transform_frame_;
+  double min_z_;
+  double max_z_;
+  std::string transform_frame_;
 };
 
 }  // namespace robot_calibration

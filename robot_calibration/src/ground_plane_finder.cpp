@@ -107,6 +107,8 @@ bool GroundPlaneFinder::find(robot_calibration_msgs::CalibrationData * msg)
     if (!std::isfinite(p.x) || !std::isfinite(p.y) || !std::isfinite(p.z))
       continue;
 
+    // Remove the points immediately in front of the camera in the point cloud
+    // NOTE : This is to handle sensors that publish zeros instead of NaNs in the point cloud
     if (p.z == 0)
       continue;
 
