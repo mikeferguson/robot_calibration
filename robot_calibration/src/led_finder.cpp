@@ -246,13 +246,13 @@ bool LedFinder::find(robot_calibration_msgs::CalibrationData * msg)
   cloud_mod.resize(4);
   sensor_msgs::PointCloud2Iterator<float> iter_cloud(cloud, "x");
 
-  // Export results
-  int idx_cam = msg->observations.size() + 0;
-  int idx_chain = msg->observations.size() + 1;
-  msg->observations.resize(msg->observations.size() + 2);
-  msg->observations[idx_cam].sensor_name = camera_sensor_name_;
-  msg->observations[idx_chain].sensor_name = chain_sensor_name_;
-  
+  // Collect Results
+  const int CAMERA = 0;
+  const int CHAIN = 1;
+  robot_calibration_msgs::Observation observations[2];
+  observations[CAMERA].sensor_name = camera_sensor_name_;
+  observations[CHAIN].sensor_name = chain_sensor_name_;
+
   for (size_t t = 0; t < trackers_.size(); ++t)
   {
     geometry_msgs::PointStamped rgbd_pt;
@@ -287,7 +287,7 @@ bool LedFinder::find(robot_calibration_msgs::CalibrationData * msg)
     for (size_t t2 = 0; t2 < t; ++t2)
     {
       double expected = distancePoints(trackers_[t2].point_, trackers_[t].point_);
-      double actual = distancePoints(msg->observations[0].features[t2].point, rgbd_pt.point);
+      double actual = distancePoints(observations[CAMERA].features[t2].point, rgbd_pt.point);
       if (fabs(expected-actual) > max_inconsistency_)
       {
         ROS_ERROR_STREAM("Features not internally consistent: " << expected << " " << actual);
@@ -296,8 +296,8 @@ bool LedFinder::find(robot_calibration_msgs::CalibrationData * msg)
     }
 
     // Push back observation
-    msg->observations[idx_cam].features.push_back(rgbd_pt);
-    msg->observations[idx_cam].ext_camera_info = depth_camera_manager_.getDepthCameraInfo();
+    observations[CAMERA].features.push_back(rgbd_pt);
+    observations[CAMERA].ext_camera_info = depth_camera_manager_.getDepthCameraInfo();
 
     // Visualize
     iter_cloud[0] = rgbd_pt.point.x;
@@ -308,11 +308,11 @@ bool LedFinder::find(robot_calibration_msgs::CalibrationData * msg)
     // Push back expected location of point on robot
     world_pt.header.frame_id = trackers_[t].frame_;
     world_pt.point = trackers_[t].point_;
-    msg->observations[idx_chain].features.push_back(world_pt);
+    observations[CHAIN].features.push_back(world_pt);
   }
 
   // Final check that all points are valid
-  if (msg->observations[idx_cam].features.size() != trackers_.size())
+  if (observations[CAMERA].features.size() != trackers_.size())
   {
     return false;
   }
@@ -320,8 +320,12 @@ bool LedFinder::find(robot_calibration_msgs::CalibrationData * msg)
   // Add debug cloud to message
   if (output_debug_)
   {
-    msg->observations[idx_cam].cloud = cloud_;
+    observations[CAMERA].cloud = cloud_;
   }
+
+  // Copy results to message
+  msg->observations.push_back(observations[CAMERA]);
+  msg->observations.push_back(observations[CHAIN]);
 
   // Publish results
   publisher_.publish(cloud);
