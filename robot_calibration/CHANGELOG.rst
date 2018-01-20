@@ -2,6 +2,17 @@
 Changelog for package robot_calibration
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* only add observations when complete
+* Adds plane calibration
+* minor style fixes, remove outdated comments
+* fix warning (`#28 <https://github.com/mikeferguson/robot_calibration/issues/28>`_)
+* pick correct sensor in each error block
+* use proper indices for multiple finders
+* fix: don't append observations if finder has failed
+* Contributors: Martin Günther, Michael Ferguson, Niharika Arora
+
 0.5.3 (2016-07-18)
 ------------------
 * add support for multiple finders in a given pose
