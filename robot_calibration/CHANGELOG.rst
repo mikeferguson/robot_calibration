@@ -2,8 +2,8 @@
 Changelog for package robot_calibration
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.5.4 (2018-01-20)
+------------------
 * only add observations when complete
 * Adds plane calibration
 * minor style fixes, remove outdated comments
