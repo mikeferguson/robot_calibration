@@ -19,6 +19,7 @@ endif ()
 
 find_package(orocos_kdl)
 find_package(Ceres REQUIRED)
+find_package(OpenCV REQUIRED)
 find_package(catkin REQUIRED
   COMPONENTS
     actionlib
@@ -89,7 +90,8 @@ target_link_libraries(robot_calibration ${Boost_LIBRARIES}
                                         ${catkin_LIBRARIES}
                                         ${CERES_LIBRARIES}
                                         ${tinyxml_LIBRARIES}
-                                        ${orocos_kdl_LIBRARIES})
+                                        ${orocos_kdl_LIBRARIES}
+                                        ${OpenCV_LIBS})
 add_dependencies(robot_calibration robot_calibration_msgs_gencpp)
 
 add_executable(calibrate src/calibrate.cpp)
@@ -98,7 +100,8 @@ target_link_libraries(calibrate robot_calibration
                                 ${catkin_LIBRARIES}
                                 ${CERES_LIBRARIES}
                                 ${tinyxml_LIBRARIES}
-                                ${orocos_kdl_LIBRARIES})
+                                ${orocos_kdl_LIBRARIES}
+                                ${OpenCV_LIBS})
 add_dependencies(calibrate robot_calibration)
 
 add_subdirectory(test)
