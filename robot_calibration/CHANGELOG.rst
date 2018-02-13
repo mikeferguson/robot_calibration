@@ -2,6 +2,12 @@
 Changelog for package robot_calibration
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Merge pull request `#36 <https://github.com/mikeferguson/robot_calibration/issues/36>`_ from guilhermelawless/indigo-devel
+  Fix broken OpenCV linking in ROS Kinetic
+* Contributors: Guilherme Lawless, Michael Ferguson
+
 0.5.4 (2018-01-20)
 ------------------
 * only add observations when complete
