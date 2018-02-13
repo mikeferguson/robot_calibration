@@ -1,6 +1,6 @@
 <package>
   <name>robot_calibration</name>
-  <version>0.5.4</version>
+  <version>0.5.5</version>
   <description>
     Calibrate a Robot
   </description>
