@@ -39,7 +39,9 @@
 namespace robot_calibration
 {
 
-Optimizer::Optimizer(const std::string& robot_description)
+Optimizer::Optimizer(const std::string& robot_description) :
+  num_params_(0),
+  num_residuals_(0)
 {
   if (!model_.initString(robot_description))
     std::cerr << "Failed to parse URDF." << std::endl;
@@ -332,6 +334,10 @@ int Optimizer::optimize(OptimizationParams& params,
   ceres::Solve(options, problem, summary_.get());
   if (progress_to_stdout)
     std::cout << "\n" << summary_->BriefReport() << std::endl;
+
+  // Save some status
+  num_params_ = problem->NumParameters();
+  num_residuals_ = problem->NumResiduals();
 
   // TODO output stats
   /*if (progress_to_stdout)

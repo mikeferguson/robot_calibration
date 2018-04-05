@@ -72,6 +72,16 @@ public:
     return offsets_;
   }
 
+  int getNumParameters()
+  {
+    return num_params_;
+  }
+
+  int getNumResiduals()
+  {
+    return num_residuals_;
+  }
+
 private:
   urdf::Model model_;
   std::string root_frame_;
@@ -82,6 +92,8 @@ private:
 
   boost::shared_ptr<CalibrationOffsetParser> offsets_;
   boost::shared_ptr<ceres::Solver::Summary> summary_;
+
+  int num_params_, num_residuals_;
 };
 
 }  // namespace robot_calibration
