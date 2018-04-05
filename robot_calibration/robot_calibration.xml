@@ -9,19 +9,13 @@
   <class name="robot_calibration/LedFinder"
          type="robot_calibration::LedFinder"
          base_class_type="robot_calibration::FeatureFinder">
-    <description>Feature finder that detect checkerboards.</description>
-  </class>
-
-  <class name="robot_calibration/GroundPlaneFinder"
-         type="robot_calibration::GroundPlaneFinder"
-         base_class_type="robot_calibration::FeatureFinder">
-    <description>Feature finder that detect checkerboards.</description>
+    <description>Feature finder that detect LED patterns (fairly Fetch-specific).</description>
   </class>
 
   <class name="robot_calibration/PlaneFinder"
          type="robot_calibration::PlaneFinder"
          base_class_type="robot_calibration::FeatureFinder">
-    <description>Feature finder that detect checkerboards.</description>
+    <description>Feature finder that detects points corresponding to planes.</description>
   </class>
 
 </library>

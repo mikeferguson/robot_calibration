@@ -53,6 +53,8 @@ private:
   double min_z_;
   double max_z_;
   std::string transform_frame_;
+
+  bool output_debug_;
 };
 
 }  // namespace robot_calibration

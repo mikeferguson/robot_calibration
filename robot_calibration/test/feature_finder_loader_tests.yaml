@@ -5,8 +5,7 @@ features:
     camera_sensor_name: camera
     chain_sensor_name: arm
   ground_plane_finder:
-    type: robot_calibration/GroundPlaneFinder
+    type: robot_calibration/PlaneFinder
     topic: /head_camera/depth_registered/points
     camera_sensor_name: camera
-    chain_sensor_name: ground
-    ground_frame: base_link
+    transform_frame: base_link
