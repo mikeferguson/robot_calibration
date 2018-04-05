@@ -1,0 +1,12 @@
+features:
+  checkerboard_finder:
+    type: robot_calibration/CheckerboardFinder
+    topic: /head_camera/depth_registered/points
+    camera_sensor_name: camera
+    chain_sensor_name: arm
+  ground_plane_finder:
+    type: robot_calibration/GroundPlaneFinder
+    topic: /head_camera/depth_registered/points
+    camera_sensor_name: camera
+    chain_sensor_name: ground
+    ground_frame: base_link

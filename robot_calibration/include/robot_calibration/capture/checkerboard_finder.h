@@ -1,4 +1,5 @@
 /*
+ * Copyright (C) 2018 Michael Ferguson
  * Copyright (C) 2015 Fetch Robotics Inc.
  * Copyright (C) 2013-2014 Unbounded Robotics Inc.
  *
@@ -22,7 +23,7 @@
 
 #include <ros/ros.h>
 #include <robot_calibration/capture/depth_camera.h>
-#include <robot_calibration/capture/feature_finder.h>
+#include <robot_calibration/plugins/feature_finder.h>
 #include <robot_calibration_msgs/CalibrationData.h>
 
 #include <opencv2/calib3d/calib3d.hpp>
@@ -37,15 +38,8 @@ namespace robot_calibration
 class CheckerboardFinder : public FeatureFinder
 {
 public:
-  CheckerboardFinder(ros::NodeHandle & n);
-
-  /**
-   * \brief Attempts to find the checkerboard incoming data.
-   * \param msg CalibrationData instance to fill in with point information.
-   * \param points_x Number of checkerboard points in x
-   * \param points_y Number of checkerboard points in y
-   * \returns True if point has been filled in.
-   */
+  CheckerboardFinder();
+  bool init(const std::string& name, ros::NodeHandle & n);
   bool find(robot_calibration_msgs::CalibrationData * msg);
 
 private:

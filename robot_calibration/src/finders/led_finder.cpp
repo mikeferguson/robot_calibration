@@ -18,9 +18,12 @@
 // Author: Michael Ferguson
 
 #include <math.h>
+#include <pluginlib/class_list_macros.h>
 #include <robot_calibration/capture/led_finder.h>
 #include <sensor_msgs/point_cloud2_iterator.h>
 #include <sensor_msgs/image_encodings.h>
+
+PLUGINLIB_EXPORT_CLASS(robot_calibration::LedFinder, robot_calibration::FeatureFinder)
 
 namespace robot_calibration
 {
@@ -42,10 +45,17 @@ double distancePoints(
                    (p1.z-p2.z) * (p1.z-p2.z));
 }
 
-LedFinder::LedFinder(ros::NodeHandle& nh) :
-  FeatureFinder(nh),
+LedFinder::LedFinder() :
   waiting_(false)
 {
+}
+
+bool LedFinder::init(const std::string& name,
+                     ros::NodeHandle& nh)
+{
+  if (!FeatureFinder::init(name, nh))
+    return false;
+
   // Setup the action client
   std::string topic_name;
   nh.param<std::string>("action", topic_name, "/gripper_led_action");
@@ -61,7 +71,7 @@ LedFinder::LedFinder(ros::NodeHandle& nh) :
                              this);
 
   // Publish where LEDs were seen
-  publisher_ = nh.advertise<sensor_msgs::PointCloud2>("led_points", 10);
+  publisher_ = nh.advertise<sensor_msgs::PointCloud2>(getName() + "_points", 10);
 
   // Maximum distance LED can be from expected pose
   nh.param<double>("max_error", max_error_, 0.1);
@@ -75,7 +85,7 @@ LedFinder::LedFinder(ros::NodeHandle& nh) :
   // Should we output debug image/cloud
   nh.param<bool>("debug", output_debug_, false);
 
-  // Get sensor names
+  // Name of the sensor model that will be used during optimization
   nh.param<std::string>("camera_sensor_name", camera_sensor_name_, "camera");
   nh.param<std::string>("chain_sensor_name", chain_sensor_name_, "arm");
 
@@ -106,9 +116,11 @@ LedFinder::LedFinder(ros::NodeHandle& nh) :
   // Setup to get camera depth info
   if (!depth_camera_manager_.init(nh))
   {
-    // Error will be printed in manager
-    throw;
+    // Error will have been printed by manager
+    return false;
   }
+
+  return true;
 }
 
 void LedFinder::cameraCallback(const sensor_msgs::PointCloud2::ConstPtr& cloud)

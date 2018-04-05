@@ -30,6 +30,13 @@ target_link_libraries(error_block_tests robot_calibration
                                         ${GTEST_LIBRARIES}
                                         ${orocos_kdl_LIBRARIES})
 
+add_executable(feature_finder_loader_tests feature_finder_loader_tests.cpp)
+add_dependencies(tests feature_finder_loader_tests)
+target_link_libraries(feature_finder_loader_tests robot_calibration
+                                                  ${Boost_LIBRARIES}
+                                                  ${catkin_LIBRARIES}
+                                                  ${GTEST_LIBRARIES})
+
 add_executable(optimization_param_tests optimization_param_tests.cpp)
 add_dependencies(tests optimization_param_tests)
 target_link_libraries(optimization_param_tests robot_calibration
@@ -38,5 +45,6 @@ target_link_libraries(optimization_param_tests robot_calibration
                                                ${GTEST_LIBRARIES})
 
 add_rostest(chain_manager_tests.test)
+add_rostest(feature_finder_loader_tests.test)
 add_rostest(optimization_param_tests.test)
 add_rostest(error_block_tests.test)

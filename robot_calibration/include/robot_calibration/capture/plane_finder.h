@@ -19,7 +19,7 @@
 
 #include <ros/ros.h>
 #include <robot_calibration/capture/depth_camera.h>
-#include <robot_calibration/capture/feature_finder.h>
+#include <robot_calibration/plugins/feature_finder.h>
 #include <robot_calibration_msgs/CalibrationData.h>
 #include <cv_bridge/cv_bridge.h>
 
@@ -29,8 +29,8 @@ namespace robot_calibration
 class PlaneFinder : public FeatureFinder
 {
 public:
-  PlaneFinder(ros::NodeHandle & n);
-
+  PlaneFinder();
+  bool init(const std::string& name, ros::NodeHandle & n);
   bool find(robot_calibration_msgs::CalibrationData * msg);
 
 private:

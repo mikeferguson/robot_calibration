@@ -17,8 +17,11 @@
 
 // Author: Michael Ferguson
 
+#include <pluginlib/class_list_macros.h>
 #include <robot_calibration/capture/checkerboard_finder.h>
 #include <sensor_msgs/point_cloud2_iterator.h>
+
+PLUGINLIB_EXPORT_CLASS(robot_calibration::CheckerboardFinder, robot_calibration::FeatureFinder)
 
 namespace robot_calibration
 {
@@ -28,10 +31,17 @@ const unsigned X = 0;
 const unsigned Y = 1;
 const unsigned Z = 2;
 
-CheckerboardFinder::CheckerboardFinder(ros::NodeHandle & nh) :
-  FeatureFinder(nh),
+CheckerboardFinder::CheckerboardFinder() :
   waiting_(false)
 {
+}
+
+bool CheckerboardFinder::init(const std::string& name,
+                              ros::NodeHandle & nh)
+{
+  if (!FeatureFinder::init(name, nh))
+    return false;
+
   // Setup Scriber
   std::string topic_name;
   nh.param<std::string>("topic", topic_name, "/points");
@@ -45,22 +55,24 @@ CheckerboardFinder::CheckerboardFinder(ros::NodeHandle & nh) :
   nh.param<int>("points_y", points_y_, 4);
   nh.param<double>("size", square_size_, 0.0245);
 
-  // Should we output debug image/cloud
+  // Should we include debug image/cloud in observations
   nh.param<bool>("debug", output_debug_, false);
 
-  // Get sensor names
+  // Name of the sensor model that will be used during optimization
   nh.param<std::string>("camera_sensor_name", camera_sensor_name_, "camera");
   nh.param<std::string>("chain_sensor_name", chain_sensor_name_, "arm");
 
   // Publish where checkerboard points were seen
-  publisher_ = nh.advertise<sensor_msgs::PointCloud2>("checkerboard_points", 10);
+  publisher_ = nh.advertise<sensor_msgs::PointCloud2>(getName() + "_points", 10);
 
   // Setup to get camera depth info
   if (!depth_camera_manager_.init(nh))
   {
-    // Error will be printed in manager
-    throw;
+    // Error will have been printed by manager
+    return false;
   }
+
+  return true;
 }
 
 void CheckerboardFinder::cameraCallback(const sensor_msgs::PointCloud2& cloud)

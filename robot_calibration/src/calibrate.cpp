@@ -30,7 +30,7 @@
 #include <robot_calibration_msgs/CaptureConfig.h>
 
 #include <robot_calibration/capture/chain_manager.h>
-#include <robot_calibration/capture/feature_finder.h>
+#include <robot_calibration/capture/feature_finder_loader.h>
 
 #include <camera_calibration_parsers/parse.h>
 #include <robot_calibration/ceres/optimizer.h>
@@ -90,8 +90,9 @@ int main(int argc, char** argv)
   {
     // No name provided for a calibration bag file, must do capture
     robot_calibration::ChainManager chain_manager_(nh);
+    robot_calibration::FeatureFinderLoader feature_finder_loader;
     robot_calibration::FeatureFinderMap finders_;
-    if (!robot_calibration::loadFeatureFinders(nh, finders_))
+    if (!feature_finder_loader.load(nh, finders_))
     {
       ROS_FATAL("Unable to load feature finders!");
       return -1;

@@ -22,7 +22,7 @@
 
 #include <ros/ros.h>
 #include <robot_calibration/capture/depth_camera.h>
-#include <robot_calibration/capture/feature_finder.h>
+#include <robot_calibration/plugins/feature_finder.h>
 
 #include <tf/transform_listener.h>
 #include <sensor_msgs/Image.h>
@@ -86,13 +86,8 @@ class LedFinder : public FeatureFinder
   typedef actionlib::SimpleActionClient<robot_calibration_msgs::GripperLedCommandAction> LedClient;
 
 public:
-  LedFinder(ros::NodeHandle & n);
-
-  /**
-   * \brief Attempts to find the led in incoming data.
-   * \param msg CalibrationData instance to fill in with led point information.
-   * \returns True if point has been filled in.
-   */
+  LedFinder();
+  bool init(const std::string& name, ros::NodeHandle & n);
   bool find(robot_calibration_msgs::CalibrationData * msg);
 
 private:
