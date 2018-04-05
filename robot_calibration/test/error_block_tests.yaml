@@ -32,9 +32,9 @@ free_frames:
    yaw: true
 error_blocks:
  - name: hand_eye
-   type: camera3d_to_arm
-   camera: camera
-   arm: arm
+   type: chain3d_to_chain3d
+   model_a: camera
+   model_b: arm
  - name: restrict_camera
    type: outrageous
    param: head_camera_rgb_joint
