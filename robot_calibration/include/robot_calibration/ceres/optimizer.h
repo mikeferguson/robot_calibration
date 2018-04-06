@@ -29,7 +29,7 @@
 #include <robot_calibration/calibration_offset_parser.h>
 #include <robot_calibration/ceres/optimization_params.h>
 #include <robot_calibration/ceres/chain3d_to_chain3d_error.h>
-#include <robot_calibration/ceres/ground_plane_error.h>
+#include <robot_calibration/ceres/chain3d_to_plane_error.h>
 #include <robot_calibration/ceres/camera_to_camera_error.h>
 #include <robot_calibration/ceres/data_functions.h>
 #include <robot_calibration/ceres/outrageous_error.h>
