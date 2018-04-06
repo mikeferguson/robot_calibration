@@ -285,7 +285,8 @@ TEST(ErrorBlockTests, error_blocks_maxwell)
   // Optimize
   opt.optimize(params, data, false);
   EXPECT_LT(opt.summary()->initial_cost, 1e-20);
-  EXPECT_LT(opt.summary()->final_cost, 1e-25);
+  EXPECT_LT(opt.summary()->final_cost, 1e-24);
+  EXPECT_LT(opt.summary()->final_cost, opt.summary()->initial_cost);
   // 14 joints + 6 from a free frame
   EXPECT_EQ(20, opt.getNumParameters());
   // 3 CalibrationData, each with outrageous block (7 residuals)
