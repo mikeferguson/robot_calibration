@@ -43,14 +43,15 @@ YAML file specifies the details needed for data capture:
    for sampling.
  * feature_finders - The configuration for the various "feature finders" that
    will be making our observations at each sample pose. Current finders include
-   an LED detector and a checkerboard finder.
+   an LED detector, checkerboard finder, and plane finder. Feature finders
+   are plugin-based, so you can create your own.
 
 The second configuration file specifies the configuration for optimization.
 This specifies several items:
 
  * models - Models define how to reproject points. The basic model is a
    kinematic chain. Additional models can reproject through a kinematic
-   chain and then a sensor, such as a camera.
+   chain and then a sensor, such as a 3d camera.
  * free_params - Defines the names of single-value free parameters. These
    can be the names of a joint for which the joint offset should be calculated,
    camera parameters such as focal lengths, or other parameters, such as
@@ -64,9 +65,17 @@ This specifies several items:
    to be free parameters.
  * error_blocks - These define the actual errors to compare during optimization.
    There are several error blocks available at this time:
-   * camera3d_to_arm - This error block can compute the difference in
-     reprojection between a 3D camera and a kinematic chain which is holding
-     the projected points.
+   * chain3d_to_chain3d - This error block can compute the difference in
+     reprojection between two 3D "sensors" which tell us the position of
+     certain features of interest. Sensors might be a 3D camera or an arm
+     which is holding a checkerboard.
+   * chain3d_to_plane - This error block can compute the difference between
+     projected 3d points and a desired plane. The most common use case is making
+     sure that the ground plane a robot sees is really on the ground.
+   * plane_to_plane - This error block is able to compute the difference
+     between two planes. For instance, 3d cameras may not have the resolution
+     to actually see a checkerboard, but we can align important axis by
+     making sure that a wall seen by both cameras is aligned.
    * outrageous - Sometimes, the calibration is ill-defined in certain dimensions,
      and we would like to avoid one of the free parameters from becoming
      absurd. An outrageous error block can be used to limit a particular
@@ -81,6 +90,31 @@ files need to be installed in the correct places to be properly loaded.
 
 The [fetch_calibration](https://github.com/fetchrobotics/fetch_ros/tree/indigo-devel/fetch_calibration)
 package has an example python script for installing the updated files.
+
+## Updating from Indigo
+
+A number of things have been streamlined since Indigo. Some changes in your
+capture configuration may be required:
+
+ * GroundPlaneFinder is gone. A simple replacement is to use the PlaneFinder with the
+   parameter "min_z" set to -2.0. (all other defaults should work fine)
+ * PlaneFinder now supports "debug" parameter, which defaults to false. If you still
+   want the point clouds in your bagfile, set this parameter to true.
+ * All finders have had their debug topic names updated to include the name of the finder,
+   this makes sure that you can run multiple instances and still know where data came from.
+   Your RVIZ config may need to be updated.
+
+Your calibration error block config will absolutely need updates:
+
+ * "camera3d_to_arm" is now "chain3d_to_chain3d". In addition to updating the type, the names
+   of the sensors have changed: "camera" is now "model_a", and "arm" is "model_b". Order
+   of the parameters no longer matters.
+ * "camera3d_to_ground" is now "chain3d_to_plane". In addition to updating the type, the
+   names of the sensors have changed: "camera" is now "model_a" and there is no sensor
+   for ground (the plane parameters are fully accessible instead of being hard-coded). The
+   default plane parameters of this error block represent the ground plane.
+ * "camera_to_camera" is now "plane_to_plane". In addition to updating the type, the
+   names of the sensors have changed from "camera1" and "camera2" to "model_a" and "model_b".
 
 # Status
 

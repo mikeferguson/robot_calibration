@@ -145,20 +145,20 @@ int Optimizer::optimize(OptimizationParams& params,
         // Output initial error
         if (progress_to_stdout)
         {
-          int index = getSensorIndex(data[i], a_name);
           double ** params = new double*[1];
           params[0] = free_params;
           double * residuals = new double[cost->num_residuals()];
 
           cost->Evaluate(params, residuals, NULL);
+
           std::cout << "INITIAL COST (" << i << ")" << std::endl << "  x: ";
-          for (size_t k = 0; k < data[i].observations[index].features.size(); ++k)
+          for (size_t k = 0; k < static_cast<size_t>(cost->num_residuals() / 3); ++k)
             std::cout << "  " << std::setw(10) << std::fixed << residuals[(3*k + 0)];
           std::cout << std::endl << "  y: ";
-          for (size_t k = 0; k < data[i].observations[index].features.size(); ++k)
+          for (size_t k = 0; k < static_cast<size_t>(cost->num_residuals() / 3); ++k)
             std::cout << "  " << std::setw(10) << std::fixed << residuals[(3*k + 1)];
           std::cout << std::endl << "  z: ";
-          for (size_t k = 0; k < data[i].observations[index].features.size(); ++k)
+          for (size_t k = 0; k < static_cast<size_t>(cost->num_residuals() / 3); ++k)
             std::cout << "  " << std::setw(10) << std::fixed << residuals[(3*k + 2)];
           std::cout << std::endl << std::endl;
         }
@@ -188,24 +188,23 @@ int Optimizer::optimize(OptimizationParams& params,
           Chain3dToPlane::Create(models_[chain_name],
                                  offsets_.get(),
                                  data[i],
-                                 static_cast<double>(params.error_blocks[j].params["a"]),
-                                 static_cast<double>(params.error_blocks[j].params["b"]),
-                                 static_cast<double>(params.error_blocks[j].params["c"]),
-                                 static_cast<double>(params.error_blocks[j].params["d"]),
-                                 static_cast<double>(params.error_blocks[j].params["scale"]));
+                                 params.getParam(params.error_blocks[j], "a", 0.0),
+                                 params.getParam(params.error_blocks[j], "b", 0.0),
+                                 params.getParam(params.error_blocks[j], "c", 1.0),
+                                 params.getParam(params.error_blocks[j], "d", 0.0),
+                                 params.getParam(params.error_blocks[j], "scale", 1.0));
 
         // Output initial error
         if (progress_to_stdout)
         {
-          int index = getSensorIndex(data[i], chain_name);
           double ** params = new double*[1];
           params[0] = free_params;
           double * residuals = new double[cost->num_residuals()];
 
           cost->Evaluate(params, residuals, NULL);
 
-          std::cout << std::endl << "  z: ";
-          for (size_t k = 0; k < data[i].observations[index].features.size(); ++k)
+          std::cout << "INITIAL COST (" << i << ")" << std::endl << "  d: ";
+          for (size_t k = 0; k < static_cast<size_t>(cost->num_residuals()); ++k)
             std::cout << "  " << std::setw(10) << std::fixed << residuals[(k)];
           std::cout << std::endl << std::endl;
         }
@@ -239,8 +238,8 @@ int Optimizer::optimize(OptimizationParams& params,
                                     models_[b_name],
                                     offsets_.get(),
                                     data[i],
-                                    static_cast<double>(params.error_blocks[j].params["scale_normal"]),
-                                    static_cast<double>(params.error_blocks[j].params["scale_offset"]));
+                                    params.getParam(params.error_blocks[j], "scale_normal", 1.0),
+                                    params.getParam(params.error_blocks[j], "scale_offset", 1.0));
 
         // Output initial error
         if (progress_to_stdout)
@@ -250,12 +249,14 @@ int Optimizer::optimize(OptimizationParams& params,
           double * residuals = new double[cost->num_residuals()];
 
           cost->Evaluate(params, residuals, NULL);
-          std::cout << "INITIAL COST (" << i << ")" << std::endl << "  x: ";
-            std::cout << "  " << std::setw(10) << std::fixed << residuals[0];
-          std::cout << std::endl << "  y: ";
-            std::cout << "  " << std::setw(10) << std::fixed << residuals[1];
-          std::cout << std::endl << "  z: ";
-            std::cout << "  " << std::setw(10) << std::fixed << residuals[2];
+          std::cout << "INITIAL COST (" << i << ")" << std::endl << "  a: ";
+          std::cout << "  " << std::setw(10) << std::fixed << residuals[0];
+          std::cout << std::endl << "  b: ";
+          std::cout << "  " << std::setw(10) << std::fixed << residuals[1];
+          std::cout << std::endl << "  c: ";
+          std::cout << "  " << std::setw(10) << std::fixed << residuals[2];
+          std::cout << std::endl << "  d: ";
+          std::cout << "  " << std::setw(10) << std::fixed << residuals[3];
           std::cout << std::endl << std::endl;
         }
 
@@ -269,9 +270,9 @@ int Optimizer::optimize(OptimizationParams& params,
         problem->AddResidualBlock(
           OutrageousError::Create(offsets_.get(),
                                   params.error_blocks[j].name,
-                                  static_cast<double>(params.error_blocks[j].params["joint_scale"]),
-                                  static_cast<double>(params.error_blocks[j].params["position_scale"]),
-                                  static_cast<double>(params.error_blocks[j].params["rotation_scale"])),
+                                  params.getParam(params.error_blocks[j], "joint_scale", 1.0),
+                                  params.getParam(params.error_blocks[j], "position_scale", 1.0),
+                                  params.getParam(params.error_blocks[j], "rotation_scale", 1.0)),
           NULL, // squared loss
           free_params);
       }
@@ -302,19 +303,6 @@ int Optimizer::optimize(OptimizationParams& params,
   // Save some status
   num_params_ = problem->NumParameters();
   num_residuals_ = problem->NumResiduals();
-
-  // TODO output stats
-  /*if (progress_to_stdout)
-    {
-    CalibrationOffsetParser no_offsets;
-    offsets_->update(free_params);
-    for (size_t i = 0; i < data.size(); ++i)
-    {
-    std::cout << "Sample " << i << std::endl;
-    printSimpleDistanceError(arm_model_, camera_model_, &no_offsets, offsets_, data[i]);
-    printComparePoints(arm_model_, camera_model_, &no_offsets, offsets_, data[i]);
-    }
-    }*/
 
   // Note: the error blocks will be managed by scoped_ptr in cost functor
   //       which takes ownership, and so we do not need to delete them here

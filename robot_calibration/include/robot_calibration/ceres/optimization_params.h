@@ -53,6 +53,18 @@ struct OptimizationParams
 
   OptimizationParams();
   bool LoadFromROS(ros::NodeHandle& nh);
+
+  template<typename T>
+  T getParam(Params& params, const std::string& name, T default_value)
+  {
+    if (!params.params.hasMember(name))
+    {
+      ROS_WARN_STREAM(name << " was not set, using default of " << default_value);
+      return default_value;
+    }
+
+    return static_cast<T>(params.params[name]);
+  }
 };
 
 }  // namespace robot_calibration
