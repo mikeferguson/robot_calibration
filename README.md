@@ -118,5 +118,5 @@ Your calibration error block config will absolutely need updates:
 
 # Status
 
- * Devel Job Status: [![Build Status](http://build.ros.org/buildStatus/icon?job=Idev__robot_calibration__ubuntu_trusty_amd64)](http://build.ros.org/job/Idev__robot_calibration__ubuntu_trusty_amd64/)
- * AMD64 Debian Job Status: [![Build Status](http://build.ros.org/buildStatus/icon?job=Ibin_uT64__robot_calibration__ubuntu_trusty_amd64__binary)](http://build.ros.org/job/Ibin_uT64__robot_calibration__ubuntu_trusty_amd64__binary/)
+ * Devel Job Status: [![Build Status](http://build.ros.org/buildStatus/icon?job=Kdev__robot_calibration__ubuntu_xenial_amd64)](http://build.ros.org/job/Kdev__robot_calibration__ubuntu_xenial_amd64/)
+ * AMD64 Debian Job Status: [![Build Status](http://build.ros.org/buildStatus/icon?job=Kbin_uX64__robot_calibration__ubuntu_xenial_amd64__binary)](http://build.ros.org/job/Kbin_uX64__robot_calibration__ubuntu_xenial_amd64__binary/)
