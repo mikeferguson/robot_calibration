@@ -284,14 +284,10 @@ TEST(ErrorBlockTests, error_blocks_maxwell)
 
   // Optimize
   opt.optimize(params, data, true);
-  EXPECT_LT(opt.summary()->initial_cost, 1e-24);  // Actual is about 1.67796e-25
-  EXPECT_LT(opt.summary()->final_cost, 1e-26);    // Actual is about 1.43174e-27
-  EXPECT_LT(opt.summary()->final_cost, opt.summary()->initial_cost);
-  EXPECT_GT(opt.summary()->iterations.size(), 10);  // expect more than 10 iterations
+  EXPECT_DOUBLE_EQ( 1.677961517431734e-25, opt.summary()->initial_cost);
   // 14 joints + 6 from a free frame
   EXPECT_EQ(20, opt.getNumParameters());
-  // 3 CalibrationData, each with outrageous block (7 residuals)
-  //   and chain3d with a single observed point (3 residuals)
+  // 3 CalibrationData, each with chain3d with a single observed point (3 residuals)
   EXPECT_EQ(30, opt.getNumResiduals());
 
   // While things are setup, test our param helpers

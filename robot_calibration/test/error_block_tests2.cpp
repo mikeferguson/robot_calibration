@@ -221,7 +221,7 @@ TEST(ErrorBlockTests, error_blocks_maxwell)
   msg.joint_states.name[8] = "head_tilt_joint";
   msg.joint_states.name[9] = "arm_lift_joint";
   msg.joint_states.position.resize(10);
-  msg.joint_states.position[0] = 0.0;
+  msg.joint_states.position[0] = -0.05;  // Add some error
   msg.joint_states.position[1] = -0.814830;
   msg.joint_states.position[2] = -0.00022290000000002586;
   msg.joint_states.position[3] = 0.0;
@@ -283,24 +283,16 @@ TEST(ErrorBlockTests, error_blocks_maxwell)
   params.LoadFromROS(nh);
 
   // Optimize
-  opt.optimize(params, data, true);
-  EXPECT_LT(opt.summary()->initial_cost, 1e-24);  // Actual is about 1.67796e-25
-  EXPECT_LT(opt.summary()->final_cost, 1e-26);    // Actual is about 1.43174e-27
-  EXPECT_LT(opt.summary()->final_cost, opt.summary()->initial_cost);
-  EXPECT_GT(opt.summary()->iterations.size(), 10);  // expect more than 10 iterations
-  // 14 joints + 6 from a free frame
-  EXPECT_EQ(20, opt.getNumParameters());
-  // 3 CalibrationData, each with outrageous block (7 residuals)
-  //   and chain3d with a single observed point (3 residuals)
-  EXPECT_EQ(30, opt.getNumResiduals());
-
-  // While things are setup, test our param helpers
-  // This param does not exist, we should get the default
-  double test = params.getParam(params.error_blocks[1], "test", 10.0);
-  EXPECT_EQ(10, test);
-  // This does exist, we should get what is in our YAML file
-  double scale = params.getParam(params.error_blocks[1], "joint_scale", 10.0);
-  EXPECT_EQ(0.0, scale);
+  opt.optimize(params, data, false);
+  EXPECT_GT(opt.summary()->initial_cost, 0.001);
+  EXPECT_LT(opt.summary()->final_cost, 1e-18);
+  EXPECT_GT(opt.summary()->iterations.size(), 1);  // expect more than 1 iteration
+  // The -0.05 we added above should be calibrated off
+  EXPECT_LT(fabs(0.05 - opt.getOffsets()->get("arm_lift_joint")), 0.001);
+  // 1 joint
+  EXPECT_EQ(1, opt.getNumParameters());
+  // 3 CalibrationData, each with chain3d with a single observed point (3 residuals)
+  EXPECT_EQ(9, opt.getNumResiduals());
 }
 
 int main(int argc, char** argv)
