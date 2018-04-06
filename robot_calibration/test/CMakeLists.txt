@@ -1,3 +1,5 @@
+if(CATKIN_ENABLE_TESTING)
+
 find_package(rostest REQUIRED)
 
 catkin_add_gtest(calibration_offset_parser_tests calibration_offset_parser_tests.cpp)
@@ -48,3 +50,5 @@ add_rostest(chain_manager_tests.test)
 add_rostest(feature_finder_loader_tests.test)
 add_rostest(optimization_param_tests.test)
 add_rostest(error_block_tests.test)
+
+endif()  # if CATKIN_ENABLE_TESTING

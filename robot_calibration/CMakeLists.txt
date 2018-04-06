@@ -62,7 +62,6 @@ catkin_package(
     tf2_ros
   DEPENDS
     Boost
-    Ceres
     orocos_kdl
   LIBRARIES
     robot_calibration
@@ -88,7 +87,7 @@ target_link_libraries(robot_calibration ${Boost_LIBRARIES}
                                         ${CERES_LIBRARIES}
                                         ${tinyxml_LIBRARIES}
                                         ${orocos_kdl_LIBRARIES})
-add_dependencies(robot_calibration robot_calibration_msgs_gencpp)
+add_dependencies(robot_calibration robot_calibration_msgs_generate_messages_cpp)
 
 add_library(robot_calibration_feature_finders src/finders/checkerboard_finder.cpp
                                               src/finders/led_finder.cpp
@@ -99,7 +98,7 @@ target_link_libraries(robot_calibration_feature_finders robot_calibration
                                                         ${tinyxml_LIBRARIES}
                                                         ${orocos_kdl_LIBRARIES}
                                                         ${OpenCV_LIBS})
-add_dependencies(robot_calibration_feature_finders robot_calibration_msgs_gencpp)
+add_dependencies(robot_calibration_feature_finders robot_calibration_msgs_generate_messages_cpp)
 
 add_executable(calibrate src/calibrate.cpp)
 target_link_libraries(calibrate robot_calibration
