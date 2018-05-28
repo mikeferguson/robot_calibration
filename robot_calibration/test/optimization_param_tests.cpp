@@ -23,20 +23,20 @@ TEST(ChainManagerTests, test_rosparam_loading)
   robot_calibration::OptimizationParams params;
   params.LoadFromROS(nh);
 
-  EXPECT_EQ(14, params.free_params.size());
+  EXPECT_EQ(static_cast<size_t>(14), params.free_params.size());
 
-  EXPECT_EQ(2, params.free_frames.size());
+  EXPECT_EQ(static_cast<size_t>(2), params.free_frames.size());
   EXPECT_EQ("head_camera_rgb_joint", params.free_frames[0].name);
   EXPECT_TRUE(params.free_frames[0].x);
   EXPECT_TRUE(params.free_frames[0].y);
   EXPECT_FALSE(params.free_frames[1].roll);
 
-  EXPECT_EQ(2, params.models.size());
+  EXPECT_EQ(static_cast<size_t>(2), params.models.size());
   EXPECT_EQ("arm", params.models[0].name);
   EXPECT_EQ("chain", params.models[0].type);
   EXPECT_EQ("gripper_led_frame", static_cast<std::string>(params.models[0].params["frame"]));
 
-  EXPECT_EQ(2, params.error_blocks.size());
+  EXPECT_EQ(static_cast<size_t>(2), params.error_blocks.size());
   EXPECT_EQ("hand_eye", params.error_blocks[0].name);
   EXPECT_EQ("camera3d_to_arm", params.error_blocks[0].type);
   EXPECT_EQ("arm", static_cast<std::string>(params.error_blocks[0].params["arm"]));
