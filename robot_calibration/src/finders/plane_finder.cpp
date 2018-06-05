@@ -127,6 +127,9 @@ bool PlaneFinder::find(robot_calibration_msgs::CalibrationData * msg)
   tf2_ros::Buffer tfBuffer;
   tf2_ros::TransformListener tfListener(tfBuffer);  // This should probably be class member
 
+  // Give some time to get TFs
+  ros::Duration(1.0).sleep();
+
   //  Remove any point that is invalid or not with our tolerance
   size_t num_points = cloud_.width * cloud_.height;
   sensor_msgs::PointCloud2ConstIterator<float> xyz(cloud_, "x");
@@ -164,6 +167,7 @@ bool PlaneFinder::find(robot_calibration_msgs::CalibrationData * msg)
       {
         ROS_ERROR("%s", ex.what());
         ros::Duration(1.0).sleep();
+        continue;
       }
     }
     else
@@ -190,6 +194,7 @@ bool PlaneFinder::find(robot_calibration_msgs::CalibrationData * msg)
 
   // Determine number of points to output
   size_t points_total = std::min(static_cast<size_t>(points_max_), j);
+  ROS_INFO_STREAM("Got " << j << " points from plane, using " << points_total);
 
   // Create PointCloud2 to publish
   sensor_msgs::PointCloud2 viz_cloud;
