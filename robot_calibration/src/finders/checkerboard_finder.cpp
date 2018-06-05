@@ -186,7 +186,7 @@ bool CheckerboardFinder::findInternal(robot_calibration_msgs::CalibrationData * 
     sensor_msgs::PointCloud2Modifier cloud_mod(cloud);
     cloud_mod.setPointCloud2FieldsByString(1, "xyz");
     cloud_mod.resize(points_x_ * points_y_);
-    sensor_msgs::PointCloud2Iterator<float> iter_cloud(cloud_, "x");
+    sensor_msgs::PointCloud2Iterator<float> iter_cloud(cloud, "x");
 
     // Set msg size
     int idx_cam = msg->observations.size() + 0;
