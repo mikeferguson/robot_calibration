@@ -91,6 +91,20 @@ files need to be installed in the correct places to be properly loaded.
 The [fetch_calibration](https://github.com/fetchrobotics/fetch_ros/tree/indigo-devel/fetch_calibration)
 package has an example python script for installing the updated files.
 
+Within the updated URDF file, there are two types of exported results:
+
+ * Changes to free_frames are applied as offsets in the joint origins.
+ * Changes to free_params (joint offsets) are applied as "calibration" tags
+   in the URDF. In particular, they are applied as "rising" tags. These
+   should be read by the robot drivers so that the offsets can be applied
+   before joint values are used for controllers. The offsets need to be added
+   to the joint position read from the device. The offset then typically
+   needs to be subtracted from the commanded position sent to the device.
+
+If your robot does not support the "calibration" tags, it might be possible
+to use only free_frames, setting only the rotation in the joint axis to be
+free.
+
 ## Updating from Indigo
 
 A number of things have been streamlined since Indigo. Some changes in your
