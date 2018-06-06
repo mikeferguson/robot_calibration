@@ -22,7 +22,6 @@
 #include <pluginlib/class_list_macros.h>
 #include <robot_calibration/capture/plane_finder.h>
 #include <sensor_msgs/point_cloud2_iterator.h>
-#include <tf2_ros/transform_listener.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
 PLUGINLIB_EXPORT_CLASS(robot_calibration::PlaneFinder, robot_calibration::FeatureFinder)
@@ -35,7 +34,7 @@ const unsigned Y = 1;
 const unsigned Z = 2;
 
 PlaneFinder::PlaneFinder() :
-  waiting_(false)
+  tfListener_(tfBuffer_), waiting_(false)
 {
 }
 
@@ -124,12 +123,6 @@ bool PlaneFinder::find(robot_calibration_msgs::CalibrationData * msg)
     return false;
   }
 
-  tf2_ros::Buffer tfBuffer;
-  tf2_ros::TransformListener tfListener(tfBuffer);  // This should probably be class member
-
-  // Give some time to get TFs
-  ros::Duration(1.0).sleep();
-
   //  Remove any point that is invalid or not with our tolerance
   size_t num_points = cloud_.width * cloud_.height;
   sensor_msgs::PointCloud2ConstIterator<float> xyz(cloud_, "x");
@@ -161,7 +154,7 @@ bool PlaneFinder::find(robot_calibration_msgs::CalibrationData * msg)
       p.header.frame_id = cloud_.header.frame_id;
       try
       {
-        tfBuffer.transform(p, p_out, transform_frame_);
+        tfBuffer_.transform(p, p_out, transform_frame_);
       }
       catch (tf2::TransformException ex)
       {
