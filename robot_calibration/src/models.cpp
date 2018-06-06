@@ -49,6 +49,7 @@ std::vector<geometry_msgs::PointStamped> ChainModel::project(
     const robot_calibration_msgs::CalibrationData& data,
     const CalibrationOffsetParser& offsets)
 {
+  // Projected points, to be returned
   std::vector<geometry_msgs::PointStamped> points;
 
   // Determine which observation to use
@@ -71,8 +72,10 @@ std::vector<geometry_msgs::PointStamped> ChainModel::project(
   // Resize to match # of features
   points.resize(data.observations[sensor_idx].features.size());
 
+  // Get the projection from forward kinematics of the robot chain
   KDL::Frame fk = getChainFK(offsets, data.joint_states);
 
+  // Project each individual point
   for (size_t i = 0; i < points.size(); ++i)
   {
     points[i].header.frame_id = root_;  // fk returns point in root_ frame
@@ -82,15 +85,20 @@ std::vector<geometry_msgs::PointStamped> ChainModel::project(
     p.p.y(data.observations[sensor_idx].features[i].point.y);
     p.p.z(data.observations[sensor_idx].features[i].point.z);
 
+    // This is primarily for the case of checkerboards
+    //   The observation is in "checkerboard" frame, but the tip of the
+    //   kinematic chain is typically something like "wrist_roll_link".
     if (data.observations[sensor_idx].features[i].header.frame_id != tip_)
     {
       KDL::Frame p2(KDL::Frame::Identity());
       if (offsets.getFrame(data.observations[sensor_idx].features[i].header.frame_id, p2))
       {
+        // We have to apply the frame offset before the FK projection
         p = p2 * p;
       }
     }
 
+    // Apply the FK projection
     p = fk * p;
 
     points[i].point.x = p.p.x();
