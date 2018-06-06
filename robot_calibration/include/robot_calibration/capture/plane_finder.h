@@ -22,6 +22,7 @@
 #include <robot_calibration/plugins/feature_finder.h>
 #include <robot_calibration_msgs/CalibrationData.h>
 #include <cv_bridge/cv_bridge.h>
+#include <tf2_ros/transform_listener.h>
 
 namespace robot_calibration
 {
@@ -39,6 +40,9 @@ private:
 
   ros::Subscriber subscriber_;
   ros::Publisher publisher_;
+
+  tf2_ros::Buffer tfBuffer_;
+  tf2_ros::TransformListener tfListener_;
 
   bool waiting_;
   sensor_msgs::PointCloud2 cloud_;
