@@ -38,7 +38,7 @@ public:
   /**
    *  \brief Tell the parser we wish to calibrate an active joint or other
    *         single parameter.
-   *  \param joint_name The name of the joint, e.g. "shoulder_pan_joint"
+   *  \param name The name of the joint, e.g. "shoulder_pan_joint"
    */
   bool add(const std::string name);
 
@@ -49,6 +49,23 @@ public:
   bool addFrame(const std::string name,
                 bool calibrate_x, bool calibrate_y, bool calibrate_z,
                 bool calibrate_roll, bool calibrate_pitch, bool calibrate_yaw);
+
+  /**
+   *  \brief Set the values for a single parameter.
+   *  \param name The name of the joint, e.g. "shoulder_pan_joint"
+   */
+  bool set(const std::string name, double value);
+
+  /**
+   *  \brief Set the values for a frame.
+   *  \param name The name of the fixed joint, e.g. "head_camera_rgb_joint"
+   */
+  bool setFrame(const std::string name,
+                double x, double y, double z,
+                double roll, double pitch, double yaw);
+
+  /** \brief Initialize the free_params */
+  bool initialize(double* free_params);
 
   /** \brief Update the offsets based on free_params from ceres-solver. */
   bool update(const double* const free_params);

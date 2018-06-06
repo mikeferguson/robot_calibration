@@ -1,4 +1,5 @@
 /*
+ * Copyright (C) 2018 Michael Ferguson
  * Copyright (C) 2013-2014 Unbounded Robotics Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -61,6 +62,45 @@ bool CalibrationOffsetParser::addFrame(
   if (calibrate_yaw)
     add(std::string(name).append("_c"));
 
+  return true;
+}
+
+bool CalibrationOffsetParser::set(const std::string name, double value)
+{
+  for (size_t i = 0; i < parameter_names_.size(); ++i)
+  {
+    if (parameter_names_[i] == name)
+    {
+      parameter_offsets_[i] = value;
+      return true;
+    }
+  }
+  return false;
+}
+
+bool CalibrationOffsetParser::setFrame(
+    const std::string name,
+    double x, double y, double z,
+    double roll, double pitch, double yaw)
+{
+  // Get axis-magnitude
+  double a, b, c;
+  KDL::Rotation r = KDL::Rotation::RPY(roll, pitch, yaw);
+  axis_magnitude_from_rotation(r, a, b, c);
+
+  // Set values
+  return set(std::string(name).append("_x"), x) &&
+         set(std::string(name).append("_y"), y) &&
+         set(std::string(name).append("_z"), z) &&
+         set(std::string(name).append("_a"), a) &&
+         set(std::string(name).append("_b"), b) &&
+         set(std::string(name).append("_c"), c);
+}
+
+bool CalibrationOffsetParser::initialize(double* free_params)
+{
+  for (size_t i = 0; i < parameter_offsets_.size(); ++i)
+    free_params[i] = parameter_offsets_[i];
   return true;
 }
 

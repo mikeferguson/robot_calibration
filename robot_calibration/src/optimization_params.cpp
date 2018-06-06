@@ -1,4 +1,5 @@
 /*
+ * Copyright (C) 2018 Michael Ferguson
  * Copyright (C) 2014-2015 Fetch Robotics Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -63,6 +64,28 @@ bool OptimizationParams::LoadFromROS(ros::NodeHandle& nh)
       params.pitch = static_cast<bool>(free_frame_params[i]["pitch"]);
       params.yaw = static_cast<bool>(free_frame_params[i]["yaw"]);
       free_frames.push_back(params);
+    }
+  }
+
+  if (nh.hasParam("free_frames_initial_values"))
+  {
+    free_frames_initial_values.clear();
+
+    XmlRpc::XmlRpcValue initial_value_params;
+    nh.getParam("free_frames_initial_values", initial_value_params);
+    ROS_ASSERT(initial_value_params.getType() == XmlRpc::XmlRpcValue::TypeArray);
+
+    for (int i = 0; i < initial_value_params.size(); ++i)
+    {
+      FreeFrameInitialValue params;
+      params.name = static_cast<std::string>(initial_value_params[i]["name"]);
+      params.x = static_cast<double>(initial_value_params[i]["x"]);
+      params.y = static_cast<double>(initial_value_params[i]["y"]);
+      params.z = static_cast<double>(initial_value_params[i]["z"]);
+      params.roll = static_cast<double>(initial_value_params[i]["roll"]);
+      params.pitch = static_cast<double>(initial_value_params[i]["pitch"]);
+      params.yaw = static_cast<double>(initial_value_params[i]["yaw"]);
+      free_frames_initial_values.push_back(params);
     }
   }
 
