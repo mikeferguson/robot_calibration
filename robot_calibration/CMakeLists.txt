@@ -117,6 +117,13 @@ target_link_libraries(to_rpy robot_calibration
                              ${orocos_kdl_LIBRARIES})
 add_dependencies(to_rpy robot_calibration)
 
+add_executable(viz src/tools/viz.cpp)
+target_link_libraries(viz robot_calibration
+                             ${Boost_LIBRARIES}
+                             ${catkin_LIBRARIES}
+                             ${orocos_kdl_LIBRARIES})
+add_dependencies(viz robot_calibration)
+
 add_subdirectory(test)
 
 install(DIRECTORY include/ DESTINATION include)

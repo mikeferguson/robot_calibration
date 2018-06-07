@@ -84,6 +84,9 @@ public:
   /** \returns The number of free parameters being parsed */
   int size();
 
+  /** \brief Load all the current offsets from a YAML */
+  bool loadOffsetYAML(const std::string& filename);
+
   /** \brief Get all the current offsets as a YAML */
   std::string getOffsetYAML();
 
