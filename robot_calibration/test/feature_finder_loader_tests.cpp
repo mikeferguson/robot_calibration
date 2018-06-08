@@ -25,7 +25,7 @@ TEST(FeatureFinderLoaderTests, test_feature_finder_loader)
   bool result = loader.load(nh, features);
 
   EXPECT_EQ(true, result);
-  EXPECT_EQ(2, features.size());
+  EXPECT_EQ(static_cast<size_t>(2), features.size());
 }
 
 int main(int argc, char** argv)
