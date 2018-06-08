@@ -286,7 +286,7 @@ TEST(ErrorBlockTests, error_blocks_maxwell)
   opt.optimize(params, data, false);
   EXPECT_GT(opt.summary()->initial_cost, 0.001);
   EXPECT_LT(opt.summary()->final_cost, 1e-18);
-  EXPECT_GT(opt.summary()->iterations.size(), 1);  // expect more than 1 iteration
+  EXPECT_GT(opt.summary()->iterations.size(), static_cast<size_t>(1));  // expect more than 1 iteration
   // The -0.05 we added above should be calibrated off
   EXPECT_LT(fabs(0.05 - opt.getOffsets()->get("arm_lift_joint")), 0.001);
   // 1 joint
