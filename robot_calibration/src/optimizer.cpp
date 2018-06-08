@@ -269,7 +269,7 @@ int Optimizer::optimize(OptimizationParams& params,
         // Outrageous error block requires no particular sensors, add to every sample
         problem->AddResidualBlock(
           OutrageousError::Create(offsets_.get(),
-                                  params.error_blocks[j].name,
+                                  static_cast<std::string>(params.error_blocks[j].params["param"]),
                                   params.getParam(params.error_blocks[j], "joint_scale", 1.0),
                                   params.getParam(params.error_blocks[j], "position_scale", 1.0),
                                   params.getParam(params.error_blocks[j], "rotation_scale", 1.0)),
