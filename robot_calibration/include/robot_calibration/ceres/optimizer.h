@@ -31,7 +31,6 @@
 #include <robot_calibration/ceres/chain3d_to_chain3d_error.h>
 #include <robot_calibration/ceres/chain3d_to_plane_error.h>
 #include <robot_calibration/ceres/plane_to_plane_error.h>
-#include <robot_calibration/ceres/data_functions.h>
 #include <robot_calibration/ceres/outrageous_error.h>
 #include <robot_calibration/models/camera3d.h>
 #include <robot_calibration/models/chain.h>

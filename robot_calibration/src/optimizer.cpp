@@ -28,7 +28,6 @@
 
 #include <robot_calibration/calibration_offset_parser.h>
 #include <robot_calibration/ceres/calibration_data_helpers.h>
-#include <robot_calibration/ceres/data_functions.h>
 #include <robot_calibration/ceres/outrageous_error.h>
 #include <robot_calibration/models/camera3d.h>
 #include <robot_calibration/models/chain.h>
