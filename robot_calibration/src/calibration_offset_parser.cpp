@@ -161,10 +161,10 @@ int CalibrationOffsetParser::size()
 bool CalibrationOffsetParser::loadOffsetYAML(const std::string& filename)
 {
   std::string line;
-  std::ifstream f(filename);
+  std::ifstream f(filename.c_str());
   while (std::getline(f, line))
   {
-    std::istringstream str(line);
+    std::istringstream str(line.c_str());
     std::string param;
     double value;
     if (str >> param >> value)
