@@ -24,6 +24,7 @@ find_package(catkin REQUIRED
   COMPONENTS
     actionlib
     camera_calibration_parsers
+    code_coverage
     cv_bridge
     geometry_msgs
     kdl_parser
@@ -66,6 +67,11 @@ catkin_package(
   LIBRARIES
     robot_calibration
 )
+
+if(ENABLE_COVERAGE_TESTING)
+  include(CodeCoverage)
+  APPEND_COVERAGE_COMPILER_FLAGS()
+endif()
 
 include_directories(include ${Boost_INCLUDE_DIRS}
                             ${catkin_INCLUDE_DIRS}
