@@ -278,6 +278,10 @@ TEST(ErrorBlockTests, error_blocks_maxwell)
   msg.observations[0].features[0].point.z = 0.517497963716;
   data.push_back(msg);
 
+  // Test some helpers
+  EXPECT_EQ(0, robot_calibration::getSensorIndex(msg, "camera"));
+  EXPECT_EQ(-1, robot_calibration::getSensorIndex(msg, "camera2"));
+
   // Setup params
   robot_calibration::OptimizationParams params;
   params.LoadFromROS(nh);

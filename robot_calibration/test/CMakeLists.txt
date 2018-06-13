@@ -16,6 +16,13 @@ target_link_libraries(rotation_tests robot_calibration
                                      ${CERES_LIBRARIES}
                                      ${orocos_kdl_LIBRARIES})
 
+add_executable(camera_info_tests camera_info_tests.cpp)
+add_dependencies(tests camera_info_tests)
+target_link_libraries(camera_info_tests robot_calibration
+                                  ${Boost_LIBRARIES}
+                                  ${catkin_LIBRARIES}
+                                  ${GTEST_LIBRARIES})
+
 add_executable(chain_manager_tests chain_manager_tests.cpp)
 add_dependencies(tests chain_manager_tests)
 target_link_libraries(chain_manager_tests robot_calibration
@@ -55,6 +62,7 @@ target_link_libraries(optimization_param_tests robot_calibration
                                                ${catkin_LIBRARIES}
                                                ${GTEST_LIBRARIES})
 
+add_rostest(camera_info_tests.test)
 add_rostest(chain_manager_tests.test)
 add_rostest(feature_finder_loader_tests.test)
 add_rostest(optimization_param_tests.test)

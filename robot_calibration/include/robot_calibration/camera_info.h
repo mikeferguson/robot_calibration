@@ -62,10 +62,10 @@ inline sensor_msgs::CameraInfo updateCameraInfo(double camera_fx, double camera_
   new_info.P[CAMERA_INFO_P_FX_INDEX] *= camera_fx + 1.0;  // FX
   new_info.P[CAMERA_INFO_P_FY_INDEX] *= camera_fy + 1.0;  // FY
 
-  new_info.K[CAMERA_INFO_K_CX_INDEX] = new_info.P[CAMERA_INFO_P_CX_INDEX];
-  new_info.K[CAMERA_INFO_K_CY_INDEX] = new_info.P[CAMERA_INFO_P_CY_INDEX];
-  new_info.K[CAMERA_INFO_K_FX_INDEX] = new_info.P[CAMERA_INFO_P_FX_INDEX];
-  new_info.K[CAMERA_INFO_K_FY_INDEX] = new_info.P[CAMERA_INFO_P_FY_INDEX];
+  new_info.K[CAMERA_INFO_K_CX_INDEX] *= camera_cx + 1.0;  // CX
+  new_info.K[CAMERA_INFO_K_CY_INDEX] *= camera_cy + 1.0;  // CY
+  new_info.K[CAMERA_INFO_K_FX_INDEX] *= camera_fx + 1.0;  // FX
+  new_info.K[CAMERA_INFO_K_FY_INDEX] *= camera_fy + 1.0;  // FY
 
   return new_info;
 }
