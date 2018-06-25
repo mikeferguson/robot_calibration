@@ -185,7 +185,7 @@ bool LedFinder::find(robot_calibration_msgs::CalibrationData * msg)
   while (true)
   {
     // Toggle LED to next state
-    code_idx = (code_idx + 1) % 8;
+    code_idx = (code_idx + 1) % codes_.size();
     command.led_code = codes_[code_idx];
     client_->sendGoal(command);
     client_->waitForResult(ros::Duration(10.0));
