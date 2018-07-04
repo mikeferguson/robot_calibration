@@ -22,7 +22,8 @@
 namespace robot_calibration
 {
 
-ChainManager::ChainManager(ros::NodeHandle& nh, double wait_time)
+ChainManager::ChainManager(ros::NodeHandle& nh, double wait_time) :
+  state_is_valid_(false)
 {
   // We cannot do much without some kinematic chains
   if (!nh.hasParam("chains"))
@@ -117,13 +118,14 @@ void ChainManager::stateCallback(const sensor_msgs::JointStateConstPtr& msg)
       state_.velocity.push_back(msg->velocity[msg_j]);
     }
   }
+  state_is_valid_ = true;
 }
 
 bool ChainManager::getState(sensor_msgs::JointState* state)
 {
   boost::mutex::scoped_lock lock(state_mutex_);
   *state = state_;
-  return true;  // TODO: this should actually return whether state is valid
+  return state_is_valid_;
 }
 
 trajectory_msgs::JointTrajectoryPoint
@@ -232,34 +234,48 @@ bool ChainManager::waitToSettle()
 {
   sensor_msgs::JointState state;
 
+  // Reset to invalid so we know state is not stale
+  {
+    boost::mutex::scoped_lock lock(state_mutex_);
+    state_is_valid_ = false;
+  }
+
   // TODO: timeout?
   while (true)
   {
-    getState(&state);
     bool settled = true;
 
-    // For each joint in state message
-    for (size_t j = 0; j < state.name.size(); ++j)
+    if (getState(&state))
     {
-      // Is this joint even a concern?
-      if (fabs(state.velocity[j]) < 0.001)
-        continue;
 
-      for (size_t i = 0; i < controllers_.size(); ++i)
+      // For each joint in state message
+      for (size_t j = 0; j < state.name.size(); ++j)
       {
-        for (size_t k = 0; k < controllers_[i]->joint_names.size(); ++k)
+        // Is this joint even a concern?
+        if (fabs(state.velocity[j]) < 0.001)
+          continue;
+
+        for (size_t i = 0; i < controllers_.size(); ++i)
         {
-          if (controllers_[i]->joint_names[k] == state.name[j])
+          for (size_t k = 0; k < controllers_[i]->joint_names.size(); ++k)
           {
-            settled = false;
-            break;
+            if (controllers_[i]->joint_names[k] == state.name[j])
+            {
+              settled = false;
+              break;
+            }
           }
         }
-      }
 
-      // If at least one joint is not settled, break out of this for loop
-      if (!settled)
-        break;
+        // If at least one joint is not settled, break out of this for loop
+        if (!settled)
+          break;
+      }
+    }
+    else
+    {
+      // State is not yet valid, can't determine if settled
+      settled = false;
     }
 
     // If all joints are settled, break out of while loop
