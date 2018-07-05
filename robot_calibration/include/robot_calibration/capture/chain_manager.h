@@ -108,10 +108,14 @@ private:
   trajectory_msgs::JointTrajectoryPoint makePoint(const sensor_msgs::JointState& state,
                                                   const std::vector<std::string>& joints);
 
+  // Subscriber for joint_states topic, storage of message
   ros::Subscriber subscriber_;
-  sensor_msgs::JointState state_;
-  double duration_;
   boost::mutex state_mutex_;
+  sensor_msgs::JointState state_;
+  bool state_is_valid_;
+
+  // Mechanisms for passing commands to controllers
+  double duration_;
   std::vector<boost::shared_ptr<ChainController> > controllers_;
   MoveGroupClientPtr move_group_;
   double velocity_factor_;  // scaling factor to slow down move_group plans
