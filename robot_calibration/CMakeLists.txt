@@ -129,10 +129,17 @@ add_subdirectory(test)
 
 install(DIRECTORY include/ DESTINATION include)
 
-install(TARGETS calibrate calibrate_base robot_calibration robot_calibration_feature_finders
+install(TARGETS
+	calibrate
+	calibrate_base
+	robot_calibration
+	robot_calibration_feature_finders
+	to_rpy
+	viz
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
+  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+ )
 
 install(FILES robot_calibration.xml
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
