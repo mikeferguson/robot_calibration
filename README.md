@@ -63,6 +63,10 @@ This specifies several items:
    internally uses an angle-axis representation, either all 3 should be set
    free, or only one should be free. You should never set two out of three
    to be free parameters.
+ * free_frames_initial_values - Defines the initial values for free_frames.
+   X, Y, Z offsets are in meters. ROLL, PITCH, YAW are in radians. This is most
+   frequently used for setting the initial estimate of the checkerboard position,
+   see details below.
  * error_blocks - These define the actual errors to compare during optimization.
    There are several error blocks available at this time:
    * chain3d_to_chain3d - This error block can compute the difference in
@@ -80,6 +84,34 @@ This specifies several items:
      and we would like to avoid one of the free parameters from becoming
      absurd. An outrageous error block can be used to limit a particular
      parameter.
+
+### Checkerboard Configuration
+When using a checkerboard, we need to estimate the transformation from the
+the kinematic chain to the checkerboard. Calibration will be faster and more
+accurate if the initial estimate of this transformation is close to the actual
+value, especially with regards to rotation.
+
+The simplest way to check your initial estimate is to run the calibration with
+only the six DOF of the checkerboard as free parameters. The output values will
+be the X, Y, Z, and A, B, C of the transformation. It is important to note that
+A, B, C are NOT roll, pitch, yaw -- they are the axis-magnitude representation.
+To get roll, pitch and yaw, run the ``to_rpy`` tool with your values of A, B,
+and C:
+```
+rosrun robot_calibration to_rpy A B C
+```
+This will print the ROLL, PITCH, YAW values to put in for initial values. Then
+insert the values in the calibration.yaml:
+```
+free_frames_initial_values:
+ - name: checkerboard
+   x: 0.0
+   y: 0.225
+   z: 0
+   roll: 0.0
+   pitch: 1.571
+   yaw: 0.0
+```
 
 ## Exported Results
 
