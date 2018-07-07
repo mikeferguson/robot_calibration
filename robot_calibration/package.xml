@@ -29,6 +29,7 @@
   <build_depend>tf</build_depend>
   <build_depend>tf2_geometry_msgs</build_depend>
   <build_depend>tf2_ros</build_depend>
+  <build_depend>visualization_msgs</build_depend>
   <build_depend>libceres-dev</build_depend>
   <build_depend>libgflags-dev</build_depend>
   <build_depend>suitesparse</build_depend>
@@ -52,6 +53,7 @@
   <run_depend>tf</run_depend>
   <run_depend>tf2_geometry_msgs</run_depend>
   <run_depend>tf2_ros</run_depend>
+  <run_depend>visualization_msgs</run_depend>
   <run_depend>libceres-dev</run_depend>
   <run_depend>suitesparse</run_depend>
   <run_depend>protobuf-dev</run_depend>
