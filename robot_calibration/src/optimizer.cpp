@@ -101,11 +101,24 @@ int Optimizer::optimize(OptimizationParams& params,
                        params.free_frames[i].pitch,
                        params.free_frames[i].yaw);
   }
+  for (size_t i = 0; i < params.free_frames_initial_values.size(); ++i)
+  {
+    if (!offsets_->setFrame(params.free_frames_initial_values[i].name,
+                            params.free_frames_initial_values[i].x,
+                            params.free_frames_initial_values[i].y,
+                            params.free_frames_initial_values[i].z,
+                            params.free_frames_initial_values[i].roll,
+                            params.free_frames_initial_values[i].pitch,
+                            params.free_frames_initial_values[i].yaw))
+    {
+      ROS_ERROR_STREAM("Error setting initial value for " <<
+                       params.free_frames_initial_values[i].name);
+    }
+  }
 
   // Allocate space
   double* free_params = new double[offsets_->size()];
-  for (int i = 0; i < offsets_->size(); ++i)
-    free_params[i] = 0.0;
+  offsets_->initialize(free_params);
 
   // Houston, we have a problem...
   ceres::Problem* problem = new ceres::Problem();

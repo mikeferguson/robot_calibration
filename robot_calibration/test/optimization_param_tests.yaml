@@ -35,6 +35,14 @@ free_frames:
    roll: false
    pitch: true
    yaw: true
+free_frames_initial_values:
+ - name: checkerboard
+   x: 0.0
+   y: 1.0
+   z: 2.0
+   roll: 0.0
+   pitch: 0.0
+   yaw: 0.0
 error_blocks:
  - name: hand_eye
    type: camera3d_to_arm

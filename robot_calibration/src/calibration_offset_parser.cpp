@@ -1,4 +1,5 @@
 /*
+ * Copyright (C) 2018 Michael Ferguson
  * Copyright (C) 2013-2014 Unbounded Robotics Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,6 +17,7 @@
 
 // Author: Michael Ferguson
 
+#include <fstream>
 #include <string>
 #include <map>
 #include <tinyxml.h>
@@ -64,6 +66,47 @@ bool CalibrationOffsetParser::addFrame(
   return true;
 }
 
+bool CalibrationOffsetParser::set(const std::string name, double value)
+{
+  for (size_t i = 0; i < parameter_names_.size(); ++i)
+  {
+    if (parameter_names_[i] == name)
+    {
+      parameter_offsets_[i] = value;
+      return true;
+    }
+  }
+  return false;
+}
+
+bool CalibrationOffsetParser::setFrame(
+    const std::string name,
+    double x, double y, double z,
+    double roll, double pitch, double yaw)
+{
+  // Get axis-magnitude
+  double a, b, c;
+  KDL::Rotation r = KDL::Rotation::RPY(roll, pitch, yaw);
+  axis_magnitude_from_rotation(r, a, b, c);
+
+  // Set values
+  set(std::string(name).append("_x"), x);
+  set(std::string(name).append("_y"), y);
+  set(std::string(name).append("_z"), z);
+  set(std::string(name).append("_a"), a);
+  set(std::string(name).append("_b"), b);
+  set(std::string(name).append("_c"), c);
+
+  return true;
+}
+
+bool CalibrationOffsetParser::initialize(double* free_params)
+{
+  for (size_t i = 0; i < parameter_offsets_.size(); ++i)
+    free_params[i] = parameter_offsets_[i];
+  return true;
+}
+
 bool CalibrationOffsetParser::update(const double* const free_params)
 {
   for (size_t i = 0; i < parameter_offsets_.size(); ++i)
@@ -94,7 +137,7 @@ bool CalibrationOffsetParser::getFrame(const std::string name, KDL::Frame& offse
       break;
     }
   }
- 
+
   if (!has_offset)
     return false;
 
@@ -113,6 +156,27 @@ bool CalibrationOffsetParser::getFrame(const std::string name, KDL::Frame& offse
 int CalibrationOffsetParser::size()
 {
   return parameter_names_.size();
+}
+
+bool CalibrationOffsetParser::loadOffsetYAML(const std::string& filename)
+{
+  std::string line;
+  std::ifstream f(filename.c_str());
+  while (std::getline(f, line))
+  {
+    std::istringstream str(line.c_str());
+    std::string param;
+    double value;
+    if (str >> param >> value)
+    {
+      // Remove the ":"
+      param.erase(param.size() - 1);
+      std::cout << "Loading '" << param << "' with value " << value << std::endl;
+      set(param, value);
+    }
+  }
+  f.close();
+  return true;
 }
 
 std::string CalibrationOffsetParser::getOffsetYAML()

@@ -207,10 +207,8 @@ bool CheckerboardFinder::findInternal(robot_calibration_msgs::CalibrationData * 
     sensor_msgs::PointCloud2ConstIterator<float> xyz(cloud_, "x");
     for (size_t i = 0; i < points.size(); ++i)
     {
-      //world.point.x = (i % points_x_) * square_size_;
-      //world.point.y = (i / points_x_) * square_size_;
-      world.point.z = (i % points_x_) * -square_size_;
-      world.point.x = (i / points_x_) * -square_size_;
+      world.point.x = (i % points_x_) * square_size_;
+      world.point.y = (i / points_x_) * square_size_;
 
       // Get 3d point
       int index = (int)(points[i].y) * cloud_.width + (int)(points[i].x);
