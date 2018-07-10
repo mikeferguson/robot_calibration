@@ -2,8 +2,8 @@
 Changelog for package robot_calibration_msgs
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.6.0 (2018-07-09)
+------------------
 * update maintainer email
 * Contributors: Michael Ferguson
 
