@@ -2,6 +2,71 @@
 Changelog for package robot_calibration
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* install our new tools
+* add depend on visualization_msgs
+* Merge pull request `#63 <https://github.com/mikeferguson/robot_calibration/issues/63>`_ from mikeferguson/checkerboards_that_work
+  Make checkerboards actually generic
+* Merge pull request `#62 <https://github.com/mikeferguson/robot_calibration/issues/62>`_ from mikeferguson/chain_manager_state_fix
+  make sure we get valid joint_states
+* make sure we get valid joint_states
+  * invalid old state, wait for new message
+  * fixes `#61 <https://github.com/mikeferguson/robot_calibration/issues/61>`_
+* Merge pull request `#59 <https://github.com/mikeferguson/robot_calibration/issues/59>`_ from saurabhbansal90/master
+  Update led_finder.cpp
+* Update led_finder.cpp
+* additional tests on camera_info
+* fix build in kinetic
+* remove entirely unused data functions header
+* fix corrupted license file
+* additional warning not previously flagged
+* buildfarm is really picky, fix another signed comparison
+* fix signed comparison warning in tests
+* add tool to visualize bagfile
+* break out load_bag function for reuse
+* towards working checkerboards
+  * unhack the checkerboard finder, so that points are in x/y only
+  * add free_frames_initial_values parameter for setting initial
+  offset of checkerboard frame
+* Merge pull request `#52 <https://github.com/mikeferguson/robot_calibration/issues/52>`_ from mikeferguson/melodic-backport
+  backport changes from melodic-devel branch
+* fix OutrageousError
+  This has apparently NEVER worked. The name that was being
+  provided was the error block name, not the name of the
+  parameter to limit.
+* add to_rpy tool
+  The YAML file output by calibration represents angles in
+  the internal axis-magnitude notation. RPY tends to be
+  easier for people to understand and visualize.
+* add some comments to Camera3dModel
+  In particular, a search for checkerboard should really turn up this
+  important piece of code
+* fix test build/warning issues on 18.04
+* Merge pull request `#50 <https://github.com/mikeferguson/robot_calibration/issues/50>`_ from guilhermelawless/tf-buffer-member
+  Make TF buffer a class member
+* make TF buffer a class member
+  Fixes `#48 <https://github.com/mikeferguson/robot_calibration/issues/48>`_. Sleeping to wait for TFs is no longer needed and was removed.
+* Merge pull request `#47 <https://github.com/mikeferguson/robot_calibration/issues/47>`_ from guilhermelawless/fix-checkerboard-visualization
+  Fix checkerboard visualization
+* Merge pull request `#45 <https://github.com/mikeferguson/robot_calibration/issues/45>`_ from guilhermelawless/kinetic-devel
+  Allow some time to get TFs in plane_finder
+* fix checkerboard visualization msg
+* allow some time to get TFs in plane_finder
+* add a second error block test, that actually needs to converge
+* fix parameter name in test, fork a second copy
+* make sure solver ran in test
+* fix cmake errors reported by buildfarm, update maintainer email
+* attempt to fix test on kinetic
+* clean up parameter loading, output printing, README
+* convert camera_to_camera into plane_to_plane
+* convert ground_plane_error into chain3d_to_plane_error
+* convert camera3d_to_arm into chain3d_to_chain3d
+* add param/residual checks to error block test
+* merge GroundPlaneFinder into PlaneFinder
+* make feature finders plugin-based, add tests
+* Contributors: Guilherme Lawless, Michael Ferguson, saurabhbansal90
+
 0.5.5 (2018-02-12)
 ------------------
 * Merge pull request `#36 <https://github.com/mikeferguson/robot_calibration/issues/36>`_ from guilhermelawless/indigo-devel
