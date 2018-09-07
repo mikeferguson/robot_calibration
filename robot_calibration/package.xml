@@ -58,6 +58,8 @@
   <run_depend>suitesparse</run_depend>
   <run_depend>protobuf-dev</run_depend>
 
+  <test_depend>code_coverage</test_depend>
+
   <export>
     <robot_calibration plugin="${prefix}/robot_calibration.xml"/>
   </export>

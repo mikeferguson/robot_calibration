@@ -68,6 +68,15 @@ catkin_package(
     robot_calibration
 )
 
+if (CATKIN_ENABLE_TESTING)
+  find_package(code_coverage REQUIRED)
+
+  if(ENABLE_COVERAGE_TESTING)
+    include(CodeCoverage)
+    APPEND_COVERAGE_COMPILER_FLAGS()
+  endif()
+endif()
+
 include_directories(include ${Boost_INCLUDE_DIRS}
                             ${catkin_INCLUDE_DIRS}
                             ${CERES_INCLUDES}
