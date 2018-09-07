@@ -12,7 +12,6 @@
   <buildtool_depend>catkin</buildtool_depend>
 
   <build_depend>actionlib</build_depend>
-  <build_depend>code_coverage</build_depend>
   <build_depend>camera_calibration_parsers</build_depend>
   <build_depend>control_msgs</build_depend>
   <build_depend>cv_bridge</build_depend>
@@ -56,6 +55,8 @@
   <run_depend>libceres-dev</run_depend>
   <run_depend>suitesparse</run_depend>
   <run_depend>protobuf-dev</run_depend>
+
+  <test_depend>code_coverage</test_depend>
 
   <export>
     <robot_calibration plugin="${prefix}/robot_calibration.xml"/>
