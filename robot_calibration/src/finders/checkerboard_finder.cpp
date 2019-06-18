@@ -217,9 +217,9 @@ bool CheckerboardFinder::findInternal(robot_calibration_msgs::CalibrationData * 
       rgbd.point.z = (xyz + index)[Z];
 
       // Do not accept NANs
-      if (isnan(rgbd.point.x) ||
-          isnan(rgbd.point.y) ||
-          isnan(rgbd.point.z))
+      if (std::isnan(rgbd.point.x) ||
+          std::isnan(rgbd.point.y) ||
+          std::isnan(rgbd.point.z))
       {
         ROS_ERROR_STREAM("NAN point on " << i);
         return false;

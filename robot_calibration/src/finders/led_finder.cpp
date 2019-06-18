@@ -467,9 +467,9 @@ bool LedFinder::CloudDifferenceTracker::isFound(
   point += max_idx_;
 
   // AND the current index is a valid point in the cloud.
-  if (isnan(point[X]) ||
-      isnan(point[Y]) ||
-      isnan(point[Z]))
+  if (std::isnan(point[X]) ||
+      std::isnan(point[Y]) ||
+      std::isnan(point[Z]))
   {
     return false;
   }
@@ -492,9 +492,9 @@ bool LedFinder::CloudDifferenceTracker::getRefinedCentroid(
   centroid.point.z = (iter + max_idx_)[Z];
 
   // Do not accept NANs
-  if (isnan(centroid.point.x) ||
-      isnan(centroid.point.y) ||
-      isnan(centroid.point.z))
+  if (std::isnan(centroid.point.x) ||
+      std::isnan(centroid.point.y) ||
+      std::isnan(centroid.point.z))
   {
     return false;
   }
@@ -511,7 +511,7 @@ bool LedFinder::CloudDifferenceTracker::getRefinedCentroid(
     // Using highly likely points
     if (diff_[i] > (max_*0.75))
     {
-      if (isnan(point[X]) || isnan(point[Y]) || isnan(point[Z]))
+      if (std::isnan(point[X]) || std::isnan(point[Y]) || std::isnan(point[Z]))
       {
         continue;
       }
