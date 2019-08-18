@@ -65,6 +65,8 @@ private:
 
   bool output_debug_;   /// Should we output debug image/cloud?
 
+  std::string frame_id_;   /// Name of checkerboard frame
+
   std::string camera_sensor_name_;
   std::string chain_sensor_name_;
 };
