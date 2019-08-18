@@ -61,11 +61,14 @@ struct OptimizationParams
   std::vector<std::string> free_params;
   std::vector<FreeFrameParams> free_frames;
   std::vector<FreeFrameInitialValue> free_frames_initial_values;
+  std::vector<std::string> prev_step_frames;
+  std::string prev_params_yaml;
   std::vector<Params> models;
   std::vector<Params> error_blocks;
 
   OptimizationParams();
   bool LoadFromROS(ros::NodeHandle& nh);
+  bool LoadPrevValues(std::vector<std::string>& prev_step_frames_,std::string& prev_params_yaml_);
 
   template<typename T>
   T getParam(Params& params, const std::string& name, T default_value)

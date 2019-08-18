@@ -128,4 +128,11 @@ bool OptimizationParams::LoadFromROS(ros::NodeHandle& nh)
   return true;
 }
 
+bool OptimizationParams::LoadPrevValues(std::vector<std::string>& prev_step_frames_, std::string& prev_params_yaml_)
+{
+  prev_step_frames = prev_step_frames_;
+  prev_params_yaml = prev_params_yaml_;
+  return true;
+}
+
 }  // namespace robot_calibration

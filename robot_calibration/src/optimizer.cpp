@@ -101,6 +101,11 @@ int Optimizer::optimize(OptimizationParams& params,
                        params.free_frames[i].pitch,
                        params.free_frames[i].yaw);
   }
+  offsets_->loadOffsetYAMLfromString(params.prev_params_yaml);
+  for (size_t i = 0; i < params.prev_step_frames.size(); ++i)
+  {
+    offsets_->addFrameNameConst(params.prev_step_frames[i]);
+  }
   for (size_t i = 0; i < params.free_frames_initial_values.size(); ++i)
   {
     if (!offsets_->setFrame(params.free_frames_initial_values[i].name,
