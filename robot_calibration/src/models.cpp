@@ -119,22 +119,27 @@ KDL::Frame ChainModel::getChainFK(const CalibrationOffsetParser& offsets,
   for (size_t i = 0; i < chain_.getNrOfSegments(); ++i)
   {
     std::string name = chain_.getSegment(i).getJoint().getName();
-    KDL::Frame correction;
+    KDL::Frame correction = KDL::Frame::Identity();
+    offsets.getFrame(name, correction);
 
-    // Apply any frame calibration
-    if (offsets.getFrame(name, correction))
-      p_out = p_out * correction;
-
-    // Apply any joint offset calibration
+    KDL::Frame pose;
     if (chain_.getSegment(i).getJoint().getType() != KDL::Joint::None)
     {
+      // Apply any joint offset calibration
       double p = positionFromMsg(name, state) + offsets.get(name);
-      p_out = p_out * chain_.getSegment(i).pose(p);
+      pose = chain_.getSegment(i).pose(p);
     }
     else
     {
-      p_out = p_out * chain_.getSegment(i).pose(0.0);
+      pose = chain_.getSegment(i).pose(0.0);
     }
+
+    KDL::Frame totip = chain_.getSegment(i).getFrameToTip();
+
+    // Apply any frame calibration on the joint <origin> frame
+    p_out = p_out * KDL::Frame(pose.p + totip.M * correction.p);
+    p_out = p_out * KDL::Frame(totip.M * correction.M * totip.M.Inverse() * pose.M);
+
   }
   return p_out;
 }
