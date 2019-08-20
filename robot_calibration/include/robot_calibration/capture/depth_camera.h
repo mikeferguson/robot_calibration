@@ -46,10 +46,12 @@ public:
                                           this);
 
     // Get parameters of drivers
-    if (!n.getParam("/head_camera/driver/z_offset_mm", z_offset_mm_) ||
-        !n.getParam("/head_camera/driver/z_scaling", z_scaling_))
+    std::string driver_name;
+    n.param<std::string>("camera_driver", driver_name, "/head_camera/driver");
+    if (!n.getParam(driver_name+"/z_offset_mm", z_offset_mm_) ||
+        !n.getParam(driver_name+"/z_scaling", z_scaling_))
     {
-      ROS_ERROR("/head_camera/driver is not set, are drivers running?");
+      ROS_ERROR("%s is not set, are drivers running?",driver_name.c_str());
       z_offset_mm_ = 0;
       z_scaling_ = 1;
     }
