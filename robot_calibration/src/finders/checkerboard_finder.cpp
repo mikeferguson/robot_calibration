@@ -58,6 +58,9 @@ bool CheckerboardFinder::init(const std::string& name,
   // Should we include debug image/cloud in observations
   nh.param<bool>("debug", output_debug_, false);
 
+  // Name of checkerboard frame that will be used during optimization
+  nh.param<std::string>("frame_id", frame_id_, "checkerboard");
+
   // Name of the sensor model that will be used during optimization
   nh.param<std::string>("camera_sensor_name", camera_sensor_name_, "camera");
   nh.param<std::string>("chain_sensor_name", chain_sensor_name_, "arm");
@@ -201,7 +204,7 @@ bool CheckerboardFinder::findInternal(robot_calibration_msgs::CalibrationData * 
 
     // Fill in the headers
     rgbd.header = cloud_.header;
-    world.header.frame_id = "checkerboard";
+    world.header.frame_id = frame_id_;
 
     // Fill in message
     sensor_msgs::PointCloud2ConstIterator<float> xyz(cloud_, "x");
