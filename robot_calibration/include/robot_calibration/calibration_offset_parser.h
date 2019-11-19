@@ -1,4 +1,5 @@
 /*
+ * Copyright (C) 2019 Michael Ferguson
  * Copyright (C) 2013-2014 Unbounded Robotics Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -42,8 +43,6 @@ public:
    */
   bool add(const std::string name);
 
-  bool addConst(const std::string name);
-
   /**
    *  \brief Tell the parser we wish to calibrate a fixed joint.
    *  \param name The name of the fixed joint, e.g. "head_camera_rgb_joint"
@@ -51,8 +50,6 @@ public:
   bool addFrame(const std::string name,
                 bool calibrate_x, bool calibrate_y, bool calibrate_z,
                 bool calibrate_roll, bool calibrate_pitch, bool calibrate_yaw);
-
-  bool addFrameNameConst(const std::string name);
 
   /**
    *  \brief Set the values for a single parameter.
@@ -86,16 +83,13 @@ public:
   bool getFrame(const std::string name, KDL::Frame& offset) const;
 
   /** \returns The number of free parameters being parsed */
-  int size();
+  size_t size();
 
-  /** \returns frame_names */
-  std::vector<std::string> getFrameNames() const;
+  /** \brief Clear free parameters, but retain values for multi-step calirations */
+  bool reset();
 
   /** \brief Load all the current offsets from a YAML */
   bool loadOffsetYAML(const std::string& filename);
-
-  /** \brief Load all the current offsets from a YAML */
-  bool loadOffsetYAMLfromString(const std::string& yaml);
 
   /** \brief Get all the current offsets as a YAML */
   std::string getOffsetYAML();
@@ -114,11 +108,8 @@ private:
   // Values of parameters from last update
   std::vector<double> parameter_offsets_;
 
-  // Names of parameters NOT being calibrated.
-  std::vector<std::string> const_parameter_names_;
-
-  // Values of const parameters
-  std::vector<double> const_parameter_offsets_;
+  // Number of params being calibrated
+  size_t num_free_params_;
 
   // No copy
   CalibrationOffsetParser(const CalibrationOffsetParser&);

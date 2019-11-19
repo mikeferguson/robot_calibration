@@ -87,6 +87,51 @@ TEST(CalibrationOffsetParserTests, test_urdf_update)
   }
 }
 
+TEST(CalibrationOffsetParserTests, test_multi_step)
+{
+  robot_calibration::CalibrationOffsetParser p;
+
+  p.add("first_step_joint1");
+  p.add("first_step_joint2");
+
+  double params[2] = {0.245, 0.44};
+  p.update(params);
+
+  EXPECT_EQ(0.245, p.get("first_step_joint1"));
+  EXPECT_EQ(0.44, p.get("first_step_joint2"));
+  EXPECT_EQ((size_t) 2, p.size());
+
+  // Reset num of free params
+  p.reset();
+  EXPECT_EQ((size_t) 0, p.size());
+
+  // Add a new one for second step
+  p.add("second_step_joint1");
+  EXPECT_EQ((size_t) 1, p.size());
+
+  params[0] *= 2.0;
+  p.update(params);
+
+  EXPECT_EQ(0.245, p.get("first_step_joint1"));
+  EXPECT_EQ(0.44, p.get("first_step_joint2"));
+  EXPECT_EQ(0.49, p.get("second_step_joint1"));
+
+  // Reset num of free params
+  p.reset();
+  EXPECT_EQ((size_t) 0, p.size());
+
+  // Reuse a param for a third step
+  p.add("first_step_joint1");
+  EXPECT_EQ((size_t) 1, p.size());
+
+  params[0] *= 2.0;
+  p.update(params);
+
+  EXPECT_EQ(0.98, p.get("first_step_joint1"));
+  EXPECT_EQ(0.44, p.get("first_step_joint2"));
+  EXPECT_EQ(0.49, p.get("second_step_joint1"));
+}
+
 int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);

@@ -44,6 +44,9 @@ Optimizer::Optimizer(const std::string& robot_description) :
 {
   if (!model_.initString(robot_description))
     std::cerr << "Failed to parse URDF." << std::endl;
+
+  // Maintain consistent offset parser so we hold onto offsets
+  offsets_.reset(new CalibrationOffsetParser());
 }
 
 Optimizer::~Optimizer()
@@ -85,8 +88,10 @@ int Optimizer::optimize(OptimizationParams& params,
     }
   }
 
+  // Reset which parameters are free (offset values are retained)
+  offsets_->reset();
+
   // Setup  parameters to calibrate
-  offsets_.reset(new CalibrationOffsetParser());
   for (size_t i = 0; i < params.free_params.size(); ++i)
   {
     offsets_->add(params.free_params[i]);
@@ -100,11 +105,6 @@ int Optimizer::optimize(OptimizationParams& params,
                        params.free_frames[i].roll,
                        params.free_frames[i].pitch,
                        params.free_frames[i].yaw);
-  }
-  offsets_->loadOffsetYAMLfromString(params.prev_params_yaml);
-  for (size_t i = 0; i < params.prev_step_frames.size(); ++i)
-  {
-    offsets_->addFrameNameConst(params.prev_step_frames[i]);
   }
   for (size_t i = 0; i < params.free_frames_initial_values.size(); ++i)
   {

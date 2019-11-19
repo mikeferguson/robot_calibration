@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Michael Ferguson
+ * Copyright (C) 2018-2019 Michael Ferguson
  * Copyright (C) 2013-2014 Unbounded Robotics Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -31,20 +31,35 @@ namespace robot_calibration
 
 CalibrationOffsetParser::CalibrationOffsetParser()
 {
-  // TODO?
+  num_free_params_ = 0;
 }
 
 bool CalibrationOffsetParser::add(const std::string name)
 {
-  parameter_names_.push_back(name);
-  parameter_offsets_.push_back(0.0);
-  return true;
-}
+  double value = 0.0;
 
-bool CalibrationOffsetParser::addConst(const std::string name)
-{
-  const_parameter_names_.push_back(name);
-  const_parameter_offsets_.push_back(0.0);
+  // Check against parameters
+  for (size_t i = 0; i < parameter_names_.size(); ++i)
+  {
+    if (parameter_names_[i] == name)
+    {
+      if (i < num_free_params_)
+      {
+        // This is already a free param, don't re-add
+        return false;
+      }
+      // Get the current value
+      value = parameter_offsets_[i];
+      // Remove the non-free-param version
+      parameter_names_.erase(parameter_names_.begin() + i);
+      parameter_offsets_.erase(parameter_offsets_.begin() + i);
+    }
+  }
+
+  // Add the parameter at end of current free params
+  parameter_names_.insert(parameter_names_.begin() + num_free_params_, name);
+  parameter_offsets_.insert(parameter_offsets_.begin() + num_free_params_, value);
+  ++num_free_params_;
   return true;
 }
 
@@ -73,40 +88,13 @@ bool CalibrationOffsetParser::addFrame(
   return true;
 }
 
-bool CalibrationOffsetParser::addFrameNameConst(const std::string name)
-{
-  bool has_offset = false;
-  for (size_t i = 0; i < frame_names_.size(); ++i)
-  {
-    if (frame_names_[i] == name)
-    {
-      has_offset = true;
-      break;
-    }
-  }
-
-  if (!has_offset)
-    return false;
-
-  frame_names_.push_back(name);
-  return true;
-}
-
 bool CalibrationOffsetParser::set(const std::string name, double value)
 {
-  for (size_t i = 0; i < parameter_names_.size(); ++i)
+  for (size_t i = 0; i < num_free_params_; ++i)
   {
     if (parameter_names_[i] == name)
     {
       parameter_offsets_[i] = value;
-      return true;
-    }
-  }
-  for (size_t i = 0; i < const_parameter_names_.size(); ++i)
-  {
-    if (const_parameter_names_[i] == name)
-    {
-      const_parameter_offsets_[i] = value;
       return true;
     }
   }
@@ -136,14 +124,14 @@ bool CalibrationOffsetParser::setFrame(
 
 bool CalibrationOffsetParser::initialize(double* free_params)
 {
-  for (size_t i = 0; i < parameter_offsets_.size(); ++i)
+  for (size_t i = 0; i < num_free_params_; ++i)
     free_params[i] = parameter_offsets_[i];
   return true;
 }
 
 bool CalibrationOffsetParser::update(const double* const free_params)
 {
-  for (size_t i = 0; i < parameter_offsets_.size(); ++i)
+  for (size_t i = 0; i < num_free_params_; ++i)
     parameter_offsets_[i] = free_params[i];
   return true;
 }
@@ -154,11 +142,6 @@ double CalibrationOffsetParser::get(const std::string name) const
   {
     if (parameter_names_[i] == name)
       return parameter_offsets_[i];
-  }
-  for (size_t i = 0; i < const_parameter_names_.size(); ++i)
-  {
-    if (const_parameter_names_[i] == name)
-      return const_parameter_offsets_[i];
   }
   // Not calibrating this
   return 0.0;
@@ -192,31 +175,21 @@ bool CalibrationOffsetParser::getFrame(const std::string name, KDL::Frame& offse
   return true;
 }
 
-int CalibrationOffsetParser::size()
+size_t CalibrationOffsetParser::size()
 {
-  return parameter_names_.size();
+  return num_free_params_;
 }
 
-std::vector<std::string> CalibrationOffsetParser::getFrameNames() const
+bool CalibrationOffsetParser::reset()
 {
-  return frame_names_;
+  num_free_params_ = 0;
+  return true;
 }
 
 bool CalibrationOffsetParser::loadOffsetYAML(const std::string& filename)
 {
   std::string line;
   std::ifstream f(filename.c_str());
-  std::stringstream str;
-  str << f.rdbuf();
-  f.close();
-  loadOffsetYAMLfromString(str.str());
-  return true;
-}
-
-bool CalibrationOffsetParser::loadOffsetYAMLfromString(const std::string& yaml)
-{
-  std::string line;
-  std::istringstream f(yaml.c_str());
   while (std::getline(f, line))
   {
     std::istringstream str(line.c_str());
@@ -227,13 +200,10 @@ bool CalibrationOffsetParser::loadOffsetYAMLfromString(const std::string& yaml)
       // Remove the ":"
       param.erase(param.size() - 1);
       std::cout << "Loading '" << param << "' with value " << value << std::endl;
-      if (!set(param, value))
-      {
-        addConst(param);
-        set(param, value);
-      }
+      set(param, value);
     }
   }
+  f.close();
   return true;
 }
 
@@ -243,10 +213,6 @@ std::string CalibrationOffsetParser::getOffsetYAML()
   for (size_t i = 0; i < parameter_names_.size(); ++i)
   {
     ss << parameter_names_[i] << ": " << parameter_offsets_[i] << std::endl;
-  }
-  for (size_t i = 0; i < const_parameter_names_.size(); ++i)
-  {
-    ss << const_parameter_names_[i] << ": " << const_parameter_offsets_[i] << std::endl;
   }
   return ss.str();
 }
