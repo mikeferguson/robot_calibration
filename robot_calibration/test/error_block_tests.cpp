@@ -288,7 +288,7 @@ TEST(ErrorBlockTests, error_blocks_maxwell)
 
   // Optimize
   opt.optimize(params, data, true);
-  EXPECT_DOUBLE_EQ( 1.677961517431734e-25, opt.summary()->initial_cost);
+  EXPECT_DOUBLE_EQ(1.6771013673719808e-25, opt.summary()->initial_cost);
   // 14 joints + 6 from a free frame
   EXPECT_EQ(20, opt.getNumParameters());
   // 3 CalibrationData, each with chain3d with a single observed point (3 residuals)

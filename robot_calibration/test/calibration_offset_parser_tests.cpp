@@ -50,7 +50,7 @@ std::string robot_description_updated =
 "  </joint>\n"
 "  <link name=\"link_2\" />\n"
 "  <joint name=\"third_joint\" type=\"fixed\">\n"
-"    <origin rpy=\"0.10000000 -1.30000000 0.30000000\" xyz=\"4.00000000 5.00000000 6.05260000\" />\n"
+"    <origin rpy=\"1.57000000 -1.50000000 0.00000000\" xyz=\"0.00000000 0.00000000 0.05260000\" />\n"
 "    <parent link=\"link_2\" />\n"
 "    <child link=\"link_3\" />\n"
 "  </joint>\n"
@@ -64,10 +64,10 @@ TEST(CalibrationOffsetParserTests, test_urdf_update)
   p.add("second_joint");
   p.addFrame("third_joint", true, true, true, true, true, true);
 
-  double params[7] = {0.245, 4, 5, 6, 0, 0, 0};
+  double params[7] = {0.245, 0, 0, 0, 0, 0, 0};
 
   // set angles
-  KDL::Rotation r = KDL::Rotation::RPY(0.1, 0.2, 0.3);
+  KDL::Rotation r = KDL::Rotation::RPY(1.57, 0, 0);
   robot_calibration::axis_magnitude_from_rotation(r, params[4], params[5], params[6]);
 
   p.update(params);
