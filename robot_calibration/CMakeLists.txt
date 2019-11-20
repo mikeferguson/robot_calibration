@@ -68,13 +68,10 @@ catkin_package(
     robot_calibration
 )
 
-if (CATKIN_ENABLE_TESTING)
+if (CATKIN_ENABLE_TESTING AND ENABLE_COVERAGE_TESTING)
   find_package(code_coverage REQUIRED)
-
-  if(ENABLE_COVERAGE_TESTING)
-    include(CodeCoverage)
-    APPEND_COVERAGE_COMPILER_FLAGS()
-  endif()
+  include(CodeCoverage)
+  APPEND_COVERAGE_COMPILER_FLAGS()
 endif()
 
 include_directories(include ${Boost_INCLUDE_DIRS}
