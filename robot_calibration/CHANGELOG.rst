@@ -2,8 +2,8 @@
 Changelog for package robot_calibration
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.6.1 (2019-11-19)
+------------------
 * Merge pull request `#70 <https://github.com/mikeferguson/robot_calibration/issues/70>`_ from Naoki-Hiraoka/enable-to-change-driver-name
   Enable to change driver name
 * Merge pull request `#69 <https://github.com/mikeferguson/robot_calibration/issues/69>`_ from Naoki-Hiraoka/allow-multiple-checkerboards
