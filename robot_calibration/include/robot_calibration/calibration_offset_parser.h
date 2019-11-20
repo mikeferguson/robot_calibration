@@ -1,4 +1,5 @@
 /*
+ * Copyright (C) 2019 Michael Ferguson
  * Copyright (C) 2013-2014 Unbounded Robotics Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -82,7 +83,10 @@ public:
   bool getFrame(const std::string name, KDL::Frame& offset) const;
 
   /** \returns The number of free parameters being parsed */
-  int size();
+  size_t size();
+
+  /** \brief Clear free parameters, but retain values for multi-step calirations */
+  bool reset();
 
   /** \brief Load all the current offsets from a YAML */
   bool loadOffsetYAML(const std::string& filename);
@@ -103,6 +107,9 @@ private:
 
   // Values of parameters from last update
   std::vector<double> parameter_offsets_;
+
+  // Number of params being calibrated
+  size_t num_free_params_;
 
   // No copy
   CalibrationOffsetParser(const CalibrationOffsetParser&);

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Michael Ferguson
+ * Copyright (C) 2018-2019 Michael Ferguson
  * Copyright (C) 2013-2014 Unbounded Robotics Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -31,13 +31,35 @@ namespace robot_calibration
 
 CalibrationOffsetParser::CalibrationOffsetParser()
 {
-  // TODO?
+  num_free_params_ = 0;
 }
 
 bool CalibrationOffsetParser::add(const std::string name)
 {
-  parameter_names_.push_back(name);
-  parameter_offsets_.push_back(0.0);
+  double value = 0.0;
+
+  // Check against parameters
+  for (size_t i = 0; i < parameter_names_.size(); ++i)
+  {
+    if (parameter_names_[i] == name)
+    {
+      if (i < num_free_params_)
+      {
+        // This is already a free param, don't re-add
+        return false;
+      }
+      // Get the current value
+      value = parameter_offsets_[i];
+      // Remove the non-free-param version
+      parameter_names_.erase(parameter_names_.begin() + i);
+      parameter_offsets_.erase(parameter_offsets_.begin() + i);
+    }
+  }
+
+  // Add the parameter at end of current free params
+  parameter_names_.insert(parameter_names_.begin() + num_free_params_, name);
+  parameter_offsets_.insert(parameter_offsets_.begin() + num_free_params_, value);
+  ++num_free_params_;
   return true;
 }
 
@@ -68,7 +90,7 @@ bool CalibrationOffsetParser::addFrame(
 
 bool CalibrationOffsetParser::set(const std::string name, double value)
 {
-  for (size_t i = 0; i < parameter_names_.size(); ++i)
+  for (size_t i = 0; i < num_free_params_; ++i)
   {
     if (parameter_names_[i] == name)
     {
@@ -102,14 +124,14 @@ bool CalibrationOffsetParser::setFrame(
 
 bool CalibrationOffsetParser::initialize(double* free_params)
 {
-  for (size_t i = 0; i < parameter_offsets_.size(); ++i)
+  for (size_t i = 0; i < num_free_params_; ++i)
     free_params[i] = parameter_offsets_[i];
   return true;
 }
 
 bool CalibrationOffsetParser::update(const double* const free_params)
 {
-  for (size_t i = 0; i < parameter_offsets_.size(); ++i)
+  for (size_t i = 0; i < num_free_params_; ++i)
     parameter_offsets_[i] = free_params[i];
   return true;
 }
@@ -153,9 +175,15 @@ bool CalibrationOffsetParser::getFrame(const std::string name, KDL::Frame& offse
   return true;
 }
 
-int CalibrationOffsetParser::size()
+size_t CalibrationOffsetParser::size()
 {
-  return parameter_names_.size();
+  return num_free_params_;
+}
+
+bool CalibrationOffsetParser::reset()
+{
+  num_free_params_ = 0;
+  return true;
 }
 
 bool CalibrationOffsetParser::loadOffsetYAML(const std::string& filename)

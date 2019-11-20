@@ -1,4 +1,5 @@
 /*
+ * Copyright (C) 2018-2019 Michael Ferguson
  * Copyright (C) 2015 Fetch Robotics Inc.
  * Copyright (C) 2013-2014 Unbounded Robotics Inc.
  *
@@ -265,17 +266,48 @@ int main(int argc, char** argv)
 
   // Create instance of optimizer
   robot_calibration::OptimizationParams params;
-  params.LoadFromROS(nh);
   robot_calibration::Optimizer opt(description_msg.data);
-  opt.optimize(params, data, verbose);
-  if (verbose)
-  {
-    std::cout << "Parameter Offsets:" << std::endl;
-    std::cout << opt.getOffsets()->getOffsetYAML() << std::endl;
-  }
 
-  // Update the URDF
-  std::string s = opt.getOffsets()->updateURDF(description_msg.data);
+  // Load calibration steps (if any)
+  XmlRpc::XmlRpcValue cal_steps;
+  if (nh.getParam("cal_steps", cal_steps))
+  {
+    // Should be a struct (mapping name -> config)
+    if (cal_steps.getType() != XmlRpc::XmlRpcValue::TypeStruct)
+    {
+      ROS_FATAL("Parameter 'cal_steps' should be a struct.");
+      return false;
+    }
+
+    XmlRpc::XmlRpcValue::iterator it;
+    size_t step;
+    size_t max_step = (cal_steps.size()>0)?cal_steps.size():1;
+    std::vector<std::string> prev_frame_names;
+    std::string prev_params_yaml;
+    for (step = 0, it = cal_steps.begin(); step < max_step; step++, it++)
+    {
+      std::string name = static_cast<std::string>(it->first);
+      ros::NodeHandle cal_steps_handle(nh, "cal_steps/"+name);
+      params.LoadFromROS(cal_steps_handle);
+      opt.optimize(params, data, verbose);
+      if (verbose)
+      {
+        std::cout << "Parameter Offsets:" << std::endl;
+        std::cout << opt.getOffsets()->getOffsetYAML() << std::endl;
+      }
+    }
+  }
+  else
+  {
+    // Single step calibration
+    params.LoadFromROS(nh);
+    opt.optimize(params, data, verbose);
+    if (verbose)
+    {
+      std::cout << "Parameter Offsets:" << std::endl;
+      std::cout << opt.getOffsets()->getOffsetYAML() << std::endl;
+    }
+  }
 
   // Generate datecode
   char datecode[80];
@@ -286,6 +318,7 @@ int main(int argc, char** argv)
 
   // Save updated URDF
   {
+    std::string s = opt.getOffsets()->updateURDF(description_msg.data);
     std::stringstream urdf_name;
     urdf_name << "/tmp/calibrated_" << datecode << ".urdf";
     std::ofstream file;
