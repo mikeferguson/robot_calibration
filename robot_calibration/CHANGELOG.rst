@@ -2,6 +2,20 @@
 Changelog for package robot_calibration
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Merge pull request `#70 <https://github.com/mikeferguson/robot_calibration/issues/70>`_ from Naoki-Hiraoka/enable-to-change-driver-name
+  Enable to change driver name
+* Merge pull request `#69 <https://github.com/mikeferguson/robot_calibration/issues/69>`_ from Naoki-Hiraoka/allow-multiple-checkerboards
+  Use multiple checkerboards
+* enable to change driver name
+* allow multiple checkerboards
+* Merge pull request `#56 <https://github.com/mikeferguson/robot_calibration/issues/56>`_ from mikeferguson/coverage
+  add code coverage testing
+* update code_coverage to be test_depend
+* add code coverage testing
+* Contributors: Michael Ferguson, Naoki-Hiraoka
+
 0.6.0 (2018-07-09)
 ------------------
 * install our new tools
