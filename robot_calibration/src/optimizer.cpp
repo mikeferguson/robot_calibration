@@ -224,6 +224,8 @@ int Optimizer::optimize(OptimizationParams& params,
           for (size_t k = 0; k < static_cast<size_t>(cost->num_residuals()); ++k)
             std::cout << "  " << std::setw(10) << std::fixed << residuals[(k)];
           std::cout << std::endl << std::endl;
+          delete residuals;
+          delete params;
         }
 
         problem->AddResidualBlock(cost,

@@ -50,6 +50,10 @@ bool CheckerboardFinder::init(const std::string& name,
                              &CheckerboardFinder::cameraCallback,
                              this);
 
+  image_transport::ImageTransport it(nh);
+  pub_checkerboard_ = it.advertise("detected_points", 1);     
+  ROS_INFO_STREAM("Publishing detected corners on topic: " << pub_checkerboard_.getTopic());                      
+
   // Size of checkerboard
   nh.param<int>("points_x", points_x_, 5);
   nh.param<int>("points_y", points_y_, 4);
@@ -68,12 +72,14 @@ bool CheckerboardFinder::init(const std::string& name,
   // Publish where checkerboard points were seen
   publisher_ = nh.advertise<sensor_msgs::PointCloud2>(getName() + "_points", 10);
 
+  ROS_INFO_STREAM("points_x: " << points_x_ << "\npoints_y: " << points_y_ << "\nsize: " << square_size_ << "\nframe_id: " << frame_id_<< "\ncamera_sensor_name_: " << camera_sensor_name_ << "\nchain_sensor_name: " << chain_sensor_name_);
+
   // Setup to get camera depth info
   if (!depth_camera_manager_.init(nh))
   {
     // Error will have been printed by manager
     return false;
-  }
+  } 
 
   return true;
 }
@@ -111,8 +117,10 @@ bool CheckerboardFinder::waitForCloud()
 
 bool CheckerboardFinder::find(robot_calibration_msgs::CalibrationData * msg)
 {
+  const int count = 50;
+  ROS_INFO_STREAM("Trying to detect checkboard for max " << count << " times.");
   // Try up to 50 frames
-  for (int i = 0; i < 50; ++i)
+  for (int i = 0; i < count; ++i)
   {
     // temporary copy of msg, so we throw away all changes if findInternal() returns false
     robot_calibration_msgs::CalibrationData tmp_msg(*msg);
@@ -120,6 +128,8 @@ bool CheckerboardFinder::find(robot_calibration_msgs::CalibrationData * msg)
     {
       *msg = tmp_msg;
       return true;
+    } else {
+      ROS_INFO_STREAM("No checkboard found in iteration: " << i);
     }
   }
   return false;
@@ -176,6 +186,13 @@ bool CheckerboardFinder::findInternal(robot_calibration_msgs::CalibrationData * 
   int found = cv::findChessboardCorners(bridge->image, checkerboard_size,
                                         points, CV_CALIB_CB_ADAPTIVE_THRESH);
 
+  // draw detected corners
+  cv::Mat corners_drawn(bridge->image.size(), CV_8UC3);
+  cv::cvtColor(bridge->image, corners_drawn, cv::COLOR_GRAY2BGR);
+  cv::drawChessboardCorners(corners_drawn, checkerboard_size, cv::Mat(points), found);
+
+  pub_checkerboard_.publish(cv_bridge::CvImage(std_msgs::Header(), "bgr8", corners_drawn).toImageMsg());
+
   if (found)
   {
     ROS_INFO("Found the checkboard");
@@ -225,6 +242,14 @@ bool CheckerboardFinder::findInternal(robot_calibration_msgs::CalibrationData * 
           std::isnan(rgbd.point.z))
       {
         ROS_ERROR_STREAM("NAN point on " << i);
+        return false;
+      }
+
+      // Do not accept (0.0, 0.0, 0.0)
+      const double eps = static_cast<double>(10.0) * std::numeric_limits<double>::epsilon();
+      if ((std::fabs(rgbd.point.x) < eps) || (std::fabs(rgbd.point.y) < eps) || (std::fabs(rgbd.point.z) < eps))
+      {
+        ROS_ERROR_STREAM("(0.0, 0.0, 0.0) point on " << i);
         return false;
       }
 

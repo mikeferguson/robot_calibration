@@ -27,6 +27,8 @@
 #include <robot_calibration_msgs/CalibrationData.h>
 
 #include <opencv2/calib3d/calib3d.hpp>
+
+#include <image_transport/image_transport.h>
 #include <cv_bridge/cv_bridge.h>
 
 namespace robot_calibration
@@ -69,6 +71,8 @@ private:
 
   std::string camera_sensor_name_;
   std::string chain_sensor_name_;
+
+  image_transport::Publisher pub_checkerboard_;
 };
 
 }  // namespace robot_calibration

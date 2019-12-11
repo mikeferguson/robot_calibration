@@ -152,6 +152,11 @@ int main(int argc, char** argv)
         else
         {
           poses.push_back(*msg);
+
+          if (poses.back().features.empty())
+          {
+            ROS_ERROR_STREAM("no feature finder added to capture pose number: " << (poses.size() - 1));
+          }
         }
       }
     }
@@ -192,7 +197,9 @@ int main(int argc, char** argv)
       chain_manager_.waitToSettle();
 
       // Make sure sensor data is up to date after settling
-      ros::Duration(0.1).sleep();
+      double settle_duration_secs = 3.0;
+      nh.param<double>("settle_duration_secs", settle_duration_secs, 3.0);
+      ros::Duration(settle_duration_secs).sleep();
 
       // Get pose of the features
       bool found_all_features = true;
@@ -316,11 +323,12 @@ int main(int argc, char** argv)
     std::strftime(datecode, 80, "%Y_%m_%d_%H_%M_%S", std::localtime(&t));
   }
 
+  ROS_INFO("saving urdf");
   // Save updated URDF
   {
     std::string s = opt.getOffsets()->updateURDF(description_msg.data);
     std::stringstream urdf_name;
-    urdf_name << "/tmp/calibrated_" << datecode << ".urdf";
+    urdf_name << "/tmp/calibration/calibrated_" << datecode << ".urdf";
     std::ofstream file;
     file.open(urdf_name.str().c_str());
     file << s;
@@ -328,9 +336,10 @@ int main(int argc, char** argv)
   }
 
   // Output camera calibration
+  ROS_INFO("outputting camera calibration");
   {
     std::stringstream depth_name;
-    depth_name << "/tmp/depth_" << datecode << ".yaml";
+    depth_name << "/tmp/calibration/depth_" << datecode << ".yaml";
     camera_calibration_parsers::writeCalibration(depth_name.str(), "",
         robot_calibration::updateCameraInfo(
                          opt.getOffsets()->get("camera_fx"),
@@ -340,7 +349,7 @@ int main(int argc, char** argv)
                          data[0].observations[0].ext_camera_info.camera_info));  // TODO avoid hardcoding index
 
     std::stringstream rgb_name;
-    rgb_name << "/tmp/rgb_" << datecode << ".yaml";
+    rgb_name << "/tmp/calibration/rgb_" << datecode << ".yaml";
     camera_calibration_parsers::writeCalibration(rgb_name.str(), "",
         robot_calibration::updateCameraInfo(
                          opt.getOffsets()->get("camera_fx"),
@@ -351,9 +360,10 @@ int main(int argc, char** argv)
   }
 
   // Output the calibration yaml
+  ROS_INFO("outputting camera calibration yaml");
   {
     std::stringstream yaml_name;
-    yaml_name << "/tmp/calibration_" << datecode << ".yaml";
+    yaml_name << "/tmp/calibration/calibration_" << datecode << ".yaml";
     std::ofstream file;
     file.open(yaml_name.str().c_str());
     file << opt.getOffsets()->getOffsetYAML();
