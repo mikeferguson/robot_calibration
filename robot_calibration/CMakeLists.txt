@@ -67,6 +67,7 @@ catkin_package(
     orocos_kdl
   LIBRARIES
     robot_calibration
+    robot_calibration_feature_finders
 )
 
 if (CATKIN_ENABLE_TESTING AND ENABLE_COVERAGE_TESTING)
