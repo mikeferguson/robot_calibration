@@ -44,11 +44,16 @@ public:
   bool init(const std::string& name, ros::NodeHandle & n);
   bool find(robot_calibration_msgs::CalibrationData * msg);
 
+  void setTrials(const uint32_t trials);
+  void setSmoothingSamplesCount(const uint32_t count);
+
 private:
   bool findInternal(robot_calibration_msgs::CalibrationData * msg);
 
   void cameraCallback(const sensor_msgs::PointCloud2& cloud);
   bool waitForCloud();
+
+  void computeMovingAverage(std::vector<cv::Point2f>& new_measurements);
 
   ros::Subscriber subscriber_;  /// Incoming sensor_msgs::PointCloud2
   ros::Publisher publisher_;   /// Outgoing sensor_msgs::PointCloud2
@@ -73,6 +78,14 @@ private:
   std::string chain_sensor_name_;
 
   image_transport::Publisher pub_checkerboard_;
+
+  int32_t trials_;
+
+  int32_t smooth_measurements_count_;
+
+  std::vector<cv::Point2f> checkerboard_points_;
+  std::vector<uint32_t>    checkerboard_points_valid_measurements_count_;
+  int32_t                  valid_detections_count_;
 };
 
 }  // namespace robot_calibration
