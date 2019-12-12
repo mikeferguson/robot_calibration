@@ -50,6 +50,15 @@ struct OptimizationParams
     double yaw;
   };
 
+  struct AdditionalFrame
+  {
+    XmlRpc::XmlRpcValue translation;
+    XmlRpc::XmlRpcValue rotation;
+
+    std::string name;
+    std::string parent;
+  };
+
   struct Params
   {
     std::string name;
@@ -63,6 +72,7 @@ struct OptimizationParams
   std::vector<FreeFrameInitialValue> free_frames_initial_values;
   std::vector<Params> models;
   std::vector<Params> error_blocks;
+  std::vector<AdditionalFrame> additional_frames;
 
   OptimizationParams();
   bool LoadFromROS(ros::NodeHandle& nh);

@@ -31,6 +31,9 @@
 #include <robot_calibration/ceres/outrageous_error.h>
 #include <robot_calibration/models/camera3d.h>
 #include <robot_calibration/models/chain.h>
+
+#include <tf2_kdl/tf2_kdl.h>
+
 #include <boost/shared_ptr.hpp>
 #include <string>
 #include <map>
@@ -38,9 +41,8 @@
 namespace robot_calibration
 {
 
-Optimizer::Optimizer(const std::string& robot_description) :
-  num_params_(0),
-  num_residuals_(0)
+Optimizer::Optimizer(const std::string &robot_description) : num_params_(0),
+                                                             num_residuals_(0)
 {
   if (!model_.initString(robot_description))
     std::cerr << "Failed to parse URDF." << std::endl;
@@ -53,7 +55,7 @@ Optimizer::~Optimizer()
 {
 }
 
-int Optimizer::optimize(OptimizationParams& params,
+int Optimizer::optimize(OptimizationParams &params,
                         std::vector<robot_calibration_msgs::CalibrationData> data,
                         bool progress_to_stdout)
 {
@@ -64,22 +66,67 @@ int Optimizer::optimize(OptimizationParams& params,
     return -1;
   }
 
+  const KDL::SegmentMap &segments = tree_.getSegments();
+  for (KDL::SegmentMap::const_iterator it = segments.cbegin(); it != segments.cend(); it++)
+  {
+    ROS_INFO_STREAM("Segment name in kdl tree: " << it->first);
+  }
+  // Insert additional frames in KDL tree
+  ROS_INFO_STREAM("about to insert " << params.additional_frames.size() << " additional frames in tree");
+  for (size_t i = 0; i < params.additional_frames.size(); ++i)
+  {
+    // if frame is not already in tree
+    if (!segments.count(params.additional_frames[i].name))
+    {
+      KDL::Rotation rot = KDL::Rotation::Quaternion(
+          static_cast<double>(params.additional_frames[i].rotation[0]),
+          static_cast<double>(params.additional_frames[i].rotation[1]),
+          static_cast<double>(params.additional_frames[i].rotation[2]),
+          static_cast<double>(params.additional_frames[i].rotation[3]));
+      KDL::Vector trans(
+          static_cast<double>(params.additional_frames[i].translation[0]),
+          static_cast<double>(params.additional_frames[i].translation[1]),
+          static_cast<double>(params.additional_frames[i].translation[2]));
+      KDL::Frame frame(rot, trans);
+
+      if (tree_.addSegment(KDL::Segment(params.additional_frames[i].name,
+                                        KDL::Joint(KDL::Joint::None), frame),
+                           params.additional_frames[i].parent))
+      {
+        ROS_INFO_STREAM("added frame: "
+                        << params.additional_frames[i].name
+                        << " to parent: " << params.additional_frames[i].parent
+                        << " with transformation: " << tf2::kdlToTransform(frame));
+      }
+      else
+      {
+        ROS_ERROR_STREAM("could not add frame: "
+                         << params.additional_frames[i].name
+                         << " to parent: " << params.additional_frames[i].parent
+                         << " with transformation: " << tf2::kdlToTransform(frame));
+      }
+    }
+    else
+    {
+      ROS_WARN_STREAM("frame: "
+                      << params.additional_frames[i].name
+                      << " is already contained in tree");
+    }
+  }
+
   // Create models
   for (size_t i = 0; i < params.models.size(); ++i)
   {
     if (params.models[i].type == "chain")
     {
-      ROS_INFO_STREAM("Creating chain '" << params.models[i].name << "' from " <<
-                                            params.base_link << " to " <<
-                                            params.models[i].params["frame"]);
-      ChainModel* model = new ChainModel(params.models[i].name, tree_, params.base_link, params.models[i].params["frame"]);
+      ROS_INFO_STREAM("Creating chain '" << params.models[i].name << "' from " << params.base_link << " to " << params.models[i].params["frame"]);
+      ChainModel *model = new ChainModel(params.models[i].name, tree_, params.base_link, params.models[i].params["frame"]);
       models_[params.models[i].name] = model;
     }
     else if (params.models[i].type == "camera3d")
     {
-      ROS_INFO_STREAM("Creating camera3d '" << params.models[i].name << "' in frame " <<
-                                               params.models[i].params["frame"]);
-      Camera3dModel* model = new Camera3dModel(params.models[i].name, tree_, params.base_link, params.models[i].params["frame"]);
+      ROS_INFO_STREAM("Creating camera3d '" << params.models[i].name << "' from " << params.base_link << "' in frame " << params.models[i].params["frame"]);
+      Camera3dModel *model = new Camera3dModel(params.models[i].name, tree_, params.base_link, params.models[i].params["frame"]);
       models_[params.models[i].name] = model;
     }
     else
@@ -116,17 +163,16 @@ int Optimizer::optimize(OptimizationParams& params,
                             params.free_frames_initial_values[i].pitch,
                             params.free_frames_initial_values[i].yaw))
     {
-      ROS_ERROR_STREAM("Error setting initial value for " <<
-                       params.free_frames_initial_values[i].name);
+      ROS_ERROR_STREAM("Error setting initial value for " << params.free_frames_initial_values[i].name);
     }
   }
 
   // Allocate space
-  double* free_params = new double[offsets_->size()];
+  double *free_params = new double[offsets_->size()];
   offsets_->initialize(free_params);
 
   // Houston, we have a problem...
-  ceres::Problem* problem = new ceres::Problem();
+  ceres::Problem *problem = new ceres::Problem();
 
   // For each sample of data:
   for (size_t i = 0; i < data.size(); ++i)
@@ -154,34 +200,38 @@ int Optimizer::optimize(OptimizationParams& params,
           continue;
 
         // Create the block
-        ceres::CostFunction * cost = Chain3dToChain3d::Create(models_[a_name],
-                                                              models_[b_name],
-                                                              offsets_.get(),
-                                                              data[i]);
+        ceres::CostFunction *cost = Chain3dToChain3d::Create(models_[a_name],
+                                                             models_[b_name],
+                                                             offsets_.get(),
+                                                             data[i]);
 
         // Output initial error
         if (progress_to_stdout)
         {
-          double ** params = new double*[1];
+          double **params = new double *[1];
           params[0] = free_params;
-          double * residuals = new double[cost->num_residuals()];
+          double *residuals = new double[cost->num_residuals()];
 
           cost->Evaluate(params, residuals, NULL);
 
-          std::cout << "INITIAL COST (" << i << ")" << std::endl << "  x: ";
+          std::cout << "INITIAL COST (" << i << ")" << std::endl
+                    << "  x: ";
           for (size_t k = 0; k < static_cast<size_t>(cost->num_residuals() / 3); ++k)
-            std::cout << "  " << std::setw(10) << std::fixed << residuals[(3*k + 0)];
-          std::cout << std::endl << "  y: ";
+            std::cout << "  " << std::setw(10) << std::fixed << residuals[(3 * k + 0)];
+          std::cout << std::endl
+                    << "  y: ";
           for (size_t k = 0; k < static_cast<size_t>(cost->num_residuals() / 3); ++k)
-            std::cout << "  " << std::setw(10) << std::fixed << residuals[(3*k + 1)];
-          std::cout << std::endl << "  z: ";
+            std::cout << "  " << std::setw(10) << std::fixed << residuals[(3 * k + 1)];
+          std::cout << std::endl
+                    << "  z: ";
           for (size_t k = 0; k < static_cast<size_t>(cost->num_residuals() / 3); ++k)
-            std::cout << "  " << std::setw(10) << std::fixed << residuals[(3*k + 2)];
-          std::cout << std::endl << std::endl;
+            std::cout << "  " << std::setw(10) << std::fixed << residuals[(3 * k + 2)];
+          std::cout << std::endl
+                    << std::endl;
         }
 
         problem->AddResidualBlock(cost,
-                                  NULL,  // squared loss
+                                  NULL, // squared loss
                                   free_params);
       }
       else if (params.error_blocks[j].type == "chain3d_to_plane")
@@ -201,29 +251,31 @@ int Optimizer::optimize(OptimizationParams& params,
           continue;
 
         // Create the block
-        ceres::CostFunction * cost =
-          Chain3dToPlane::Create(models_[chain_name],
-                                 offsets_.get(),
-                                 data[i],
-                                 params.getParam(params.error_blocks[j], "a", 0.0),
-                                 params.getParam(params.error_blocks[j], "b", 0.0),
-                                 params.getParam(params.error_blocks[j], "c", 1.0),
-                                 params.getParam(params.error_blocks[j], "d", 0.0),
-                                 params.getParam(params.error_blocks[j], "scale", 1.0));
+        ceres::CostFunction *cost =
+            Chain3dToPlane::Create(models_[chain_name],
+                                   offsets_.get(),
+                                   data[i],
+                                   params.getParam(params.error_blocks[j], "a", 0.0),
+                                   params.getParam(params.error_blocks[j], "b", 0.0),
+                                   params.getParam(params.error_blocks[j], "c", 1.0),
+                                   params.getParam(params.error_blocks[j], "d", 0.0),
+                                   params.getParam(params.error_blocks[j], "scale", 1.0));
 
         // Output initial error
         if (progress_to_stdout)
         {
-          double ** params = new double*[1];
+          double **params = new double *[1];
           params[0] = free_params;
-          double * residuals = new double[cost->num_residuals()];
+          double *residuals = new double[cost->num_residuals()];
 
           cost->Evaluate(params, residuals, NULL);
 
-          std::cout << "INITIAL COST (" << i << ")" << std::endl << "  d: ";
+          std::cout << "INITIAL COST (" << i << ")" << std::endl
+                    << "  d: ";
           for (size_t k = 0; k < static_cast<size_t>(cost->num_residuals()); ++k)
             std::cout << "  " << std::setw(10) << std::fixed << residuals[(k)];
-          std::cout << std::endl << std::endl;
+          std::cout << std::endl
+                    << std::endl;
           delete residuals;
           delete params;
         }
@@ -252,48 +304,53 @@ int Optimizer::optimize(OptimizationParams& params,
           continue;
 
         // Create the block
-        ceres::CostFunction * cost =
-          PlaneToPlaneError::Create(models_[a_name],
-                                    models_[b_name],
-                                    offsets_.get(),
-                                    data[i],
-                                    params.getParam(params.error_blocks[j], "scale_normal", 1.0),
-                                    params.getParam(params.error_blocks[j], "scale_offset", 1.0));
+        ceres::CostFunction *cost =
+            PlaneToPlaneError::Create(models_[a_name],
+                                      models_[b_name],
+                                      offsets_.get(),
+                                      data[i],
+                                      params.getParam(params.error_blocks[j], "scale_normal", 1.0),
+                                      params.getParam(params.error_blocks[j], "scale_offset", 1.0));
 
         // Output initial error
         if (progress_to_stdout)
         {
-          double ** params = new double*[1];
+          double **params = new double *[1];
           params[0] = free_params;
-          double * residuals = new double[cost->num_residuals()];
+          double *residuals = new double[cost->num_residuals()];
 
           cost->Evaluate(params, residuals, NULL);
-          std::cout << "INITIAL COST (" << i << ")" << std::endl << "  a: ";
+          std::cout << "INITIAL COST (" << i << ")" << std::endl
+                    << "  a: ";
           std::cout << "  " << std::setw(10) << std::fixed << residuals[0];
-          std::cout << std::endl << "  b: ";
+          std::cout << std::endl
+                    << "  b: ";
           std::cout << "  " << std::setw(10) << std::fixed << residuals[1];
-          std::cout << std::endl << "  c: ";
+          std::cout << std::endl
+                    << "  c: ";
           std::cout << "  " << std::setw(10) << std::fixed << residuals[2];
-          std::cout << std::endl << "  d: ";
+          std::cout << std::endl
+                    << "  d: ";
           std::cout << "  " << std::setw(10) << std::fixed << residuals[3];
-          std::cout << std::endl << std::endl;
+          std::cout << std::endl
+                    << std::endl;
         }
 
         problem->AddResidualBlock(cost,
-                                  NULL,  // squared loss
+                                  NULL, // squared loss
                                   free_params);
       }
       else if (params.error_blocks[j].type == "outrageous")
       {
         // Outrageous error block requires no particular sensors, add to every sample
         problem->AddResidualBlock(
-          OutrageousError::Create(offsets_.get(),
-                                  static_cast<std::string>(params.error_blocks[j].params["param"]),
-                                  params.getParam(params.error_blocks[j], "joint_scale", 1.0),
-                                  params.getParam(params.error_blocks[j], "position_scale", 1.0),
-                                  params.getParam(params.error_blocks[j], "rotation_scale", 1.0)),
-          NULL, // squared loss
-          free_params);
+            OutrageousError::Create(offsets_.get(),
+                                    static_cast<std::string>(params.error_blocks[j].params["param"]),
+                                    params.getParam(params.error_blocks[j], "joint_scale", 1.0),
+                                    params.getParam(params.error_blocks[j], "position_scale", 1.0),
+                                    params.getParam(params.error_blocks[j], "rotation_scale", 1.0)),
+            NULL, // squared loss
+            free_params);
       }
       else
       {
@@ -317,7 +374,8 @@ int Optimizer::optimize(OptimizationParams& params,
   summary_.reset(new ceres::Solver::Summary());
   ceres::Solve(options, problem, summary_.get());
   if (progress_to_stdout)
-    std::cout << "\n" << summary_->BriefReport() << std::endl;
+    std::cout << "\n"
+              << summary_->BriefReport() << std::endl;
 
   // Save some status
   num_params_ = problem->NumParameters();
@@ -333,4 +391,4 @@ int Optimizer::optimize(OptimizationParams& params,
   return 0;
 }
 
-}  // namespace robot_calibration
+} // namespace robot_calibration

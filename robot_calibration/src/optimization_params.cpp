@@ -125,6 +125,23 @@ bool OptimizationParams::LoadFromROS(ros::NodeHandle& nh)
     }
   }
 
+  if (nh.hasParam("additional_frames_in_tree"))
+  {
+    XmlRpc::XmlRpcValue frame_params;
+    nh.getParam("additional_frames_in_tree", frame_params);
+    ROS_ASSERT(frame_params.getType() == XmlRpc::XmlRpcValue::TypeArray);
+
+    for (int32_t i = 0; i < frame_params.size(); ++i)
+    {
+      AdditionalFrame frame;
+      frame.name = static_cast<std::string>(frame_params[i]["name"]);
+      frame.parent = static_cast<std::string>(frame_params[i]["parent"]);
+      frame.translation = frame_params[i]["translation"];
+      frame.rotation = frame_params[i]["rotation"];
+      additional_frames.push_back(frame);
+    }
+  }
+
   return true;
 }
 
