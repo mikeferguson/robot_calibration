@@ -38,7 +38,7 @@
 #include <robot_calibration/camera_info.h>
 #include <robot_calibration/load_bag.h>
 
-#include <boost/foreach.hpp>  // for rosbag iterator
+#include <boost/foreach.hpp> // for rosbag iterator
 
 /** \mainpage
  * \section parameters Parameters of the Optimization:
@@ -64,15 +64,46 @@
  *     - write results to URDF.
  */
 
+void output_calibration_offsets_to_yaml(const robot_calibration::OptimizationParams&      params,
+                                        const robot_calibration::CalibrationOffsetParser& offsets)
+{
+  std::stringstream stream;
+
+  stream << "frames_offsets:" << std::endl;
+  for (uint32_t i = 0; i < params.free_frames.size(); i++)
+  {
+    KDL::Frame frame;
+    offsets.getFrame(params.free_frames[i].name, frame);
+
+    double rx, ry, rz, rw;
+    frame.M.GetQuaternion(rx, ry, rz, rw);
+
+    stream << "  - name: " << params.free_frames[i].name << "\n    translation: [" << frame.p.x() << ", " << frame.p.y()
+           << ", " << frame.p.z() << "]"
+           << "\n    rotation: [" << rx << ", " << ry << ", " << rz << ", " << rw << "]" << std::endl;
+  }
+
+  stream << "joint_angle_offsets:" << std::endl;
+  for (uint32_t i = 0; i < params.free_params.size(); i++)
+  {
+    stream << "  " << params.free_params[i] << ": " << offsets.get(params.free_params[i]) << std::endl;
+  }
+  std::string result = stream.str();
+  std::cout << result;
+  std::ofstream file_stream("/tmp/calibration_offsets.yaml");
+  file_stream << result;
+  file_stream.close();
+}
+
 /*
  * usage:
  *  calibrate --manual
  *  calibrate calibration_poses.bag
  *  calibrate --from-bag calibration_data.bag
  */
-int main(int argc, char** argv)
+int main(int argc, char **argv)
 {
-  ros::init(argc, argv,"robot_calibration");
+  ros::init(argc, argv, "robot_calibration");
   ros::NodeHandle nh("~");
 
   // Should we be stupidly verbose?
@@ -101,7 +132,7 @@ int main(int argc, char** argv)
     }
 
     ros::Publisher pub = nh.advertise<robot_calibration_msgs::CalibrationData>("/calibration_data", 10);
-    ros::Publisher urdf_pub = nh.advertise<std_msgs::String>("/robot_description", 1, true);  // latched
+    ros::Publisher urdf_pub = nh.advertise<std_msgs::String>("/robot_description", 1, true); // latched
 
     // Get the robot_description and republish it
     if (!nh.getParam("/robot_description", description_msg.data))
@@ -288,13 +319,13 @@ int main(int argc, char** argv)
 
     XmlRpc::XmlRpcValue::iterator it;
     size_t step;
-    size_t max_step = (cal_steps.size()>0)?cal_steps.size():1;
+    size_t max_step = (cal_steps.size() > 0) ? cal_steps.size() : 1;
     std::vector<std::string> prev_frame_names;
     std::string prev_params_yaml;
     for (step = 0, it = cal_steps.begin(); step < max_step; step++, it++)
     {
       std::string name = static_cast<std::string>(it->first);
-      ros::NodeHandle cal_steps_handle(nh, "cal_steps/"+name);
+      ros::NodeHandle cal_steps_handle(nh, "cal_steps/" + name);
       params.LoadFromROS(cal_steps_handle);
       opt.optimize(params, data, verbose);
       if (verbose)
@@ -302,6 +333,7 @@ int main(int argc, char** argv)
         std::cout << "Parameter Offsets:" << std::endl;
         std::cout << opt.getOffsets()->getOffsetYAML() << std::endl;
       }
+      output_calibration_offsets_to_yaml(params, *opt.getOffsets());
     }
   }
   else
@@ -323,6 +355,9 @@ int main(int argc, char** argv)
     std::strftime(datecode, 80, "%Y_%m_%d_%H_%M_%S", std::localtime(&t));
   }
 
+  ROS_INFO("saving offsets to yaml");
+  output_calibration_offsets_to_yaml(params, *opt.getOffsets());
+
   ROS_INFO("saving urdf");
   // Save updated URDF
   {
@@ -341,22 +376,22 @@ int main(int argc, char** argv)
     std::stringstream depth_name;
     depth_name << "/tmp/calibration/depth_" << datecode << ".yaml";
     camera_calibration_parsers::writeCalibration(depth_name.str(), "",
-        robot_calibration::updateCameraInfo(
-                         opt.getOffsets()->get("camera_fx"),
-                         opt.getOffsets()->get("camera_fy"),
-                         opt.getOffsets()->get("camera_cx"),
-                         opt.getOffsets()->get("camera_cy"),
-                         data[0].observations[0].ext_camera_info.camera_info));  // TODO avoid hardcoding index
+                                                 robot_calibration::updateCameraInfo(
+                                                     opt.getOffsets()->get("camera_fx"),
+                                                     opt.getOffsets()->get("camera_fy"),
+                                                     opt.getOffsets()->get("camera_cx"),
+                                                     opt.getOffsets()->get("camera_cy"),
+                                                     data[0].observations[0].ext_camera_info.camera_info)); // TODO avoid hardcoding index
 
     std::stringstream rgb_name;
     rgb_name << "/tmp/calibration/rgb_" << datecode << ".yaml";
     camera_calibration_parsers::writeCalibration(rgb_name.str(), "",
-        robot_calibration::updateCameraInfo(
-                         opt.getOffsets()->get("camera_fx"),
-                         opt.getOffsets()->get("camera_fy"),
-                         opt.getOffsets()->get("camera_cx"),
-                         opt.getOffsets()->get("camera_cy"),
-                         data[0].observations[0].ext_camera_info.camera_info));  // TODO avoid hardcoding index
+                                                 robot_calibration::updateCameraInfo(
+                                                     opt.getOffsets()->get("camera_fx"),
+                                                     opt.getOffsets()->get("camera_fy"),
+                                                     opt.getOffsets()->get("camera_cx"),
+                                                     opt.getOffsets()->get("camera_cy"),
+                                                     data[0].observations[0].ext_camera_info.camera_info)); // TODO avoid hardcoding index
   }
 
   // Output the calibration yaml
