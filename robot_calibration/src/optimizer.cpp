@@ -66,11 +66,15 @@ int Optimizer::optimize(OptimizationParams &params,
     return -1;
   }
 
-  const KDL::SegmentMap &segments = tree_.getSegments();
+  std::stringstream      segments_out;
+  const KDL::SegmentMap& segments = tree_.getSegments();
+  segments_out << "Segment name in kdl tree: " << std::endl;
   for (KDL::SegmentMap::const_iterator it = segments.cbegin(); it != segments.cend(); it++)
   {
-    ROS_INFO_STREAM("Segment name in kdl tree: " << it->first);
+    segments_out << "  - " << it->first << std::endl;
   }
+  ROS_INFO_STREAM(segments_out.str());
+
   // Insert additional frames in KDL tree
   ROS_INFO_STREAM("about to insert " << params.additional_frames.size() << " additional frames in tree");
   for (size_t i = 0; i < params.additional_frames.size(); ++i)
@@ -96,14 +100,14 @@ int Optimizer::optimize(OptimizationParams &params,
         ROS_INFO_STREAM("added frame: "
                         << params.additional_frames[i].name
                         << " to parent: " << params.additional_frames[i].parent
-                        << " with transformation: " << tf2::kdlToTransform(frame));
+                        << " with transformation: " << tf2::kdlToTransform(frame).transform);
       }
       else
       {
         ROS_ERROR_STREAM("could not add frame: "
                          << params.additional_frames[i].name
                          << " to parent: " << params.additional_frames[i].parent
-                         << " with transformation: " << tf2::kdlToTransform(frame));
+                         << " with transformation: " << tf2::kdlToTransform(frame).transform);
       }
     }
     else

@@ -75,7 +75,12 @@ bool load_bag(const std::string& file_name,
   BOOST_FOREACH (rosbag::MessageInstance const m, data_view_)
   {
     robot_calibration_msgs::CalibrationData::ConstPtr msg = m.instantiate<robot_calibration_msgs::CalibrationData>();
-    data.push_back(*msg);
+    if (msg->observations.empty())
+    {
+      ROS_ERROR_STREAM("observations is empty in calibration data sample");
+      return false;
+    }
+    data.push_back(*msg);    
   }
 
   return true;
