@@ -21,9 +21,7 @@
 
 namespace robot_calibration
 {
-
-OptimizationParams::OptimizationParams() :
-  base_link("base_link")
+OptimizationParams::OptimizationParams() : base_link("base_link")
 {
 }
 
@@ -127,6 +125,8 @@ bool OptimizationParams::LoadFromROS(ros::NodeHandle& nh)
 
   if (nh.hasParam("additional_frames_in_tree"))
   {
+    additional_frames.clear();
+
     XmlRpc::XmlRpcValue frame_params;
     nh.getParam("additional_frames_in_tree", frame_params);
     ROS_ASSERT(frame_params.getType() == XmlRpc::XmlRpcValue::TypeArray);

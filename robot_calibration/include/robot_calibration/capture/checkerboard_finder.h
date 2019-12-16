@@ -21,19 +21,18 @@
 #ifndef ROBOT_CALIBRATION_CAPTURE_CHECKERBOARD_FINDER_H
 #define ROBOT_CALIBRATION_CAPTURE_CHECKERBOARD_FINDER_H
 
-#include <ros/ros.h>
 #include <robot_calibration/capture/depth_camera.h>
 #include <robot_calibration/plugins/feature_finder.h>
 #include <robot_calibration_msgs/CalibrationData.h>
+#include <ros/ros.h>
 
 #include <opencv2/calib3d/calib3d.hpp>
 
-#include <image_transport/image_transport.h>
 #include <cv_bridge/cv_bridge.h>
+#include <image_transport/image_transport.h>
 
 namespace robot_calibration
 {
-
 /**
  *  \brief This class processes the point cloud input to find a checkerboard
  */
@@ -41,22 +40,24 @@ class CheckerboardFinder : public FeatureFinder
 {
 public:
   CheckerboardFinder();
-  bool init(const std::string& name, ros::NodeHandle & n);
-  bool find(robot_calibration_msgs::CalibrationData * msg);
+  bool init(const std::string& name, ros::NodeHandle& n);
+  bool find(robot_calibration_msgs::CalibrationData* msg);
 
   void setTrials(const uint32_t trials);
   void setSmoothingSamplesCount(const uint32_t count);
 
 private:
-  bool findInternal(robot_calibration_msgs::CalibrationData * msg);
+  bool findInternal(robot_calibration_msgs::CalibrationData* msg);
 
   void cameraCallback(const sensor_msgs::PointCloud2& cloud);
   bool waitForCloud();
 
   void computeMovingAverage(std::vector<cv::Point2f>& new_measurements);
 
+  void reset();
+
   ros::Subscriber subscriber_;  /// Incoming sensor_msgs::PointCloud2
-  ros::Publisher publisher_;   /// Outgoing sensor_msgs::PointCloud2
+  ros::Publisher publisher_;    /// Outgoing sensor_msgs::PointCloud2
 
   bool waiting_;
   sensor_msgs::PointCloud2 cloud_;
@@ -65,14 +66,14 @@ private:
   /*
    * ROS Parameters
    */
-  int points_x_;        /// Size of checkerboard
-  int points_y_;        /// Size of checkerboard
+  int points_x_;  /// Size of checkerboard
+  int points_y_;  /// Size of checkerboard
 
-  double square_size_;     /// Size of a square on checkboard (in meters)
+  double square_size_;  /// Size of a square on checkboard (in meters)
 
-  bool output_debug_;   /// Should we output debug image/cloud?
+  bool output_debug_;  /// Should we output debug image/cloud?
 
-  std::string frame_id_;   /// Name of checkerboard frame
+  std::string frame_id_;  /// Name of checkerboard frame
 
   std::string camera_sensor_name_;
   std::string chain_sensor_name_;
@@ -84,8 +85,8 @@ private:
   int32_t smooth_measurements_count_;
 
   std::vector<cv::Point2f> checkerboard_points_;
-  std::vector<uint32_t>    checkerboard_points_valid_measurements_count_;
-  int32_t                  valid_detections_count_;
+  std::vector<uint32_t> checkerboard_points_valid_measurements_count_;
+  int32_t valid_detections_count_;
 };
 
 }  // namespace robot_calibration

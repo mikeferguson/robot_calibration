@@ -74,6 +74,9 @@ class CapturePoses:
             except ValueError:
                 self.last_state_.joint_states.name.append(joint)
                 self.last_state_.joint_states.position.append(position)
+        
+        # TODO hardcoded feature finder id
+        self.last_state_.features = ['checkerboard_finder']        
 
 
 if __name__ == '__main__':

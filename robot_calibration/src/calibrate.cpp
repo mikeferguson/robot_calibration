@@ -151,16 +151,16 @@ void output_calibration_offsets(const robot_calibration::OptimizationParams& par
   }
 
   // Output the calibration yaml
-  ROS_INFO("outputting camera calibration yaml");
+  ROS_INFO("outputting calibration yaml");
   {
     std::stringstream yaml_name;
-    yaml_name << path + "/camera_calibration.yaml";
+    yaml_name << path + "/calibration.yaml";
     std::ofstream file;
     file.open(yaml_name.str().c_str());
     file << opt.getOffsets()->getOffsetYAML();
-    file << "depth_info: depth_" << datecode << ".yaml" << std::endl;
-    file << "rgb_info: rgb_" << datecode << ".yaml" << std::endl;
-    file << "urdf: calibrated_" << datecode << ".urdf" << std::endl;
+    file << "depth_info: depth.yaml" << std::endl;
+    file << "rgb_info: rgb.yaml" << std::endl;
+    file << "urdf: calibrated.urdf" << std::endl;
     file.close();
   }
 }
@@ -254,7 +254,12 @@ int main(int argc, char** argv)
 
           if (poses.back().features.empty())
           {
-            ROS_ERROR_STREAM("no feature finder added to capture pose number: " << (poses.size() - 1));
+            ROS_WARN_STREAM("no feature finder added to capture pose number: " << (poses.size() - 1)
+                                                                               << " . Adding default finders.");
+            for (robot_calibration::FeatureFinderMap::iterator it = finders_.begin(); it != finders_.end(); it++)
+            {
+              poses.back().features.push_back(it->first);
+            }
           }
         }
       }
