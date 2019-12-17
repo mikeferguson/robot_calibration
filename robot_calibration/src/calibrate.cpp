@@ -96,15 +96,15 @@ void output_calibration_offsets(const robot_calibration::OptimizationParams& par
       KDL::Frame frame;
       opt.getOffsets()->getFrame(params.free_frames[i].name, frame);
 
-      double rx, ry, rz, rw;
-      frame.M.GetQuaternion(rx, ry, rz, rw);
+      double rpy[3U];
+      frame.M.GetRPY(rpy[0U], rpy[1U], rpy[2U]);
 
       stream << "  - name: " << params.free_frames[i].name << "\n    translation: [" << frame.p.x() << ", "
              << frame.p.y() << ", " << frame.p.z() << "]"
-             << "\n    rotation: [" << rx << ", " << ry << ", " << rz << ", " << rw << "]" << std::endl;
+             << "\n    rpy: [" << rpy[0U] << ", " << rpy[1U] << ", " << rpy[2U] << "]" << std::endl;
     }
 
-    stream << "joint_angle_offsets:" << std::endl;
+    stream << "offsets:" << std::endl;
     for (uint32_t i = 0; i < params.free_params.size(); i++)
     {
       stream << "  " << params.free_params[i] << ": " << opt.getOffsets()->get(params.free_params[i]) << std::endl;
