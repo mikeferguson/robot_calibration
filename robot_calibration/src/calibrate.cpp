@@ -83,7 +83,7 @@ void output_calibration_offsets(const robot_calibration::OptimizationParams& par
 
   if (!boost::filesystem::exists(dir))
   {
-    boost::filesystem::create_directory(dir);
+    boost::filesystem::create_directories(dir);
   }
 
   ROS_INFO("saving offsets to yaml");
