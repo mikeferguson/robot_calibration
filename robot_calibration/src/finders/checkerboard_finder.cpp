@@ -151,7 +151,7 @@ bool CheckerboardFinder::find(robot_calibration_msgs::CalibrationData* msg)
 {
   reset();
 
-  for (int32_t i = 0U; i < trials_; ++i)
+  for (int32_t i = 0U; (i < trials_) && (ros::ok()); ++i)
   {
     // temporary copy of msg, so we throw away all changes if findInternal() returns false
     robot_calibration_msgs::CalibrationData tmp_msg(*msg);

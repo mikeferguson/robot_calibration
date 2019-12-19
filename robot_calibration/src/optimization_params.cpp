@@ -37,10 +37,16 @@ bool OptimizationParams::LoadFromROS(ros::NodeHandle& nh)
     nh.getParam("free_params", names);
     ROS_ASSERT(names.getType() == XmlRpc::XmlRpcValue::TypeArray);
 
+    std::stringstream stream;
+    stream << "found the following free params:"<< std::endl;
+
     for (int i = 0; i < names.size(); ++i)
     {
       free_params.push_back(static_cast<std::string>(names[i]));
+      stream << "  - " << free_params.back() << std::endl;
     }
+
+    ROS_INFO_STREAM(stream.str());
   }
 
   if (nh.hasParam("free_frames"))
@@ -50,6 +56,9 @@ bool OptimizationParams::LoadFromROS(ros::NodeHandle& nh)
     XmlRpc::XmlRpcValue free_frame_params;
     nh.getParam("free_frames", free_frame_params);
     ROS_ASSERT(free_frame_params.getType() == XmlRpc::XmlRpcValue::TypeArray);
+
+    std::stringstream stream;
+    stream << "found the following free frames:"<< std::endl;
 
     for (int i = 0; i < free_frame_params.size(); ++i)
     {
@@ -62,7 +71,10 @@ bool OptimizationParams::LoadFromROS(ros::NodeHandle& nh)
       params.pitch = static_cast<bool>(free_frame_params[i]["pitch"]);
       params.yaw = static_cast<bool>(free_frame_params[i]["yaw"]);
       free_frames.push_back(params);
+      stream << "  - " <<  params.name << std::endl;
     }
+    ROS_INFO_STREAM(stream.str());
+
   }
 
   if (nh.hasParam("free_frames_initial_values"))

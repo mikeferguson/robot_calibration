@@ -142,20 +142,41 @@ int Optimizer::optimize(OptimizationParams &params,
   // Reset which parameters are free (offset values are retained)
   offsets_->reset();
 
-  // Setup  parameters to calibrate
-  for (size_t i = 0; i < params.free_params.size(); ++i)
   {
-    offsets_->add(params.free_params[i]);
+    std::stringstream stream;
+    stream << "adding the following free params to the optimizer:" << std::endl;
+
+    // Setup  parameters to calibrate
+    for (size_t i = 0; i < params.free_params.size(); ++i)
+    {
+      offsets_->add(params.free_params[i]);
+      stream << "  - " << params.free_params[i] << std::endl;
+    }
+    ROS_INFO_STREAM(stream.str());
   }
-  for (size_t i = 0; i < params.free_frames.size(); ++i)
   {
-    offsets_->addFrame(params.free_frames[i].name,
-                       params.free_frames[i].x,
-                       params.free_frames[i].y,
-                       params.free_frames[i].z,
-                       params.free_frames[i].roll,
-                       params.free_frames[i].pitch,
-                       params.free_frames[i].yaw);
+    std::stringstream stream;
+    stream << "adding the following free frames to the optimizer:" << std::endl;
+    for (size_t i = 0; i < params.free_frames.size(); ++i)
+    {
+      bool found_joint = false;
+      for (KDL::SegmentMap::const_iterator it = segments.cbegin(); (it != segments.cend()) && (!found_joint); it++)
+      {
+        if (it->second.segment.getJoint().getName() == params.free_frames[i].name)
+        {
+          found_joint = true;
+        }
+      }
+      if (!found_joint)
+      {
+        ROS_WARN_STREAM("frame: " << params.free_frames[i].name << " not found in KDL tree.");
+      }
+      offsets_->addFrame(params.free_frames[i].name, params.free_frames[i].x, params.free_frames[i].y,
+                         params.free_frames[i].z, params.free_frames[i].roll, params.free_frames[i].pitch,
+                         params.free_frames[i].yaw);
+      stream << "  - " << params.free_frames[i].name << std::endl;
+    }
+    ROS_INFO_STREAM(stream.str());
   }
   for (size_t i = 0; i < params.free_frames_initial_values.size(); ++i)
   {
@@ -232,6 +253,10 @@ int Optimizer::optimize(OptimizationParams &params,
             std::cout << "  " << std::setw(10) << std::fixed << residuals[(3 * k + 2)];
           std::cout << std::endl
                     << std::endl;
+
+          
+          delete residuals;
+          delete params;          
         }
 
         problem->AddResidualBlock(cost,
@@ -338,6 +363,9 @@ int Optimizer::optimize(OptimizationParams &params,
           std::cout << "  " << std::setw(10) << std::fixed << residuals[3];
           std::cout << std::endl
                     << std::endl;
+
+          delete residuals;
+          delete params;          
         }
 
         problem->AddResidualBlock(cost,
