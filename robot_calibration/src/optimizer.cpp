@@ -67,9 +67,9 @@ int Optimizer::optimize(OptimizationParams &params,
   }
 
   std::stringstream      segments_out;
-  const KDL::SegmentMap& segments = tree_.getSegments();
+  KDL::SegmentMap segments = tree_.getSegments();
   segments_out << "Segment name in kdl tree: " << std::endl;
-  for (KDL::SegmentMap::const_iterator it = segments.cbegin(); it != segments.cend(); it++)
+  for (KDL::SegmentMap::iterator it = segments.begin(); it != segments.end(); it++)
   {
     segments_out << "  - " << it->first << std::endl;
   }
@@ -160,7 +160,7 @@ int Optimizer::optimize(OptimizationParams &params,
     for (size_t i = 0; i < params.free_frames.size(); ++i)
     {
       bool found_joint = false;
-      for (KDL::SegmentMap::const_iterator it = segments.cbegin(); (it != segments.cend()) && (!found_joint); it++)
+      for (KDL::SegmentMap::iterator it = segments.begin(); (it != segments.end()) && (!found_joint); it++)
       {
         if (it->second.segment.getJoint().getName() == params.free_frames[i].name)
         {
