@@ -2,6 +2,27 @@
 Changelog for package robot_calibration
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Merge pull request `#75 <https://github.com/mikeferguson/robot_calibration/issues/75>`_ from mikeferguson/mute_warnings
+  fix warnings about build type
+* fix warnings about build type
+* Merge pull request `#74 <https://github.com/mikeferguson/robot_calibration/issues/74>`_ from mikeferguson/fix_tests
+  fix tests broken by `#71 <https://github.com/mikeferguson/robot_calibration/issues/71>`_
+* fix tests broken by `#71 <https://github.com/mikeferguson/robot_calibration/issues/71>`_
+* Merge pull request `#71 <https://github.com/mikeferguson/robot_calibration/issues/71>`_ from Naoki-Hiraoka/fix-calculation-of-frame_offset
+  Fix calculation of frame offset
+* Merge pull request `#73 <https://github.com/mikeferguson/robot_calibration/issues/73>`_ from mikeferguson/multi-step
+  Support multi-step optimization
+* Merge pull request `#68 <https://github.com/mikeferguson/robot_calibration/issues/68>`_ from d-walsh/bugfix/isnan_error
+  Fixed isnan() error on Kinetic
+* refactor mutli-step support
+* enable multi-step optimization
+* fix frame calculation in getChainFK()
+* fix calculation of frame_offset
+* Fixed isnan() error on Kinetic
+* Contributors: David Walsh, Michael Ferguson, Naoki-Hiraoka
+
 0.6.1 (2019-11-19)
 ------------------
 * Merge pull request `#70 <https://github.com/mikeferguson/robot_calibration/issues/70>`_ from Naoki-Hiraoka/enable-to-change-driver-name
