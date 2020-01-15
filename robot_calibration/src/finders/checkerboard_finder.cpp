@@ -47,10 +47,6 @@ bool CheckerboardFinder::init(const std::string& name, ros::NodeHandle& nh)
   nh.param<std::string>("topic", topic_name, "/points");
   subscriber_ = nh.subscribe(topic_name, 1, &CheckerboardFinder::cameraCallback, this);
 
-  image_transport::ImageTransport it(nh);
-  pub_checkerboard_ = it.advertise("detected_points_image", 1);
-  ROS_INFO_STREAM("Publishing detected corners on topic: " << pub_checkerboard_.getTopic());
-
   // Size of checkerboard
   nh.param<int>("points_x", points_x_, 5);
   nh.param<int>("points_y", points_y_, 4);
@@ -224,9 +220,6 @@ bool CheckerboardFinder::findInternal(robot_calibration_msgs::CalibrationData* m
   cv::Size checkerboard_size(points_x_, points_y_);
   bool found = cv::findChessboardCorners(bridge->image, checkerboard_size, points_current, CV_CALIB_CB_ADAPTIVE_THRESH);
 
-  // draw (un)detected corners using averaged samples
-  cv::Mat corners_drawn(bridge->image.size(), CV_8UC3);
-  cv::cvtColor(bridge->image, corners_drawn, cv::COLOR_GRAY2BGR);
 
   if (found)
   {
@@ -316,9 +309,7 @@ bool CheckerboardFinder::findInternal(robot_calibration_msgs::CalibrationData* m
     }
   }
 
-  cv::drawChessboardCorners(corners_drawn, checkerboard_size, cv::Mat(checkerboard_points_), found);
 
-  pub_checkerboard_.publish(cv_bridge::CvImage(std_msgs::Header(), "bgr8", corners_drawn).toImageMsg());
 
   return false;
 }

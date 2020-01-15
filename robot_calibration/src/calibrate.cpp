@@ -68,18 +68,23 @@
 void output_calibration_offsets(const robot_calibration::OptimizationParams& params,
                                 const robot_calibration::Optimizer& opt,
                                 const std::vector<robot_calibration_msgs::CalibrationData>& data,
-                                const std_msgs::String& description_msg)
-{
-  // Generate datecode
-  char datecode[80];
+                                const std_msgs::String& description_msg,
+                                const ros::NodeHandle& nh)
+{  
+  std::string output_directory;
+  if (!nh.getParam("output_directory", output_directory))
   {
-    std::time_t t = std::time(NULL);
-    std::strftime(datecode, 80, "%Y_%m_%d_%H_%M_%S", std::localtime(&t));
-  }
+    // Generate datecode
+    char datecode[80];
+    {
+      std::time_t t = std::time(NULL);
+      std::strftime(datecode, 80, "%Y_%m_%d_%H_%M_%S", std::localtime(&t));
+    }
 
-  std::string path = "/tmp/calibration/" + std::string(datecode);
+    output_directory = "/tmp/calibration/" + std::string(datecode);
+  }  
 
-  boost::filesystem::path dir(path);
+  boost::filesystem::path dir(output_directory);
 
   if (!boost::filesystem::exists(dir))
   {
@@ -111,7 +116,7 @@ void output_calibration_offsets(const robot_calibration::OptimizationParams& par
     }
     std::string result = stream.str();
     std::cout << result;
-    std::ofstream file_stream(path + "/calibration_offsets.yaml");
+    std::ofstream file_stream(output_directory + "/calibration_offsets.yaml");
     file_stream << result;
     file_stream.close();
   }
@@ -121,7 +126,7 @@ void output_calibration_offsets(const robot_calibration::OptimizationParams& par
   {
     std::string s = opt.getOffsets()->updateURDF(description_msg.data);
     std::stringstream urdf_name;
-    urdf_name << path + "/calibrated.urdf";
+    urdf_name << output_directory + "/calibrated.urdf";
     std::ofstream file;
     file.open(urdf_name.str().c_str());
     file << s;
@@ -132,7 +137,7 @@ void output_calibration_offsets(const robot_calibration::OptimizationParams& par
   ROS_INFO("outputting camera calibration");
   {
     std::stringstream depth_name;
-    depth_name << path + "/depth.yaml";
+    depth_name << output_directory + "/depth.yaml";
     camera_calibration_parsers::writeCalibration(
         depth_name.str(), "",
         robot_calibration::updateCameraInfo(opt.getOffsets()->get("camera_fx"), opt.getOffsets()->get("camera_fy"),
@@ -141,7 +146,7 @@ void output_calibration_offsets(const robot_calibration::OptimizationParams& par
                                                                                                     // hardcoding index
 
     std::stringstream rgb_name;
-    rgb_name << path + "/rgb.yaml";
+    rgb_name << output_directory + "/rgb.yaml";
     camera_calibration_parsers::writeCalibration(
         rgb_name.str(), "",
         robot_calibration::updateCameraInfo(opt.getOffsets()->get("camera_fx"), opt.getOffsets()->get("camera_fy"),
@@ -151,18 +156,18 @@ void output_calibration_offsets(const robot_calibration::OptimizationParams& par
   }
 
   // Output the calibration yaml
-  ROS_INFO("outputting calibration yaml");
-  {
-    std::stringstream yaml_name;
-    yaml_name << path + "/calibration.yaml";
-    std::ofstream file;
-    file.open(yaml_name.str().c_str());
-    file << opt.getOffsets()->getOffsetYAML();
-    file << "depth_info: depth.yaml" << std::endl;
-    file << "rgb_info: rgb.yaml" << std::endl;
-    file << "urdf: calibrated.urdf" << std::endl;
-    file.close();
-  }
+  // ROS_INFO("outputting calibration yaml");
+  // {
+  //   std::stringstream yaml_name;
+  //   yaml_name << path + "/calibration.yaml";
+  //   std::ofstream file;
+  //   file.open(yaml_name.str().c_str());
+  //   file << opt.getOffsets()->getOffsetYAML();
+  //   file << "depth_info: depth.yaml" << std::endl;
+  //   file << "rgb_info: rgb.yaml" << std::endl;
+  //   file << "urdf: calibrated.urdf" << std::endl;
+  //   file.close();
+  // }
 }
 
 /*
@@ -416,7 +421,7 @@ int main(int argc, char** argv)
     }
   }
 
-  output_calibration_offsets(params, opt, data, description_msg);
+  output_calibration_offsets(params, opt, data, description_msg, nh);
 
   ROS_INFO("Done calibrating");
 

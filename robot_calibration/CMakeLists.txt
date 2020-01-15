@@ -26,7 +26,6 @@ find_package(catkin REQUIRED
     camera_calibration_parsers
     cv_bridge
     geometry_msgs
-    image_transport
     kdl_parser
     moveit_msgs
     nav_msgs
