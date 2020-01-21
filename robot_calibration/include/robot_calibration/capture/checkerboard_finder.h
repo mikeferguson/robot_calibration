@@ -42,18 +42,11 @@ public:
   bool init(const std::string& name, ros::NodeHandle& n);
   bool find(robot_calibration_msgs::CalibrationData* msg);
 
-  void setTrials(const uint32_t trials);
-  void setSmoothingSamplesCount(const uint32_t count);
-
 private:
   bool findInternal(robot_calibration_msgs::CalibrationData* msg);
 
   void cameraCallback(const sensor_msgs::PointCloud2& cloud);
   bool waitForCloud();
-
-  void computeMovingAverage(std::vector<cv::Point2f>& new_measurements);
-
-  void reset();
 
   std::vector<cv::Point2f> detectChessBoard(const cv::Mat_<cv::Vec3b>& image) const;
   std::vector<cv::Point2f> detectCircleBoard(const cv::Mat_<cv::Vec3b>& image) const;
@@ -87,12 +80,6 @@ private:
   std::string chain_sensor_name_;
 
   int32_t trials_;
-
-  int32_t smooth_measurements_count_;
-
-  std::vector<cv::Point2f> checkerboard_points_;
-  std::vector<uint32_t> checkerboard_points_valid_measurements_count_;
-  int32_t valid_detections_count_;
 
   /**
    * @brief Either "chess_board, circle_board_symmetric, circle_board_asymmetric"

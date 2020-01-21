@@ -30,8 +30,7 @@ const unsigned X = 0;
 const unsigned Y = 1;
 const unsigned Z = 2;
 
-CheckerboardFinder::CheckerboardFinder()
-  : waiting_(false), trials_(50U), smooth_measurements_count_(1U), valid_detections_count_(0U)
+CheckerboardFinder::CheckerboardFinder() : waiting_(false), trials_(50U)
 {
 }
 
@@ -52,7 +51,6 @@ bool CheckerboardFinder::init(const std::string& name, ros::NodeHandle& nh)
   nh.param<int>("points_y", points_y_, 4);
   nh.param<double>("size", square_size_, 0.0245);
 
-  nh.param<int32_t>("moving_average_samples_count", smooth_measurements_count_, 30);
   nh.param<int32_t>("max_trials_count", trials_, 50);
 
   // Should we include debug image/cloud in observations
@@ -115,40 +113,8 @@ bool CheckerboardFinder::waitForCloud()
   return !waiting_;
 }
 
-void CheckerboardFinder::computeMovingAverage(std::vector<cv::Point2f>& new_measurements)
-{
-  for (uint32_t i = 0; i < new_measurements.size(); i++)
-  {
-    const cv::Point2f& point = new_measurements[i];
-
-    // Do not accept (0.0, 0.0)
-    const double eps = static_cast<double>(10.0) * std::numeric_limits<double>::epsilon();
-    bool is_not_valid = ((std::fabs(point.x) < eps) && (std::fabs(point.y) < eps));
-
-    if (!is_not_valid)
-    {
-      const uint32_t n = checkerboard_points_valid_measurements_count_[i]++;
-      checkerboard_points_[i] = (new_measurements[i] + static_cast<float>(n) * checkerboard_points_[i]) /
-                                static_cast<float>(checkerboard_points_valid_measurements_count_[i]);
-    }
-  }
-}
-
-void CheckerboardFinder::reset()
-{
-  valid_detections_count_ = 0U;
-  checkerboard_points_valid_measurements_count_.resize(points_x_ * points_y_);
-  checkerboard_points_.resize(points_x_ * points_y_);
-
-  std::fill(checkerboard_points_valid_measurements_count_.begin(), checkerboard_points_valid_measurements_count_.end(),
-            0U);
-  std::fill(checkerboard_points_.begin(), checkerboard_points_.end(), cv::Point2f(0.0F, 0.0F));
-}
-
 bool CheckerboardFinder::find(robot_calibration_msgs::CalibrationData* msg)
 {
-  reset();
-
   for (int32_t i = 0U; (i < trials_) && (ros::ok()); ++i)
   {
     // temporary copy of msg, so we throw away all changes if findInternal() returns false
@@ -160,16 +126,6 @@ bool CheckerboardFinder::find(robot_calibration_msgs::CalibrationData* msg)
     }
   }
   return false;
-}
-
-void CheckerboardFinder::setTrials(const uint32_t trials)
-{
-  trials_ = trials;
-}
-
-void CheckerboardFinder::setSmoothingSamplesCount(const uint32_t count)
-{
-  smooth_measurements_count_ = count;
 }
 
 bool CheckerboardFinder::findInternal(robot_calibration_msgs::CalibrationData* msg)
@@ -194,17 +150,17 @@ bool CheckerboardFinder::findInternal(robot_calibration_msgs::CalibrationData* m
     return false;
   }
 
-  std::vector<cv::Point2f> points_current;
-  std::vector<geometry_msgs::PointStamped> points_world;
+  std::vector<cv::Point2f> checker_board_image_positions;
+  std::vector<geometry_msgs::PointStamped> checker_board_object_positions;
   if (checkerboard_type_ == "chess_board")
   {
-    points_current = detectChessBoard(rgb_image);
-    points_world = computeObjectPointsChessBoard();
+    checker_board_image_positions = detectChessBoard(rgb_image);
+    checker_board_object_positions = computeObjectPointsChessBoard();
   }
   else if ((checkerboard_type_ == "circle_board_asymmetric") || checkerboard_type_ == "circle_board_symmetric")
   {
-    points_current = detectCircleBoard(rgb_image);
-    points_world = computeObjectPointsCircleBoard(checkerboard_type_ == "circle_board_asymmetric");
+    checker_board_image_positions = detectCircleBoard(rgb_image);
+    checker_board_object_positions = computeObjectPointsCircleBoard(checkerboard_type_ == "circle_board_asymmetric");
   }
   else
   {
@@ -212,90 +168,81 @@ bool CheckerboardFinder::findInternal(robot_calibration_msgs::CalibrationData* m
     return false;
   }
 
-  const bool found = !points_current.empty();
+  const bool found = !checker_board_image_positions.empty();
 
   if (found)
   {
-    computeMovingAverage(points_current);
+    // Create PointCloud2 to publish
+    sensor_msgs::PointCloud2 cloud;
+    cloud.width = 0;
+    cloud.height = 0;
+    cloud.header.stamp = ros::Time::now();
+    cloud.header.frame_id = cloud_.header.frame_id;
+    sensor_msgs::PointCloud2Modifier cloud_mod(cloud);
+    cloud_mod.setPointCloud2FieldsByString(1, "xyz");
+    cloud_mod.resize(points_x_ * points_y_);
+    sensor_msgs::PointCloud2Iterator<float> iter_cloud(cloud, "x");
 
-    if ((++valid_detections_count_) >= smooth_measurements_count_)
+    // Set msg size
+    int idx_cam = msg->observations.size() + 0;
+    int idx_chain = msg->observations.size() + 1;
+    msg->observations.resize(msg->observations.size() + 2);
+    msg->observations[idx_cam].sensor_name = camera_sensor_name_;
+    msg->observations[idx_chain].sensor_name = chain_sensor_name_;
+
+    msg->observations[idx_cam].features.resize(points_x_ * points_y_);
+    msg->observations[idx_chain].features.resize(points_x_ * points_y_);
+
+    // Fill in the headers
+    rgbd.header = cloud_.header;
+
+    // Fill in message
+    sensor_msgs::PointCloud2ConstIterator<float> xyz(cloud_, "x");
+    for (size_t i = 0; i < checker_board_image_positions.size(); ++i)
     {
-      // Create PointCloud2 to publish
-      sensor_msgs::PointCloud2 cloud;
-      cloud.width = 0;
-      cloud.height = 0;
-      cloud.header.stamp = ros::Time::now();
-      cloud.header.frame_id = cloud_.header.frame_id;
-      sensor_msgs::PointCloud2Modifier cloud_mod(cloud);
-      cloud_mod.setPointCloud2FieldsByString(1, "xyz");
-      cloud_mod.resize(points_x_ * points_y_);
-      sensor_msgs::PointCloud2Iterator<float> iter_cloud(cloud, "x");
+      // Get 3d point
+      int index = (int)(checker_board_image_positions[i].y) * cloud_.width + (int)(checker_board_image_positions[i].x);
+      rgbd.point.x = (xyz + index)[X];
+      rgbd.point.y = (xyz + index)[Y];
+      rgbd.point.z = (xyz + index)[Z];
 
-      // Set msg size
-      int idx_cam = msg->observations.size() + 0;
-      int idx_chain = msg->observations.size() + 1;
-      msg->observations.resize(msg->observations.size() + 2);
-      msg->observations[idx_cam].sensor_name = camera_sensor_name_;
-      msg->observations[idx_chain].sensor_name = chain_sensor_name_;
-
-      msg->observations[idx_cam].features.resize(points_x_ * points_y_);
-      msg->observations[idx_chain].features.resize(points_x_ * points_y_);
-
-      // Fill in the headers
-      rgbd.header = cloud_.header;
-
-      // Fill in message
-      sensor_msgs::PointCloud2ConstIterator<float> xyz(cloud_, "x");
-      for (size_t i = 0; i < checkerboard_points_.size(); ++i)
+      // Do not accept NANs
+      if (std::isnan(rgbd.point.x) || std::isnan(rgbd.point.y) || std::isnan(rgbd.point.z))
       {
-        // Get 3d point
-        int index = (int)(checkerboard_points_[i].y) * cloud_.width + (int)(checkerboard_points_[i].x);
-        rgbd.point.x = (xyz + index)[X];
-        rgbd.point.y = (xyz + index)[Y];
-        rgbd.point.z = (xyz + index)[Z];
-
-        // Do not accept NANs
-        if (std::isnan(rgbd.point.x) || std::isnan(rgbd.point.y) || std::isnan(rgbd.point.z))
-        {
-          ROS_ERROR_STREAM("NAN point on " << i);
-          return false;
-        }
-
-        // Do not accept (0.0, 0.0, 0.0)
-        const double eps = static_cast<double>(10.0) * std::numeric_limits<double>::epsilon();
-        if ((std::fabs(rgbd.point.x) < eps) || (std::fabs(rgbd.point.y) < eps) || (std::fabs(rgbd.point.z) < eps))
-        {
-          ROS_ERROR_STREAM("(0.0, 0.0, 0.0) point on " << i);
-          return false;
-        }
-
-        msg->observations[idx_cam].features[i] = rgbd;
-        msg->observations[idx_cam].ext_camera_info = depth_camera_manager_.getDepthCameraInfo();
-        msg->observations[idx_chain].features[i] = points_world[i];
-
-        // Visualize
-        iter_cloud[0] = rgbd.point.x;
-        iter_cloud[1] = rgbd.point.y;
-        iter_cloud[2] = rgbd.point.z;
-        ++iter_cloud;
+        ROS_ERROR_STREAM("NAN point on " << i);
+        return false;
       }
 
-      // Add debug cloud to message
-      if (output_debug_)
+      // Do not accept (0.0, 0.0, 0.0)
+      const double eps = static_cast<double>(10.0) * std::numeric_limits<double>::epsilon();
+      if ((std::fabs(rgbd.point.x) < eps) || (std::fabs(rgbd.point.y) < eps) || (std::fabs(rgbd.point.z) < eps))
       {
-        msg->observations[idx_cam].cloud = cloud_;
+        ROS_ERROR_STREAM("(0.0, 0.0, 0.0) point on " << i);
+        return false;
       }
 
-      // Publish results
-      publisher_.publish(cloud);
+      msg->observations[idx_cam].features[i] = rgbd;
+      msg->observations[idx_cam].ext_camera_info = depth_camera_manager_.getDepthCameraInfo();
+      msg->observations[idx_chain].features[i] = checker_board_object_positions[i];
 
-      // Found all points
-      return true;
+      // Visualize
+      iter_cloud[0] = rgbd.point.x;
+      iter_cloud[1] = rgbd.point.y;
+      iter_cloud[2] = rgbd.point.z;
+      ++iter_cloud;
     }
-    else
+
+    // Add debug cloud to message
+    if (output_debug_)
     {
-      // reset();
+      msg->observations[idx_cam].cloud = cloud_;
     }
+
+    // Publish results
+    publisher_.publish(cloud);
+
+    // Found all points
+    return true;
   }
 
   return false;
