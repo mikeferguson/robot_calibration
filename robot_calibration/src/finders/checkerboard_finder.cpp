@@ -65,6 +65,8 @@ bool CheckerboardFinder::init(const std::string& name, ros::NodeHandle& nh)
   nh.param<std::string>("camera_sensor_name", camera_sensor_name_, "camera");
   nh.param<std::string>("chain_sensor_name", chain_sensor_name_, "arm");
 
+  nh.param<std::string>("checkerboard_type", checkerboard_type_, "chess_board");
+
   // Publish where checkerboard points were seen
   publisher_ = nh.advertise<sensor_msgs::PointCloud2>(getName() + "_points", 10);
 
@@ -173,7 +175,6 @@ void CheckerboardFinder::setSmoothingSamplesCount(const uint32_t count)
 bool CheckerboardFinder::findInternal(robot_calibration_msgs::CalibrationData* msg)
 {
   geometry_msgs::PointStamped rgbd;
-  geometry_msgs::PointStamped world;
 
   // Get cloud
   if (!waitForCloud())
@@ -182,31 +183,10 @@ bool CheckerboardFinder::findInternal(robot_calibration_msgs::CalibrationData* m
     return false;
   }
 
-  // Get an image message from point cloud
-  sensor_msgs::ImagePtr image_msg(new sensor_msgs::Image);
-  sensor_msgs::PointCloud2ConstIterator<uint8_t> rgb(cloud_, "rgb");
-  image_msg->encoding = "bgr8";
-  image_msg->height = cloud_.height;
-  image_msg->width = cloud_.width;
-  image_msg->step = image_msg->width * sizeof(uint8_t) * 3;
-  image_msg->data.resize(image_msg->step * image_msg->height);
-  for (size_t y = 0; y < cloud_.height; y++)
-  {
-    for (size_t x = 0; x < cloud_.width; x++)
-    {
-      uint8_t* pixel = &(image_msg->data[y * image_msg->step + x * 3]);
-      pixel[0] = rgb[0];
-      pixel[1] = rgb[1];
-      pixel[2] = rgb[2];
-      ++rgb;
-    }
-  }
-
-  // Get an OpenCV image from the cloud
-  cv_bridge::CvImagePtr bridge;
+  cv::Mat_<cv::Vec3b> rgb_image;
   try
   {
-    bridge = cv_bridge::toCvCopy(image_msg, "mono8");  // TODO: was rgb8? does this work?
+    rgb_image = getImageFromCloud(cloud_);
   }
   catch (cv_bridge::Exception& e)
   {
@@ -214,12 +194,25 @@ bool CheckerboardFinder::findInternal(robot_calibration_msgs::CalibrationData* m
     return false;
   }
 
-  // Find checkerboard
   std::vector<cv::Point2f> points_current;
-  points_current.resize(points_x_ * points_y_);
-  cv::Size checkerboard_size(points_x_, points_y_);
-  bool found = cv::findChessboardCorners(bridge->image, checkerboard_size, points_current, CV_CALIB_CB_ADAPTIVE_THRESH);
+  std::vector<geometry_msgs::PointStamped> points_world;
+  if (checkerboard_type_ == "chess_board")
+  {
+    points_current = detectChessBoard(rgb_image);
+    points_world = computeObjectPointsChessBoard();
+  }
+  else if ((checkerboard_type_ == "circle_board_asymmetric") || checkerboard_type_ == "circle_board_symmetric")
+  {
+    points_current = detectCircleBoard(rgb_image);
+    points_world = computeObjectPointsCircleBoard(checkerboard_type_ == "circle_board_asymmetric");
+  }
+  else
+  {
+    ROS_ERROR_STREAM("CheckerBoardFinder: not supported checkboard type: " << checkerboard_type_);
+    return false;
+  }
 
+  const bool found = !points_current.empty();
 
   if (found)
   {
@@ -250,15 +243,11 @@ bool CheckerboardFinder::findInternal(robot_calibration_msgs::CalibrationData* m
 
       // Fill in the headers
       rgbd.header = cloud_.header;
-      world.header.frame_id = frame_id_;
 
       // Fill in message
       sensor_msgs::PointCloud2ConstIterator<float> xyz(cloud_, "x");
       for (size_t i = 0; i < checkerboard_points_.size(); ++i)
       {
-        world.point.x = (i % points_x_) * square_size_;
-        world.point.y = (i / points_x_) * square_size_;
-
         // Get 3d point
         int index = (int)(checkerboard_points_[i].y) * cloud_.width + (int)(checkerboard_points_[i].x);
         rgbd.point.x = (xyz + index)[X];
@@ -282,7 +271,7 @@ bool CheckerboardFinder::findInternal(robot_calibration_msgs::CalibrationData* m
 
         msg->observations[idx_cam].features[i] = rgbd;
         msg->observations[idx_cam].ext_camera_info = depth_camera_manager_.getDepthCameraInfo();
-        msg->observations[idx_chain].features[i] = world;
+        msg->observations[idx_chain].features[i] = points_world[i];
 
         // Visualize
         iter_cloud[0] = rgbd.point.x;
@@ -309,9 +298,103 @@ bool CheckerboardFinder::findInternal(robot_calibration_msgs::CalibrationData* m
     }
   }
 
-
-
   return false;
+}
+
+std::vector<cv::Point2f> CheckerboardFinder::detectChessBoard(const cv::Mat_<cv::Vec3b>& image) const
+{
+  std::vector<cv::Point2f> corners;
+  const bool found =
+      cv::findChessboardCorners(image, cv::Size(points_x_, points_y_), corners, CV_CALIB_CB_ADAPTIVE_THRESH);
+
+  if (found)
+  {
+    cv::Mat gray;
+    cv::cvtColor(image, gray, cv::COLOR_BGR2GRAY);
+    cv::cornerSubPix(gray, corners, cv::Size(11, 11), cv::Size(-1, -1),
+                     cv::TermCriteria(CV_TERMCRIT_EPS + CV_TERMCRIT_ITER, 30, 0.1));
+  }
+
+  return corners;
+}
+
+std::vector<cv::Point2f> CheckerboardFinder::detectCircleBoard(const cv::Mat_<cv::Vec3b>& image) const
+{
+  std::vector<cv::Point2f> corners;
+  const bool is_asymetric = (checkerboard_type_ == "circle_board_asymetric");
+
+  cv::findCirclesGrid(image, cv::Size(points_y_, points_x_), corners,
+                      (is_asymetric) ? cv::CALIB_CB_ASYMMETRIC_GRID : cv::CALIB_CB_SYMMETRIC_GRID);
+  return corners;
+}
+
+cv::Mat_<cv::Vec3b> CheckerboardFinder::getImageFromCloud(const sensor_msgs::PointCloud2& cloud) const
+{
+  if ((cloud.height + cloud.width) <= 1U)
+  {
+    return cv::Mat_<cv::Vec3b>();
+  }
+
+  cv::Mat_<cv::Vec3b> image(cloud_.height, cloud_.width);
+  sensor_msgs::PointCloud2ConstIterator<uint8_t> rgb(cloud_, "rgb");
+  for (size_t y = 0; y < cloud_.height; y++)
+  {
+    for (size_t x = 0; x < cloud_.width; x++)
+    {
+      image(y, x)[0U] = rgb[0U];
+      image(y, x)[1U] = rgb[1U];
+      image(y, x)[2U] = rgb[2U];
+      ++rgb;
+    }
+  }
+  return image;
+}
+
+std::vector<geometry_msgs::PointStamped> CheckerboardFinder::computeObjectPointsCircleBoard(const bool asymmetric) const
+{
+  if (asymmetric)
+  {
+    cv::Size pattern_size(points_y_, points_x_);
+    std::vector<geometry_msgs::PointStamped> object_points;
+    for (int i = 0; i < pattern_size.height; i++)
+    {
+      for (int j = 0; j < pattern_size.width; j++)
+      {
+        geometry_msgs::PointStamped p;
+        p.header.frame_id = frame_id_;
+        p.header.stamp = cloud_.header.stamp;
+        p.point.x = static_cast<double>(i * square_size_);
+        p.point.y = static_cast<double>((2 * j + i % 2) * square_size_);
+        p.point.z = 0.0;
+
+        object_points.push_back(p);
+      }
+    }
+    return object_points;
+  }
+  else
+  {
+    return computeObjectPointsChessBoard();
+  }
+}
+
+std::vector<geometry_msgs::PointStamped> CheckerboardFinder::computeObjectPointsChessBoard() const
+{
+  std::vector<geometry_msgs::PointStamped> object_points;
+
+  for (size_t i = 0; i < static_cast<size_t>(points_x_ * points_y_); ++i)
+  {
+    geometry_msgs::PointStamped p;
+    p.header.frame_id = frame_id_;
+    p.header.stamp = cloud_.header.stamp;
+    p.point.x = (i % points_x_) * square_size_;
+    p.point.y = (i / points_x_) * square_size_;
+    p.point.z = 0.0;
+
+    object_points.push_back(p);
+  }
+
+  return object_points;
 }
 
 }  // namespace robot_calibration

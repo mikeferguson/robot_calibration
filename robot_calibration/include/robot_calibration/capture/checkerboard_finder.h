@@ -55,6 +55,15 @@ private:
 
   void reset();
 
+  std::vector<cv::Point2f> detectChessBoard(const cv::Mat_<cv::Vec3b>& image) const;
+  std::vector<cv::Point2f> detectCircleBoard(const cv::Mat_<cv::Vec3b>& image) const;
+
+  cv::Mat_<cv::Vec3b> getImageFromCloud(const sensor_msgs::PointCloud2& cloud) const;
+
+  std::vector<geometry_msgs::PointStamped> computeObjectPointsCircleBoard(const bool asymmetric) const;
+
+  std::vector<geometry_msgs::PointStamped> computeObjectPointsChessBoard() const;
+
   ros::Subscriber subscriber_;  /// Incoming sensor_msgs::PointCloud2
   ros::Publisher publisher_;    /// Outgoing sensor_msgs::PointCloud2
 
@@ -84,6 +93,11 @@ private:
   std::vector<cv::Point2f> checkerboard_points_;
   std::vector<uint32_t> checkerboard_points_valid_measurements_count_;
   int32_t valid_detections_count_;
+
+  /**
+   * @brief Either "chess_board, circle_board_symmetric, circle_board_asymmetric"
+   */
+  std::string checkerboard_type_;
 };
 
 }  // namespace robot_calibration
