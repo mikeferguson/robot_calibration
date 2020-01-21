@@ -48,8 +48,8 @@ private:
   void cameraCallback(const sensor_msgs::PointCloud2& cloud);
   bool waitForCloud();
 
-  std::vector<cv::Point2f> detectChessBoard(const cv::Mat_<cv::Vec3b>& image) const;
-  std::vector<cv::Point2f> detectCircleBoard(const cv::Mat_<cv::Vec3b>& image) const;
+  bool detectChessBoard(const cv::Mat_<cv::Vec3b>& image, std::vector<cv::Point2f>& points) const;
+  bool detectCircleBoard(const cv::Mat_<cv::Vec3b>& image, std::vector<cv::Point2f>& points) const;
 
   cv::Mat_<cv::Vec3b> getImageFromCloud(const sensor_msgs::PointCloud2& cloud) const;
 

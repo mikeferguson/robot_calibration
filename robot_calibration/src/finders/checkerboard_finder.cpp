@@ -150,25 +150,28 @@ bool CheckerboardFinder::findInternal(robot_calibration_msgs::CalibrationData* m
     return false;
   }
 
+  const bool is_chessboard = (checkerboard_type_ == "chess_board");
+
+  const bool is_circleboard = ((checkerboard_type_ == "circle_board_asymmetric") || (checkerboard_type_ == "circle_"
+                                                                                                           "board_"
+                                                                                                           "symmetri"
+                                                                                                           "c"));
+
   std::vector<cv::Point2f> checker_board_image_positions;
-  std::vector<geometry_msgs::PointStamped> checker_board_object_positions;
-  if (checkerboard_type_ == "chess_board")
+  bool found = false;
+  if (is_chessboard)
   {
-    checker_board_image_positions = detectChessBoard(rgb_image);
-    checker_board_object_positions = computeObjectPointsChessBoard();
+    found = detectChessBoard(rgb_image, checker_board_image_positions);
   }
-  else if ((checkerboard_type_ == "circle_board_asymmetric") || checkerboard_type_ == "circle_board_symmetric")
+  else if (is_circleboard)
   {
-    checker_board_image_positions = detectCircleBoard(rgb_image);
-    checker_board_object_positions = computeObjectPointsCircleBoard(checkerboard_type_ == "circle_board_asymmetric");
+    found = detectCircleBoard(rgb_image, checker_board_image_positions);
   }
   else
   {
-    ROS_ERROR_STREAM("CheckerBoardFinder: not supported checkboard type: " << checkerboard_type_);
+    ROS_ERROR_STREAM("CheckerBoardFinder: not supported checkerboard type: " << checkerboard_type_);
     return false;
   }
-
-  const bool found = !checker_board_image_positions.empty();
 
   if (found)
   {
@@ -191,7 +194,24 @@ bool CheckerboardFinder::findInternal(robot_calibration_msgs::CalibrationData* m
     msg->observations[idx_chain].sensor_name = chain_sensor_name_;
 
     msg->observations[idx_cam].features.resize(points_x_ * points_y_);
-    msg->observations[idx_chain].features.resize(points_x_ * points_y_);
+
+    if (is_circleboard)
+    {
+      msg->observations[idx_chain].features = computeObjectPointsChessBoard();
+    }
+    else
+    {
+      msg->observations[idx_chain].features = computeObjectPointsCircleBoard(checkerboard_type_ == "circle_board_"
+                                                                                                   "asymmetric");
+    }
+
+    if (msg->observations[idx_chain].features.size() != checker_board_image_positions.size())
+    {
+      ROS_ERROR_STREAM("CheckerBoardDetector:: Rejecting observation because size of image points: "
+                       << checker_board_image_positions.size()
+                       << ", is not equal to size of object points: " << msg->observations[idx_chain].features.size());
+      return false;
+    }
 
     // Fill in the headers
     rgbd.header = cloud_.header;
@@ -201,7 +221,8 @@ bool CheckerboardFinder::findInternal(robot_calibration_msgs::CalibrationData* m
     for (size_t i = 0; i < checker_board_image_positions.size(); ++i)
     {
       // Get 3d point
-      int index = (int)(checker_board_image_positions[i].y) * cloud_.width + (int)(checker_board_image_positions[i].x);
+      uint32_t index = static_cast<uint32_t>(checker_board_image_positions[i].y) * cloud_.width +
+                       static_cast<uint32_t>(checker_board_image_positions[i].x);
       rgbd.point.x = (xyz + index)[X];
       rgbd.point.y = (xyz + index)[Y];
       rgbd.point.z = (xyz + index)[Z];
@@ -209,7 +230,7 @@ bool CheckerboardFinder::findInternal(robot_calibration_msgs::CalibrationData* m
       // Do not accept NANs
       if (std::isnan(rgbd.point.x) || std::isnan(rgbd.point.y) || std::isnan(rgbd.point.z))
       {
-        ROS_ERROR_STREAM("NAN point on " << i);
+        ROS_ERROR_STREAM("CheckerBoardDetector:: Rejecting observation due to NAN point on " << i);
         return false;
       }
 
@@ -217,13 +238,12 @@ bool CheckerboardFinder::findInternal(robot_calibration_msgs::CalibrationData* m
       const double eps = static_cast<double>(10.0) * std::numeric_limits<double>::epsilon();
       if ((std::fabs(rgbd.point.x) < eps) || (std::fabs(rgbd.point.y) < eps) || (std::fabs(rgbd.point.z) < eps))
       {
-        ROS_ERROR_STREAM("(0.0, 0.0, 0.0) point on " << i);
+        ROS_ERROR_STREAM("CheckerBoardDetector:: Rejecting observation due to (0.0, 0.0, 0.0) point on " << i);
         return false;
       }
 
       msg->observations[idx_cam].features[i] = rgbd;
       msg->observations[idx_cam].ext_camera_info = depth_camera_manager_.getDepthCameraInfo();
-      msg->observations[idx_chain].features[i] = checker_board_object_positions[i];
 
       // Visualize
       iter_cloud[0] = rgbd.point.x;
@@ -248,31 +268,27 @@ bool CheckerboardFinder::findInternal(robot_calibration_msgs::CalibrationData* m
   return false;
 }
 
-std::vector<cv::Point2f> CheckerboardFinder::detectChessBoard(const cv::Mat_<cv::Vec3b>& image) const
+bool CheckerboardFinder::detectChessBoard(const cv::Mat_<cv::Vec3b>& image, std::vector<cv::Point2f>& points) const
 {
-  std::vector<cv::Point2f> corners;
   const bool found =
-      cv::findChessboardCorners(image, cv::Size(points_x_, points_y_), corners, CV_CALIB_CB_ADAPTIVE_THRESH);
+      cv::findChessboardCorners(image, cv::Size(points_x_, points_y_), points, CV_CALIB_CB_ADAPTIVE_THRESH);
 
   if (found)
   {
     cv::Mat gray;
     cv::cvtColor(image, gray, cv::COLOR_BGR2GRAY);
-    cv::cornerSubPix(gray, corners, cv::Size(11, 11), cv::Size(-1, -1),
+    cv::cornerSubPix(gray, points, cv::Size(11, 11), cv::Size(-1, -1),
                      cv::TermCriteria(CV_TERMCRIT_EPS + CV_TERMCRIT_ITER, 30, 0.1));
   }
 
-  return corners;
+  return found;
 }
 
-std::vector<cv::Point2f> CheckerboardFinder::detectCircleBoard(const cv::Mat_<cv::Vec3b>& image) const
+bool CheckerboardFinder::detectCircleBoard(const cv::Mat_<cv::Vec3b>& image, std::vector<cv::Point2f>& points) const
 {
-  std::vector<cv::Point2f> corners;
-  const bool is_asymetric = (checkerboard_type_ == "circle_board_asymetric");
-
-  cv::findCirclesGrid(image, cv::Size(points_y_, points_x_), corners,
-                      (is_asymetric) ? cv::CALIB_CB_ASYMMETRIC_GRID : cv::CALIB_CB_SYMMETRIC_GRID);
-  return corners;
+  return cv::findCirclesGrid(image, cv::Size(points_y_, points_x_), points,
+                             (checkerboard_type_ == "circle_board_asymetric") ? cv::CALIB_CB_ASYMMETRIC_GRID :
+                                                                                cv::CALIB_CB_SYMMETRIC_GRID);
 }
 
 cv::Mat_<cv::Vec3b> CheckerboardFinder::getImageFromCloud(const sensor_msgs::PointCloud2& cloud) const
