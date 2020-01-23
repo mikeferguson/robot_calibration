@@ -68,9 +68,8 @@
 void output_calibration_offsets(const robot_calibration::OptimizationParams& params,
                                 const robot_calibration::Optimizer& opt,
                                 const std::vector<robot_calibration_msgs::CalibrationData>& data,
-                                const std_msgs::String& description_msg,
-                                const ros::NodeHandle& nh)
-{  
+                                const std_msgs::String& description_msg, const ros::NodeHandle& nh)
+{
   std::string output_directory;
   if (!nh.getParam("output_directory", output_directory))
   {
@@ -82,7 +81,7 @@ void output_calibration_offsets(const robot_calibration::OptimizationParams& par
     }
 
     output_directory = "/tmp/calibration/" + std::string(datecode);
-  }  
+  }
 
   boost::filesystem::path dir(output_directory);
 
@@ -115,8 +114,15 @@ void output_calibration_offsets(const robot_calibration::OptimizationParams& par
       stream << "  " << params.free_params[i] << ": " << opt.getOffsets()->get(params.free_params[i]) << std::endl;
     }
     std::string result = stream.str();
+
+    std::string yaml_out;
     std::cout << result;
-    std::ofstream file_stream(output_directory + "/calibration_offsets.yaml");
+    {
+      std::stringstream ss;
+      ss << output_directory << "/calibration_offsets.yaml";
+      yaml_out = ss.str();
+    }
+    std::ofstream file_stream(yaml_out.c_str());
     file_stream << result;
     file_stream.close();
   }

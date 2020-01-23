@@ -49,9 +49,10 @@ private:
   bool waitForCloud();
 
   bool detectChessBoard(const cv::Mat_<cv::Vec3b>& image, std::vector<cv::Point2f>& points) const;
-  bool detectCircleBoard(const cv::Mat_<cv::Vec3b>& image, std::vector<cv::Point2f>& points) const;
+  bool detectCircleBoard(const cv::Mat_<cv::Vec3b>& image, std::vector<cv::Point2f>& points,
+                         const bool asymmetric) const;
 
-  cv::Mat_<cv::Vec3b> getImageFromCloud(const sensor_msgs::PointCloud2& cloud) const;
+  cv::Mat_<cv::Vec3b> getImageFromCloud() const;
 
   std::vector<geometry_msgs::PointStamped> computeObjectPointsCircleBoard(const bool asymmetric) const;
 
@@ -84,6 +85,9 @@ private:
   /**
    * @brief Either "chess_board, circle_board_symmetric, circle_board_asymmetric"
    */
+  static const std::string ChessBoard;
+  static const std::string CircleBoardSymmetric;
+  static const std::string CircleBoardAsymmetric;
   std::string checkerboard_type_;
 };
 
