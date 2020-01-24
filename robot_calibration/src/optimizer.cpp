@@ -129,7 +129,7 @@ int Optimizer::optimize(OptimizationParams &params,
     }
     else if (params.models[i].type == "camera3d")
     {
-      ROS_INFO_STREAM("Creating camera3d '" << params.models[i].name << "' from " << params.base_link << "' in frame " << params.models[i].params["frame"]);
+      ROS_INFO_STREAM("Creating camera3d '" << params.models[i].name << "' from " << params.base_link << "' to " << params.models[i].params["frame"]);
       Camera3dModel *model = new Camera3dModel(params.models[i].name, tree_, params.base_link, params.models[i].params["frame"]);
       models_[params.models[i].name] = model;
     }

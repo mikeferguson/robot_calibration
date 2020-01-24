@@ -41,8 +41,13 @@ ChainModel::ChainModel(const std::string& name, KDL::Tree model, std::string roo
     root_(root), tip_(tip), name_(name)
 {
   // Create a KDL::Chain
-  if (!model.getChain(root, tip, chain_))
-    std::cerr << "Failed to get chain, root: " << root << " tip: " << tip << std::endl;
+  if (!model.getChain(root, tip, chain_)) 
+  {
+    std::stringstream ss;
+    ss << "Failed to get chain, root: " << root << " tip: " << tip << std::endl;
+    std::string msg = ss.str();
+    throw std::runtime_error(msg);
+  }
 }
 
 std::vector<geometry_msgs::PointStamped> ChainModel::project(
