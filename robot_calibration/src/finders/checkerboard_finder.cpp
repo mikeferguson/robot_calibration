@@ -329,8 +329,8 @@ std::vector<geometry_msgs::PointStamped> CheckerboardFinder::computeObjectPoints
         geometry_msgs::PointStamped p;
         p.header.frame_id = frame_id_;
         p.header.stamp = cloud_.header.stamp;
-        p.point.x = static_cast<double>(i * square_size_);
-        p.point.y = static_cast<double>((2 * j + i % 2) * square_size_);
+        p.point.x = static_cast<double>((2 * j + i % 2) * square_size_);
+        p.point.y = static_cast<double>(i * square_size_);
         p.point.z = 0.0;
 
         object_points.push_back(p);
