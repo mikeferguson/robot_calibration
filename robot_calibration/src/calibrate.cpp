@@ -95,7 +95,7 @@ void output_calibration_offsets(const robot_calibration::OptimizationParams& par
     std::stringstream stream;
 
     stream << "frames_offsets:" << std::endl;
-    for (uint32_t i = 0; i < params.free_frames.size(); i++)
+    for (uint32_t i = 0U; i < params.free_frames.size(); i++)
     {
       KDL::Frame frame;
       opt.getOffsets()->getFrame(params.free_frames[i].name, frame);
@@ -109,7 +109,7 @@ void output_calibration_offsets(const robot_calibration::OptimizationParams& par
     }
 
     stream << "offsets:" << std::endl;
-    for (uint32_t i = 0; i < params.free_params.size(); i++)
+    for (uint32_t i = 0U; i < params.free_params.size(); i++)
     {
       stream << "  " << params.free_params[i] << ": " << opt.getOffsets()->get(params.free_params[i]) << std::endl;
     }
