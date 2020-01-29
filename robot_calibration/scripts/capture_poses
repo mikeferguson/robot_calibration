@@ -20,7 +20,6 @@
 from __future__ import print_function
 
 import string
-import sys
 
 import rospy
 import rosbag
@@ -30,7 +29,7 @@ from robot_calibration_msgs.msg import CaptureConfig
 
 
 class CapturePoses:
-    last_state_ = None  # last joint states
+    last_state_ = None # last joint states
 
     def __init__(self):
         self.last_state_ = CaptureConfig()
@@ -39,18 +38,12 @@ class CapturePoses:
         rospy.Subscriber("joint_states", JointState, self.stateCb)
 
         # bag to write data to
-        arguments = len(sys.argv) - 1
-        path = './calibration_poses.bag'
-        if (arguments >= 1):
-            path = sys.argv[1]
-        bag = rosbag.Bag(path, 'w')
-        rospy.loginfo('writing to bag {}'.format(path))
+        bag = rosbag.Bag('calibration_poses.bag', 'w')
 
         # put samples in
         count = 0
         while not rospy.is_shutdown():
-            print(
-                'Move arm/head to a new sample position:  (type "exit" to quit and save data)')
+            print('Move arm/head to a new sample position:  (type "exit" to quit and save data)')
             resp = raw_input('press <enter>')
             if string.upper(resp) == 'EXIT':
                 break
@@ -74,10 +67,6 @@ class CapturePoses:
             except ValueError:
                 self.last_state_.joint_states.name.append(joint)
                 self.last_state_.joint_states.position.append(position)
-        
-        # TODO hardcoded feature finder id
-        self.last_state_.features = ['checkerboard_finder']        
 
-
-if __name__ == '__main__':
+if __name__=='__main__':
     CapturePoses()
