@@ -27,8 +27,8 @@
   <build_depend>sensor_msgs</build_depend>
   <build_depend>std_msgs</build_depend>
   <build_depend>tf</build_depend>
-  <build_depend>tf2_kdl</build_depend>
   <build_depend>tf2_geometry_msgs</build_depend>
+  <build_depend>tf2_kdl</build_depend>
   <build_depend>tf2_ros</build_depend>
   <build_depend>visualization_msgs</build_depend>
   <build_depend>libceres-dev</build_depend>
@@ -52,8 +52,8 @@
   <run_depend>sensor_msgs</run_depend>
   <run_depend>std_msgs</run_depend>
   <run_depend>tf</run_depend>
-  <run_depend>tf2_kdl</run_depend>
   <run_depend>tf2_geometry_msgs</run_depend>
+  <run_depend>tf2_kdl</run_depend>
   <run_depend>tf2_ros</run_depend>
   <run_depend>visualization_msgs</run_depend>
   <run_depend>libceres-dev</run_depend>

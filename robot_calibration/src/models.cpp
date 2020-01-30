@@ -220,7 +220,7 @@ std::vector<geometry_msgs::PointStamped> Camera3dModel::project(
   KDL::Frame fk = getChainFK(offsets, data.joint_states);
 
   for (size_t i = 0; i < points.size(); ++i)
-  {    
+  {
     // TODO: warn if frame_id != tip?
     double x = data.observations[sensor_idx].features[i].point.x;
     double y = data.observations[sensor_idx].features[i].point.y;

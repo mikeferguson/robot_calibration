@@ -36,8 +36,8 @@ find_package(catkin REQUIRED
     sensor_msgs
     std_msgs
     tf
-    tf2_kdl
     tf2_geometry_msgs
+    tf2_kdl
     tf2_ros
     visualization_msgs
 )
@@ -60,8 +60,8 @@ catkin_package(
     sensor_msgs
     std_msgs
     tf
-    tf2_kdl
     tf2_geometry_msgs
+    tf2_kdl
     tf2_ros
   DEPENDS
     Boost

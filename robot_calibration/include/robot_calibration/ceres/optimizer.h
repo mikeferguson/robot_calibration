@@ -70,7 +70,7 @@ public:
   {
     return offsets_;
   }
-  
+
   int getNumParameters()
   {
     return num_params_;
