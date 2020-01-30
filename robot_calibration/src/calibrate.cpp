@@ -70,16 +70,16 @@ void output_calibration_offsets(const robot_calibration::OptimizationParams& par
                                 const std::vector<robot_calibration_msgs::CalibrationData>& data,
                                 const std_msgs::String& description_msg, const ros::NodeHandle& nh)
 {
+  // Generate datecode
+  char datecode[80];
+  {
+    std::time_t t = std::time(NULL);
+    std::strftime(datecode, 80, "%Y_%m_%d_%H_%M_%S", std::localtime(&t));
+  }
+
   std::string output_directory;
   if (!nh.getParam("output_directory", output_directory))
   {
-    // Generate datecode
-    char datecode[80];
-    {
-      std::time_t t = std::time(NULL);
-      std::strftime(datecode, 80, "%Y_%m_%d_%H_%M_%S", std::localtime(&t));
-    }
-
     output_directory = "/tmp/calibration/" + std::string(datecode);
   }
 
@@ -131,12 +131,22 @@ void output_calibration_offsets(const robot_calibration::OptimizationParams& par
   // Save updated URDF
   {
     std::string s = opt.getOffsets()->updateURDF(description_msg.data);
-    std::stringstream urdf_name;
-    urdf_name << output_directory + "/calibrated.urdf";
-    std::ofstream file;
-    file.open(urdf_name.str().c_str());
-    file << s;
-    file.close();
+    {
+      std::stringstream urdf_name;
+      urdf_name << output_directory + "/calibrated.urdf";
+      std::ofstream file;
+      file.open(urdf_name.str().c_str());
+      file << s;
+      file.close();
+    }
+    {
+      std::stringstream urdf_name;
+      urdf_name << "/tmp/calibrated_" << datecode << ".urdf";
+      std::ofstream file;
+      file.open(urdf_name.str().c_str());
+      file << s;
+      file.close();
+    }
   }
 
   // Output camera calibration
@@ -161,19 +171,18 @@ void output_calibration_offsets(const robot_calibration::OptimizationParams& par
                                                                                                     // hardcoding index
   }
 
-  // Output the calibration yaml
-  // ROS_INFO("outputting calibration yaml");
-  // {
-  //   std::stringstream yaml_name;
-  //   yaml_name << path + "/calibration.yaml";
-  //   std::ofstream file;
-  //   file.open(yaml_name.str().c_str());
-  //   file << opt.getOffsets()->getOffsetYAML();
-  //   file << "depth_info: depth.yaml" << std::endl;
-  //   file << "rgb_info: rgb.yaml" << std::endl;
-  //   file << "urdf: calibrated.urdf" << std::endl;
-  //   file.close();
-  // }
+  // original output
+  {
+    std::stringstream yaml_name;
+    yaml_name << "/tmp/calibration_" << datecode << ".yaml";
+    std::ofstream file;
+    file.open(yaml_name.str().c_str());
+    file << opt.getOffsets()->getOffsetYAML();
+    file << "depth_info: depth_" << datecode << ".yaml" << std::endl;
+    file << "rgb_info: rgb_" << datecode << ".yaml" << std::endl;
+    file << "urdf: calibrated_" << datecode << ".urdf" << std::endl;
+    file.close();
+  }
 }
 
 /*
