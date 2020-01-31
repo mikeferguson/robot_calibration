@@ -220,8 +220,8 @@ bool CheckerboardFinder::findInternal(robot_calibration_msgs::CalibrationData* m
     for (size_t i = 0; i < checker_board_image_positions.size(); ++i)
     {
       // Get 3d point
-      uint32_t index = static_cast<uint32_t>(checker_board_image_positions[i].y) * cloud_.width +
-                       static_cast<uint32_t>(checker_board_image_positions[i].x);
+      size_t index = static_cast<size_t>(checker_board_image_positions[i].y) * cloud_.width +
+                     static_cast<size_t>(checker_board_image_positions[i].x);
       rgbd.point.x = (xyz + index)[X];
       rgbd.point.y = (xyz + index)[Y];
       rgbd.point.z = (xyz + index)[Z];
