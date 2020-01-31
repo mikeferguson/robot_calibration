@@ -41,8 +41,13 @@ ChainModel::ChainModel(const std::string& name, KDL::Tree model, std::string roo
     root_(root), tip_(tip), name_(name)
 {
   // Create a KDL::Chain
-  if (!model.getChain(root, tip, chain_))
-    std::cerr << "Failed to get chain" << std::endl;
+  if (!model.getChain(root, tip, chain_)) 
+  {
+    std::stringstream ss;
+    ss << "Failed to get chain, root: " << root << " tip: " << tip << std::endl;
+    std::string msg = ss.str();
+    throw std::runtime_error(msg);
+  }
 }
 
 std::vector<geometry_msgs::PointStamped> ChainModel::project(
@@ -220,6 +225,14 @@ std::vector<geometry_msgs::PointStamped> Camera3dModel::project(
     double x = data.observations[sensor_idx].features[i].point.x;
     double y = data.observations[sensor_idx].features[i].point.y;
     double z = data.observations[sensor_idx].features[i].point.z;
+
+    if (std::fabs(z) < (static_cast<double>(10.0) * std::numeric_limits<double>::epsilon()))
+    {
+      ROS_WARN_STREAM("Z-value of sample point: ("
+                      << data.observations[sensor_idx].features[i].point << ") at observation at sensor index: "
+                      << sensor_idx << " and sample index: " << i << " is zero and will result in division by zero.");
+      continue;
+    }
 
     // Unproject through parameters stored at runtime
     double u = x * camera_fx / z + camera_cx;

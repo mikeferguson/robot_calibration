@@ -86,7 +86,10 @@ struct Chain3dToChain3d
     for (size_t i = 0; i < a_pts.size(); ++i)
     {
       if (a_pts[i].header.frame_id != b_pts[i].header.frame_id)
-        std::cerr << "Projected observation frame_ids do not match." << std::endl;
+      {
+        std::cerr << "Projected observation frame_ids do not match." << a_pts[i].header.frame_id
+                  << " != " << b_pts[i].header.frame_id << std::endl;
+      }
       residuals[(3*i)+0] = a_pts[i].point.x - b_pts[i].point.x;
       residuals[(3*i)+1] = a_pts[i].point.y - b_pts[i].point.y;
       residuals[(3*i)+2] = a_pts[i].point.z - b_pts[i].point.z;

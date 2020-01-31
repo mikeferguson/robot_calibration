@@ -37,6 +37,7 @@ find_package(catkin REQUIRED
     std_msgs
     tf
     tf2_geometry_msgs
+    tf2_kdl
     tf2_ros
     visualization_msgs
 )
@@ -60,12 +61,14 @@ catkin_package(
     std_msgs
     tf
     tf2_geometry_msgs
+    tf2_kdl
     tf2_ros
   DEPENDS
     Boost
     orocos_kdl
   LIBRARIES
     robot_calibration
+    robot_calibration_feature_finders
 )
 
 if (CATKIN_ENABLE_TESTING AND ENABLE_COVERAGE_TESTING)

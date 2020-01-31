@@ -18,26 +18,27 @@
 
 // Author: Michael Ferguson
 
-#include <fstream>
 #include <ctime>
+#include <fstream>
 
 #include <ros/ros.h>
 #include <rosbag/bag.h>
-#include <rosbag/view.h>
 #include <rosbag/query.h>
+#include <rosbag/view.h>
 
-#include <std_msgs/String.h>
 #include <robot_calibration_msgs/CalibrationData.h>
 #include <robot_calibration_msgs/CaptureConfig.h>
+#include <std_msgs/String.h>
 
 #include <robot_calibration/capture/chain_manager.h>
 #include <robot_calibration/capture/feature_finder_loader.h>
 
 #include <camera_calibration_parsers/parse.h>
-#include <robot_calibration/ceres/optimizer.h>
 #include <robot_calibration/camera_info.h>
+#include <robot_calibration/ceres/optimizer.h>
 #include <robot_calibration/load_bag.h>
 
+#include <boost/filesystem.hpp>
 #include <boost/foreach.hpp>  // for rosbag iterator
 
 /** \mainpage
@@ -64,6 +65,126 @@
  *     - write results to URDF.
  */
 
+void output_calibration_offsets(const robot_calibration::OptimizationParams& params,
+                                const robot_calibration::Optimizer& opt,
+                                const std::vector<robot_calibration_msgs::CalibrationData>& data,
+                                const std_msgs::String& description_msg, const ros::NodeHandle& nh)
+{
+  // Generate datecode
+  char datecode[80];
+  {
+    std::time_t t = std::time(NULL);
+    std::strftime(datecode, 80, "%Y_%m_%d_%H_%M_%S", std::localtime(&t));
+  }
+
+  std::string output_directory;
+  if (!nh.getParam("output_directory", output_directory))
+  {
+    output_directory = "/tmp/calibration/" + std::string(datecode);
+  }
+
+  boost::filesystem::path dir(output_directory);
+
+  if (!boost::filesystem::exists(dir))
+  {
+    boost::filesystem::create_directories(dir);
+  }
+
+  ROS_INFO("saving offsets to yaml");
+  {
+    std::stringstream stream;
+
+    stream << "frames_offsets:" << std::endl;
+    for (size_t i = 0U; i < params.free_frames.size(); i++)
+    {
+      KDL::Frame frame;
+      opt.getOffsets()->getFrame(params.free_frames[i].name, frame);
+
+      double rpy[3U];
+      frame.M.GetRPY(rpy[0U], rpy[1U], rpy[2U]);
+
+      stream << "  - name: " << params.free_frames[i].name << "\n    translation: [" << frame.p.x() << ", "
+             << frame.p.y() << ", " << frame.p.z() << "]"
+             << "\n    rpy: [" << rpy[0U] << ", " << rpy[1U] << ", " << rpy[2U] << "]" << std::endl;
+    }
+
+    stream << "offsets:" << std::endl;
+    for (size_t i = 0U; i < params.free_params.size(); i++)
+    {
+      stream << "  " << params.free_params[i] << ": " << opt.getOffsets()->get(params.free_params[i]) << std::endl;
+    }
+    std::string result = stream.str();
+
+    std::string yaml_out;
+    std::cout << result;
+    {
+      std::stringstream ss;
+      ss << output_directory << "/calibration_offsets.yaml";
+      yaml_out = ss.str();
+    }
+    std::ofstream file_stream(yaml_out.c_str());
+    file_stream << result;
+    file_stream.close();
+  }
+
+  ROS_INFO("saving urdf");
+  // Save updated URDF
+  {
+    std::string s = opt.getOffsets()->updateURDF(description_msg.data);
+    {
+      std::stringstream urdf_name;
+      urdf_name << output_directory + "/calibrated.urdf";
+      std::ofstream file;
+      file.open(urdf_name.str().c_str());
+      file << s;
+      file.close();
+    }
+    {
+      std::stringstream urdf_name;
+      urdf_name << "/tmp/calibrated_" << datecode << ".urdf";
+      std::ofstream file;
+      file.open(urdf_name.str().c_str());
+      file << s;
+      file.close();
+    }
+  }
+
+  // Output camera calibration
+  ROS_INFO("outputting camera calibration");
+  {
+    std::stringstream depth_name;
+    depth_name << output_directory + "/depth.yaml";
+    camera_calibration_parsers::writeCalibration(
+        depth_name.str(), "",
+        robot_calibration::updateCameraInfo(opt.getOffsets()->get("camera_fx"), opt.getOffsets()->get("camera_fy"),
+                                            opt.getOffsets()->get("camera_cx"), opt.getOffsets()->get("camera_cy"),
+                                            data[0].observations[0].ext_camera_info.camera_info));  // TODO avoid
+                                                                                                    // hardcoding index
+
+    std::stringstream rgb_name;
+    rgb_name << output_directory + "/rgb.yaml";
+    camera_calibration_parsers::writeCalibration(
+        rgb_name.str(), "",
+        robot_calibration::updateCameraInfo(opt.getOffsets()->get("camera_fx"), opt.getOffsets()->get("camera_fy"),
+                                            opt.getOffsets()->get("camera_cx"), opt.getOffsets()->get("camera_cy"),
+                                            data[0].observations[0].ext_camera_info.camera_info));  // TODO avoid
+                                                                                                    // hardcoding index
+  }
+
+  // original output
+  {
+    std::stringstream yaml_name;
+    yaml_name << "/tmp/calibration_" << datecode << ".yaml";
+    std::ofstream file;
+    file.open(yaml_name.str().c_str());
+    file << opt.getOffsets()->getOffsetYAML();
+    file << "depth_info: depth_" << datecode << ".yaml" << std::endl;
+    file << "rgb_info: rgb_" << datecode << ".yaml" << std::endl;
+    file << "urdf: calibrated_" << datecode << ".urdf" << std::endl;
+    file.close();
+  }
+}
+
 /*
  * usage:
  *  calibrate --manual
@@ -72,7 +193,7 @@
  */
 int main(int argc, char** argv)
 {
-  ros::init(argc, argv,"robot_calibration");
+  ros::init(argc, argv, "robot_calibration");
   ros::NodeHandle nh("~");
 
   // Should we be stupidly verbose?
@@ -140,9 +261,7 @@ int main(int argc, char** argv)
             robot_calibration_msgs::CaptureConfig config;
             config.joint_states = *js_msg;
             // Assume all finders should find this pose (old style config):
-            for (robot_calibration::FeatureFinderMap::iterator it = finders_.begin();
-                 it != finders_.end();
-                 it++)
+            for (robot_calibration::FeatureFinderMap::iterator it = finders_.begin(); it != finders_.end(); it++)
             {
               config.features.push_back(it->first);
             }
@@ -152,6 +271,16 @@ int main(int argc, char** argv)
         else
         {
           poses.push_back(*msg);
+
+          if (poses.back().features.empty())
+          {
+            ROS_WARN_STREAM("no feature finder added to capture pose number: " << (poses.size() - 1)
+                                                                               << " . Adding default finders.");
+            for (robot_calibration::FeatureFinderMap::iterator it = finders_.begin(); it != finders_.end(); it++)
+            {
+              poses.back().features.push_back(it->first);
+            }
+          }
         }
       }
     }
@@ -161,9 +290,7 @@ int main(int argc, char** argv)
     }
 
     // For each pose in the capture sequence.
-    for (unsigned pose_idx = 0;
-         (pose_idx < poses.size() || poses.size() == 0) && ros::ok();
-         ++pose_idx)
+    for (unsigned pose_idx = 0; (pose_idx < poses.size() || poses.size() == 0) && ros::ok(); ++pose_idx)
     {
       robot_calibration_msgs::CalibrationData msg;
 
@@ -192,16 +319,16 @@ int main(int argc, char** argv)
       chain_manager_.waitToSettle();
 
       // Make sure sensor data is up to date after settling
-      ros::Duration(0.1).sleep();
+      double settle_duration_secs = 3.0;
+      nh.param<double>("settle_duration_secs", settle_duration_secs, 3.0);
+      ros::Duration(settle_duration_secs).sleep();
 
       // Get pose of the features
       bool found_all_features = true;
       if (poses.size() == 0)
       {
         // In manual mode, we need to capture all features
-        for (robot_calibration::FeatureFinderMap::iterator it = finders_.begin();
-             it != finders_.end();
-             it++)
+        for (robot_calibration::FeatureFinderMap::iterator it = finders_.begin(); it != finders_.end(); it++)
         {
           if (!it->second->find(&msg))
           {
@@ -281,13 +408,13 @@ int main(int argc, char** argv)
 
     XmlRpc::XmlRpcValue::iterator it;
     size_t step;
-    size_t max_step = (cal_steps.size()>0)?cal_steps.size():1;
+    size_t max_step = (cal_steps.size() > 0) ? cal_steps.size() : 1;
     std::vector<std::string> prev_frame_names;
     std::string prev_params_yaml;
     for (step = 0, it = cal_steps.begin(); step < max_step; step++, it++)
     {
       std::string name = static_cast<std::string>(it->first);
-      ros::NodeHandle cal_steps_handle(nh, "cal_steps/"+name);
+      ros::NodeHandle cal_steps_handle(nh, "cal_steps/" + name);
       params.LoadFromROS(cal_steps_handle);
       opt.optimize(params, data, verbose);
       if (verbose)
@@ -309,59 +436,7 @@ int main(int argc, char** argv)
     }
   }
 
-  // Generate datecode
-  char datecode[80];
-  {
-    std::time_t t = std::time(NULL);
-    std::strftime(datecode, 80, "%Y_%m_%d_%H_%M_%S", std::localtime(&t));
-  }
-
-  // Save updated URDF
-  {
-    std::string s = opt.getOffsets()->updateURDF(description_msg.data);
-    std::stringstream urdf_name;
-    urdf_name << "/tmp/calibrated_" << datecode << ".urdf";
-    std::ofstream file;
-    file.open(urdf_name.str().c_str());
-    file << s;
-    file.close();
-  }
-
-  // Output camera calibration
-  {
-    std::stringstream depth_name;
-    depth_name << "/tmp/depth_" << datecode << ".yaml";
-    camera_calibration_parsers::writeCalibration(depth_name.str(), "",
-        robot_calibration::updateCameraInfo(
-                         opt.getOffsets()->get("camera_fx"),
-                         opt.getOffsets()->get("camera_fy"),
-                         opt.getOffsets()->get("camera_cx"),
-                         opt.getOffsets()->get("camera_cy"),
-                         data[0].observations[0].ext_camera_info.camera_info));  // TODO avoid hardcoding index
-
-    std::stringstream rgb_name;
-    rgb_name << "/tmp/rgb_" << datecode << ".yaml";
-    camera_calibration_parsers::writeCalibration(rgb_name.str(), "",
-        robot_calibration::updateCameraInfo(
-                         opt.getOffsets()->get("camera_fx"),
-                         opt.getOffsets()->get("camera_fy"),
-                         opt.getOffsets()->get("camera_cx"),
-                         opt.getOffsets()->get("camera_cy"),
-                         data[0].observations[0].ext_camera_info.camera_info));  // TODO avoid hardcoding index
-  }
-
-  // Output the calibration yaml
-  {
-    std::stringstream yaml_name;
-    yaml_name << "/tmp/calibration_" << datecode << ".yaml";
-    std::ofstream file;
-    file.open(yaml_name.str().c_str());
-    file << opt.getOffsets()->getOffsetYAML();
-    file << "depth_info: depth_" << datecode << ".yaml" << std::endl;
-    file << "rgb_info: rgb_" << datecode << ".yaml" << std::endl;
-    file << "urdf: calibrated_" << datecode << ".urdf" << std::endl;
-    file.close();
-  }
+  output_calibration_offsets(params, opt, data, description_msg, nh);
 
   ROS_INFO("Done calibrating");
 

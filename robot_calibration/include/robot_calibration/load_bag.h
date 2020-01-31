@@ -67,10 +67,20 @@ bool load_bag(const std::string& file_name,
 
   // Parse calibration_data topic
   rosbag::View data_view_(bag_, rosbag::TopicQuery("calibration_data"));
+  if (data_view_.size() < 1)
+  {
+    ROS_FATAL_STREAM("calibration_data topic not found in bag file.");
+    return false;
+  }
   BOOST_FOREACH (rosbag::MessageInstance const m, data_view_)
   {
     robot_calibration_msgs::CalibrationData::ConstPtr msg = m.instantiate<robot_calibration_msgs::CalibrationData>();
-    data.push_back(*msg);
+    if (msg->observations.empty())
+    {
+      ROS_ERROR_STREAM("observations is empty in calibration data sample");
+      return false;
+    }
+    data.push_back(*msg);    
   }
 
   return true;

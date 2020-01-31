@@ -21,9 +21,7 @@
 
 namespace robot_calibration
 {
-
-OptimizationParams::OptimizationParams() :
-  base_link("base_link")
+OptimizationParams::OptimizationParams() : base_link("base_link")
 {
 }
 
@@ -39,10 +37,16 @@ bool OptimizationParams::LoadFromROS(ros::NodeHandle& nh)
     nh.getParam("free_params", names);
     ROS_ASSERT(names.getType() == XmlRpc::XmlRpcValue::TypeArray);
 
+    std::stringstream stream;
+    stream << "found the following free params:"<< std::endl;
+
     for (int i = 0; i < names.size(); ++i)
     {
       free_params.push_back(static_cast<std::string>(names[i]));
+      stream << "  - " << free_params.back() << std::endl;
     }
+
+    ROS_INFO_STREAM(stream.str());
   }
 
   if (nh.hasParam("free_frames"))
@@ -52,6 +56,9 @@ bool OptimizationParams::LoadFromROS(ros::NodeHandle& nh)
     XmlRpc::XmlRpcValue free_frame_params;
     nh.getParam("free_frames", free_frame_params);
     ROS_ASSERT(free_frame_params.getType() == XmlRpc::XmlRpcValue::TypeArray);
+
+    std::stringstream stream;
+    stream << "found the following free frames:"<< std::endl;
 
     for (int i = 0; i < free_frame_params.size(); ++i)
     {
@@ -64,7 +71,10 @@ bool OptimizationParams::LoadFromROS(ros::NodeHandle& nh)
       params.pitch = static_cast<bool>(free_frame_params[i]["pitch"]);
       params.yaw = static_cast<bool>(free_frame_params[i]["yaw"]);
       free_frames.push_back(params);
+      stream << "  - " <<  params.name << std::endl;
     }
+    ROS_INFO_STREAM(stream.str());
+
   }
 
   if (nh.hasParam("free_frames_initial_values"))
@@ -122,6 +132,25 @@ bool OptimizationParams::LoadFromROS(ros::NodeHandle& nh)
       params.type = static_cast<std::string>(error_params[i]["type"]);
       params.params = error_params[i];
       error_blocks.push_back(params);
+    }
+  }
+
+  if (nh.hasParam("additional_frames_in_tree"))
+  {
+    additional_frames.clear();
+
+    XmlRpc::XmlRpcValue frame_params;
+    nh.getParam("additional_frames_in_tree", frame_params);
+    ROS_ASSERT(frame_params.getType() == XmlRpc::XmlRpcValue::TypeArray);
+
+    for (int32_t i = 0; i < frame_params.size(); ++i)
+    {
+      AdditionalFrame frame;
+      frame.name = static_cast<std::string>(frame_params[i]["name"]);
+      frame.parent = static_cast<std::string>(frame_params[i]["parent"]);
+      frame.translation = frame_params[i]["translation"];
+      frame.rotation = frame_params[i]["rotation"];
+      additional_frames.push_back(frame);
     }
   }
 

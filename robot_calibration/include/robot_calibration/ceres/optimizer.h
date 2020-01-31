@@ -66,7 +66,7 @@ public:
     return summary_;
   }
 
-  boost::shared_ptr<CalibrationOffsetParser> getOffsets()
+  boost::shared_ptr<CalibrationOffsetParser> getOffsets() const
   {
     return offsets_;
   }
