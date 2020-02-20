@@ -183,6 +183,17 @@ void output_calibration_offsets(const robot_calibration::OptimizationParams& par
     file << "urdf: calibrated_" << datecode << ".urdf" << std::endl;
     file.close();
   }
+  {
+    std::stringstream yaml_name;
+    yaml_name << "/tmp/calibration_free_params_output.yaml";
+    std::ofstream file;
+    file.open(yaml_name.str().c_str());
+    file << opt.getOffsets()->getOffsetYAML();
+    file << "depth_info: depth_" << datecode << ".yaml" << std::endl;
+    file << "rgb_info: rgb_" << datecode << ".yaml" << std::endl;
+    file << "urdf: calibrated_" << datecode << ".urdf" << std::endl;
+    file.close();
+  }
 }
 
 /*
