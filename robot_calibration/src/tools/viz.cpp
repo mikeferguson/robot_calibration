@@ -21,7 +21,6 @@
 #include <ros/ros.h>
 #include <robot_calibration/load_bag.h>
 #include <visualization_msgs/MarkerArray.h>
-#include <tf2_kdl/tf2_kdl.h>
 
 #include <urdf/model.h>
 #include <kdl_parser/kdl_parser.hpp>
@@ -78,50 +77,7 @@ int main(int argc, char** argv)
   ROS_INFO_STREAM("Publishing markers in " << params.base_link << " frame.");
 
   // adding additional frames to tree
-  std::stringstream segments_out;
-  KDL::SegmentMap segments = tree.getSegments();
-  segments_out << "Segment name in kdl tree: " << std::endl;
-  for (KDL::SegmentMap::iterator it = segments.begin(); it != segments.end(); it++)
-  {
-    segments_out << "  - " << it->first << std::endl;
-  }
-  ROS_INFO_STREAM(segments_out.str());
-
-  // Insert additional frames in KDL tree
-  ROS_INFO_STREAM("about to insert " << params.additional_frames.size() << " additional frames in tree");
-  for (size_t i = 0; i < params.additional_frames.size(); ++i)
-  {
-    // if frame is not already in tree
-    if (!segments.count(params.additional_frames[i].name))
-    {
-      KDL::Rotation rot = KDL::Rotation::Quaternion(static_cast<double>(params.additional_frames[i].rotation[0]),
-                                                    static_cast<double>(params.additional_frames[i].rotation[1]),
-                                                    static_cast<double>(params.additional_frames[i].rotation[2]),
-                                                    static_cast<double>(params.additional_frames[i].rotation[3]));
-      KDL::Vector trans(static_cast<double>(params.additional_frames[i].translation[0]),
-                        static_cast<double>(params.additional_frames[i].translation[1]),
-                        static_cast<double>(params.additional_frames[i].translation[2]));
-      KDL::Frame frame(rot, trans);
-
-      if (tree.addSegment(KDL::Segment(params.additional_frames[i].name, KDL::Joint(KDL::Joint::None), frame),
-                          params.additional_frames[i].parent))
-      {
-        ROS_INFO_STREAM("added frame: " << params.additional_frames[i].name
-                                        << " to parent: " << params.additional_frames[i].parent
-                                        << " with transformation: " << tf2::kdlToTransform(frame).transform);
-      }
-      else
-      {
-        ROS_ERROR_STREAM("could not add frame: " << params.additional_frames[i].name
-                                                 << " to parent: " << params.additional_frames[i].parent
-                                                 << " with transformation: " << tf2::kdlToTransform(frame).transform);
-      }
-    }
-    else
-    {
-      ROS_WARN_STREAM("frame: " << params.additional_frames[i].name << " is already contained in tree");
-    }
-  }
+  robot_calibration::insert_additional_frames_in_tree(params.additional_frames, tree);
 
    // Create models for reprojection
   std::map<std::string, robot_calibration::ChainModel*> models;
