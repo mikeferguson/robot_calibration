@@ -24,6 +24,7 @@
 #include <kdl/chain.hpp>
 #include <kdl/tree.hpp>
 #include <robot_calibration/calibration_offset_parser.h>
+#include <robot_calibration/ceres/optimization_params.h>
 
 #include <geometry_msgs/PointStamped.h>
 #include <sensor_msgs/JointState.h>
@@ -154,6 +155,9 @@ inline std::string ChainModel::name() const
 {
   return name_;
 }
+
+/** \brief Insert frames in a KDL tree */
+void insert_additional_frames_in_tree(std::vector<OptimizationParams::AdditionalFrame>& frames, KDL::Tree& tree);
 
 }  // namespace robot_calibration
 

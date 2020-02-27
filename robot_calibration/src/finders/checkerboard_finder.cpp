@@ -196,12 +196,12 @@ bool CheckerboardFinder::findInternal(robot_calibration_msgs::CalibrationData* m
 
     if (is_circleboard)
     {
-      msg->observations[idx_chain].features = computeObjectPointsChessBoard();
+      msg->observations[idx_chain].features =
+          computeObjectPointsCircleBoard(checkerboard_type_ == CircleBoardAsymmetric);
     }
     else
     {
-      msg->observations[idx_chain].features =
-          computeObjectPointsCircleBoard(checkerboard_type_ == CircleBoardAsymmetric);
+      msg->observations[idx_chain].features = computeObjectPointsChessBoard();
     }
 
     if (msg->observations[idx_chain].features.size() != checker_board_image_positions.size())

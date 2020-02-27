@@ -20,6 +20,9 @@
 #include <robot_calibration/models/chain.h>
 #include <robot_calibration/models/camera3d.h>
 
+#include <tf2_kdl/tf2_kdl.h>
+
+
 namespace robot_calibration
 {
 
@@ -41,7 +44,7 @@ ChainModel::ChainModel(const std::string& name, KDL::Tree model, std::string roo
     root_(root), tip_(tip), name_(name)
 {
   // Create a KDL::Chain
-  if (!model.getChain(root, tip, chain_)) 
+  if (!model.getChain(root, tip, chain_))
   {
     std::stringstream ss;
     ss << "Failed to get chain, root: " << root << " tip: " << tip << std::endl;
@@ -288,6 +291,55 @@ void axis_magnitude_from_rotation(const KDL::Rotation& r, double& x, double& y, 
   x = (qx / k) * magnitude;
   y = (qy / k) * magnitude;
   z = (qz / k) * magnitude;
+}
+
+void insert_additional_frames_in_tree(std::vector<OptimizationParams::AdditionalFrame>& frames, KDL::Tree& tree)
+{
+  // adding additional frames to tree
+  std::stringstream segments_out;
+  KDL::SegmentMap segments = tree.getSegments();
+  segments_out << "Segment name in kdl tree: " << std::endl;
+  for (KDL::SegmentMap::iterator it = segments.begin(); it != segments.end(); it++)
+  {
+    segments_out << "  - " << it->first << std::endl;
+  }
+  ROS_INFO_STREAM(segments_out.str());
+
+  // Insert additional frames in KDL tree
+  ROS_INFO_STREAM("about to insert " << frames.size() << " additional frames in tree");
+  for (size_t i = 0; i < frames.size(); ++i)
+  {
+    // if frame is not already in tree
+    if (!segments.count(frames[i].name))
+    {
+      KDL::Rotation rot = KDL::Rotation::Quaternion(static_cast<double>(frames[i].rotation[0]),
+                                                    static_cast<double>(frames[i].rotation[1]),
+                                                    static_cast<double>(frames[i].rotation[2]),
+                                                    static_cast<double>(frames[i].rotation[3]));
+      KDL::Vector trans(static_cast<double>(frames[i].translation[0]),
+                        static_cast<double>(frames[i].translation[1]),
+                        static_cast<double>(frames[i].translation[2]));
+      KDL::Frame frame(rot, trans);
+
+      if (tree.addSegment(KDL::Segment(frames[i].name, KDL::Joint(KDL::Joint::None), frame),
+                          frames[i].parent))
+      {
+        ROS_INFO_STREAM("added frame: " << frames[i].name
+                                        << " to parent: " << frames[i].parent
+                                        << " with transformation: " << tf2::kdlToTransform(frame).transform);
+      }
+      else
+      {
+        ROS_ERROR_STREAM("could not add frame: " << frames[i].name
+                                                 << " to parent: " << frames[i].parent
+                                                 << " with transformation: " << tf2::kdlToTransform(frame).transform);
+      }
+    }
+    else
+    {
+      ROS_WARN_STREAM("frame: " << frames[i].name << " is already contained in tree");
+    }
+  }
 }
 
 }  // namespace robot_calibration

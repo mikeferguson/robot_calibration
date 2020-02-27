@@ -66,57 +66,7 @@ int Optimizer::optimize(OptimizationParams &params,
     return -1;
   }
 
-  std::stringstream      segments_out;
-  KDL::SegmentMap segments = tree_.getSegments();
-  segments_out << "Segment name in kdl tree: " << std::endl;
-  for (KDL::SegmentMap::iterator it = segments.begin(); it != segments.end(); it++)
-  {
-    segments_out << "  - " << it->first << std::endl;
-  }
-  ROS_INFO_STREAM(segments_out.str());
-
-  // Insert additional frames in KDL tree
-  ROS_INFO_STREAM("about to insert " << params.additional_frames.size() << " additional frames in tree");
-  for (size_t i = 0; i < params.additional_frames.size(); ++i)
-  {
-    // if frame is not already in tree
-    if (!segments.count(params.additional_frames[i].name))
-    {
-      KDL::Rotation rot = KDL::Rotation::Quaternion(
-          static_cast<double>(params.additional_frames[i].rotation[0]),
-          static_cast<double>(params.additional_frames[i].rotation[1]),
-          static_cast<double>(params.additional_frames[i].rotation[2]),
-          static_cast<double>(params.additional_frames[i].rotation[3]));
-      KDL::Vector trans(
-          static_cast<double>(params.additional_frames[i].translation[0]),
-          static_cast<double>(params.additional_frames[i].translation[1]),
-          static_cast<double>(params.additional_frames[i].translation[2]));
-      KDL::Frame frame(rot, trans);
-
-      if (tree_.addSegment(KDL::Segment(params.additional_frames[i].name,
-                                        KDL::Joint(KDL::Joint::None), frame),
-                           params.additional_frames[i].parent))
-      {
-        ROS_INFO_STREAM("added frame: "
-                        << params.additional_frames[i].name
-                        << " to parent: " << params.additional_frames[i].parent
-                        << " with transformation: " << tf2::kdlToTransform(frame).transform);
-      }
-      else
-      {
-        ROS_ERROR_STREAM("could not add frame: "
-                         << params.additional_frames[i].name
-                         << " to parent: " << params.additional_frames[i].parent
-                         << " with transformation: " << tf2::kdlToTransform(frame).transform);
-      }
-    }
-    else
-    {
-      ROS_WARN_STREAM("frame: "
-                      << params.additional_frames[i].name
-                      << " is already contained in tree");
-    }
-  }
+  robot_calibration::insert_additional_frames_in_tree(params.additional_frames, tree_);
 
   // Create models
   for (size_t i = 0; i < params.models.size(); ++i)
@@ -155,6 +105,8 @@ int Optimizer::optimize(OptimizationParams &params,
     ROS_INFO_STREAM(stream.str());
   }
   {
+    KDL::SegmentMap segments = tree_.getSegments();
+
     std::stringstream stream;
     stream << "adding the following free frames to the optimizer:" << std::endl;
     for (size_t i = 0; i < params.free_frames.size(); ++i)
@@ -254,9 +206,9 @@ int Optimizer::optimize(OptimizationParams &params,
           std::cout << std::endl
                     << std::endl;
 
-          
+
           delete residuals;
-          delete params;          
+          delete params;
         }
 
         problem->AddResidualBlock(cost,
@@ -365,7 +317,7 @@ int Optimizer::optimize(OptimizationParams &params,
                     << std::endl;
 
           delete residuals;
-          delete params;          
+          delete params;
         }
 
         problem->AddResidualBlock(cost,

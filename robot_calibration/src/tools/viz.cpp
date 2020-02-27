@@ -76,7 +76,10 @@ int main(int argc, char** argv)
   params.LoadFromROS(nh);
   ROS_INFO_STREAM("Publishing markers in " << params.base_link << " frame.");
 
-  // Create models for reprojection
+  // adding additional frames to tree
+  robot_calibration::insert_additional_frames_in_tree(params.additional_frames, tree);
+
+   // Create models for reprojection
   std::map<std::string, robot_calibration::ChainModel*> models;
   std::vector<std::string> model_names;
   for (size_t i = 0; i < params.models.size(); ++i)
