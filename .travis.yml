@@ -9,7 +9,7 @@ jobs:
         - docker
       env:
         - ROS_DISTRO="melodic"
-        - UPSTREAM_WORKSPACE="upstream.repos"
+        - UPSTREAM_WORKSPACE=".upstream.repos"
         # Pass environment so codecov works
         - DOCKER_RUN_OPTS="$ci_env"
         # Configure properly so we can run coverage
