@@ -15,7 +15,7 @@ jobs:
         # Configure properly so we can run coverage
         - CMAKE_ARGS="-DENABLE_COVERAGE_TESTING=ON -DCMAKE_BUILD_TYPE=Debug"
         # Run coverage testing
-        - AFTER_SCRIPT="../coverage.sh"
+        - AFTER_SCRIPT="./.coverage.sh"
       install:
         - git clone --quiet --depth 1 https://github.com/ros-industrial/industrial_ci.git .industrial_ci -b master
       script:
