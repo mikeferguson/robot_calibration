@@ -9,9 +9,10 @@ jobs:
         - docker
       env:
         - ROS_DISTRO="melodic"
+        # Temporary dependency on code_coverage that isn't released
         - UPSTREAM_WORKSPACE=".upstream.repos"
-        # Pass environment so codecov works
-        - DOCKER_RUN_OPTS="$ci_env"
+        # Need curl for upload to codecov
+        - ADDITIONAL_DEBS="curl"
         # Configure properly so we can run coverage
         - CMAKE_ARGS="-DENABLE_COVERAGE_TESTING=ON -DCMAKE_BUILD_TYPE=Debug"
         # Run coverage testing
@@ -19,5 +20,4 @@ jobs:
       install:
         - git clone --quiet --depth 1 https://github.com/ros-industrial/industrial_ci.git .industrial_ci -b master
       script:
-        - ci_env=`bash <(curl -s https://codecov.io/env)`
-        - .industrial_ci/travis.sh
+        - .travis.sh
