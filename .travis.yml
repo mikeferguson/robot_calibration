@@ -1,0 +1,27 @@
+os: linux
+language: generic
+dist: bionic
+
+branches:
+  only:
+  - master
+
+jobs:
+  include:
+    - name: ROS tests
+      services:
+        - docker
+      env:
+        - ROS_DISTRO="melodic"
+        # Temporary dependency on code_coverage that isn't released
+        - UPSTREAM_WORKSPACE=".upstream.repos"
+        # Need curl for upload to codecov
+        - ADDITIONAL_DEBS="curl"
+        # Configure properly so we can run coverage
+        - CMAKE_ARGS="-DENABLE_COVERAGE_TESTING=ON -DCMAKE_BUILD_TYPE=Debug"
+        # Run coverage testing
+        - AFTER_SCRIPT="./.coverage.sh"
+      install:
+        - git clone --quiet --depth 1 https://github.com/ros-industrial/industrial_ci.git .industrial_ci -b master
+      script:
+        - source ./.codecov.sh && .industrial_ci/travis.sh

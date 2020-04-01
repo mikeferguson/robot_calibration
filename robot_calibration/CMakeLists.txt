@@ -71,7 +71,6 @@ catkin_package(
 
 if (CATKIN_ENABLE_TESTING AND ENABLE_COVERAGE_TESTING)
   find_package(code_coverage REQUIRED)
-  include(CodeCoverage)
   APPEND_COVERAGE_COMPILER_FLAGS()
 endif()
 
