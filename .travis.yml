@@ -21,4 +21,4 @@ jobs:
         - git clone --quiet --depth 1 https://github.com/ros-industrial/industrial_ci.git .industrial_ci -b master
       script:
         - .codecov.sh
-        - .industrial_ci.sh
+        - .industrial_ci/travis.sh
