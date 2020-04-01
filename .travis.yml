@@ -1,6 +1,6 @@
 os: linux
 language: generic
-dist: melodic
+dist: bionic
 
 jobs:
   include:

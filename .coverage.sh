@@ -7,7 +7,7 @@ echo "Generating coverage for robot_calibration"
 
 ws=~/target_ws
 extend="/opt/ros/$ROS_DISTRO"
-ici_exec_in_workspace "$extend" "$ws" catkin build robot_calibration -v --no-deps --catkin-cmake-args robot_calibration_coverage_report
+ici_exec_in_workspace "$extend" "$ws" catkin build robot_calibration -v --no-deps --catkin-make-args robot_calibration_coverage_report
 
 echo "Uploading coverage results to codecov.io"
 
