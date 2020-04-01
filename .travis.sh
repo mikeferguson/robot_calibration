@@ -10,4 +10,4 @@ echo "DOCKER_RUN_OPTS=$DOCKER_RUN_OPTS"
 THIS_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 # Call into industrial CI
-source ${THIS_DIR}/.industrial_ci/.travis.sh
+source /root/src/.industrial_ci/.travis.sh
