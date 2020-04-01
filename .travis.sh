@@ -7,4 +7,4 @@ DOCKER_RUN_OPTS="$DOCKER_RUN_OPTS $ci_env"
 echo "DOCKER_RUN_OPTS=$DOCKER_RUN_OPTS"
 
 # Call into industrial CI
-source .industrial/.travis.sh
+source .industrial_ci/.travis.sh
