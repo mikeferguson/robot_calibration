@@ -11,4 +11,4 @@ ici_exec_in_workspace "$extend" "$ws" catkin build robot_calibration -v --no-dep
 
 echo "Uploading coverage results to codecov.io"
 
-bash <(curl -s https://codecov.io/bash) -s "$ws/build/robot_calibration/robot_calibration/"
+bash <(curl -s https://codecov.io/bash) -s "$ws/build/robot_calibration/"
