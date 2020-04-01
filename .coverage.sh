@@ -11,4 +11,9 @@ ici_exec_in_workspace "$extend" "$ws" catkin build robot_calibration -v --no-dep
 
 echo "Uploading coverage results to codecov.io"
 
+# Remove duplicated information
+rm "$ws/build/robot_calibration/robot_calibration_coverage_report.info.cleaned"
+rm "$ws/build/robot_calibration/robot_calibration_coverage_report.info.removed"
+
+# Actually upload coverage information
 bash <(curl -s https://codecov.io/bash) -s "$ws/build/robot_calibration/"
