@@ -2,6 +2,10 @@ os: linux
 language: generic
 dist: bionic
 
+branches:
+  only:
+  - master
+
 jobs:
   include:
     - name: ROS tests
