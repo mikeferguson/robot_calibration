@@ -95,7 +95,7 @@ int main(int argc, char** argv)
 
   // Determine topic name (including remapping)
   std::string mag_topic_name = "/imu/mag";
-  //mag_topic_name = ros::names::resolve(mag_topic_name);
+  mag_topic_name = ros::names::resolve(mag_topic_name);
 
   // Get calibration data
   std::vector<sensor_msgs::MagneticField> data;
@@ -146,6 +146,10 @@ int main(int argc, char** argv)
 
     if (rotation_manual)
     {
+      // Need to process messages in background
+      ros::AsyncSpinner spinner(1);
+      spinner.start();
+
       // Wait for keypress
       ROS_INFO("Rotate the sensor to many orientations.");
       ROS_INFO("Press key when done rotating");
@@ -155,7 +159,7 @@ int main(int argc, char** argv)
     else
     {
       // Rotate the robot
-      ros::Publisher pub = nh.advertise<geometry_msgs::Twist>("cmd_vel", 1);
+      ros::Publisher pub = nh.advertise<geometry_msgs::Twist>("/cmd_vel", 1);
 
       geometry_msgs::Twist msg;
       msg.angular.z = rotation_velocity;
@@ -166,7 +170,7 @@ int main(int argc, char** argv)
       while ((ros::Time::now() - start).toSec() < rotation_duration)
       {
         pub.publish(msg);
-        ros::Duration(0.1).sleep(); 
+        ros::Duration(0.1).sleep();
       }
 
       msg.angular.z = 0.0;
@@ -181,6 +185,7 @@ int main(int argc, char** argv)
     // Save data to bag file
     ROS_INFO_STREAM("Saving bag file with " << data.size() << " samples.");
     rosbag::Bag bag;
+    bag.open(bag_file_name, rosbag::bagmode::Write);
     for (auto msg : data)
     {
       bag.write(mag_topic_name, msg.header.stamp, msg);
