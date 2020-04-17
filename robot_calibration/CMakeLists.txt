@@ -84,6 +84,12 @@ add_executable(calibrate_base src/calibrate_base.cpp)
 target_link_libraries(calibrate_base ${Boost_LIBRARIES}
                                      ${catkin_LIBRARIES})
 
+add_executable(magnetometer_calibration src/magnetometer_calibration.cpp)
+target_link_libraries(magnetometer_calibration
+  ${Boost_LIBRARIES}
+  ${catkin_LIBRARIES}
+  ${CERES_LIBRARIES})
+
 add_library(robot_calibration src/calibration_offset_parser.cpp
                               src/chain_manager.cpp
                               src/models.cpp
