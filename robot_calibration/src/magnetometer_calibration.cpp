@@ -167,14 +167,16 @@ int main(int argc, char** argv)
       ROS_INFO_STREAM("Rotating robot for " << rotation_duration << " seconds.");
 
       ros::Time start = ros::Time::now();
-      while ((ros::Time::now() - start).toSec() < rotation_duration)
+      while (ros::ok() && (ros::Time::now() - start).toSec() < rotation_duration)
       {
         pub.publish(msg);
+        ros::spinOnce();
         ros::Duration(0.1).sleep();
       }
 
       msg.angular.z = 0.0;
       pub.publish(msg);
+      ros::spinOnce();
 
       ROS_INFO("Done rotating robot.");
     }
