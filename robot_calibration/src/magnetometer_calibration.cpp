@@ -33,6 +33,7 @@ class MagnetometerCapture
 public:
   MagnetometerCapture(const std::string& topic, ros::NodeHandle& nh)
   {
+    ROS_INFO_STREAM("Subscribing to " << topic);
     subscriber_ = nh.subscribe(topic,
                                1,
                                &MagnetometerCapture::callback,
@@ -159,6 +160,7 @@ int main(int argc, char** argv)
     else
     {
       // Rotate the robot
+      ROS_INFO_STREAM("Publishing to " << ros::names::resolve("/cmd_vel"));
       ros::Publisher pub = nh.advertise<geometry_msgs::Twist>("/cmd_vel", 1);
 
       geometry_msgs::Twist msg;
