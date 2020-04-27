@@ -2,6 +2,19 @@
 Changelog for package robot_calibration
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* kinetic requires C++11, but doesn't specify it (`#85 <https://github.com/mikeferguson/robot_calibration/issues/85>`_)
+* note topics being published/subscribed
+* some fixes for magnetometer cal (`#84 <https://github.com/mikeferguson/robot_calibration/issues/84>`_)
+  * the spinOnce was needed
+  * exit properly on CTRL-C
+* add magnetometer calibration node (`#83 <https://github.com/mikeferguson/robot_calibration/issues/83>`_)
+* remove readme, top level one has docs
+* add travis and code coverage (`#80 <https://github.com/mikeferguson/robot_calibration/issues/80>`_)
+* export feature_finders lib
+* Contributors: Michael Ferguson
+
 0.6.2 (2020-01-14)
 ------------------
 * Merge pull request `#75 <https://github.com/mikeferguson/robot_calibration/issues/75>`_ from mikeferguson/mute_warnings
