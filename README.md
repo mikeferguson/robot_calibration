@@ -1,6 +1,7 @@
 # Robot Calibration
 
-This package offers calibration of a number of parameters of a robot, such as:
+This package offers ROS nodes. The primary one is called _calibrate_, and
+can be used to calibrate a number of parameters of a robot, such as:
 
  * 3D Camera intrinsics and extrinsics
  * Joint angle offsets
@@ -9,7 +10,15 @@ This package offers calibration of a number of parameters of a robot, such as:
 These parameters are then inserted into an updated URDF, or updated camera
 configuration YAML in the case of camera intrinsics.
 
-## Overview
+Two additional ROS nodes are used for mobile-base related parameter tuning:
+
+ * _calibrate_base_ - can determine scaling factors for gyro and track
+   width parameters by rotating the robot in place and tracking the actual
+   rotation based on the laser scanner view of a wall.
+ * _magnetometer_calibration_ - can be used to do hard iron calibration
+   of a magnetometer.
+
+## The _calibrate_ node
 
 Calibration works in two steps. The first step involves the capture of data
 samples from the robot. Each "sample" comprises the measured joint positions
@@ -33,7 +42,7 @@ the reprojection of the checkerboard corners through the arm is as closely
 aligned with the reprojection through the camera (and any associated
 kinematic chain, for instance, a pan/tilt head).
 
-## Configuration
+### Configuration
 
 Configuration is typically handled through two sets of YAML files. The first
 YAML file specifies the details needed for data capture:
@@ -85,7 +94,7 @@ This specifies several items:
      absurd. An outrageous error block can be used to limit a particular
      parameter.
 
-### Checkerboard Configuration
+#### Checkerboard Configuration
 When using a checkerboard, we need to estimate the transformation from the
 the kinematic chain to the checkerboard. Calibration will be faster and more
 accurate if the initial estimate of this transformation is close to the actual
@@ -113,7 +122,7 @@ free_frames_initial_values:
    yaw: 0.0
 ```
 
-## Exported Results
+### Exported Results
 
 The exported results consist of an updated URDF file, and one or more updated
 camera calibration YAML files. By default, these files will by exported into
@@ -136,6 +145,65 @@ Within the updated URDF file, there are two types of exported results:
 If your robot does not support the "calibration" tags, it might be possible
 to use only free_frames, setting only the rotation in the joint axis to be
 free.
+
+## The _calibrate_base_ node
+
+To run the _calibrate_base_ node, you need a somewhat open space with a large
+(~3 meters wide) wall that you can point the robot at. The robot should be
+pointed at the wall and it will then spin around at several different speeds.
+On each rotation it will stop and capture the laser data. Afterwards, the
+node uses the angle of the wall as measured by the laser scanner to determine
+how far the robot has actually rotated versus the measurements from the gyro
+and odometry. We then compute scalar corrections for both the gyro and the
+odometry.
+
+Node parameters:
+
+ * <code>/base_controller/track_width</code> - this is the default track width.
+ * <code>/imu/gyro/scale</code> - this is the initial gyro scale.
+ * <code>~min_angle/~max_angle</code> how much of the laser scan to use when
+   measuring the wall angle (radians).
+ * <code>~accel_limit</code> - acceleration limit for rotation (radians/second^2).
+
+Node topics:
+
+ * <code>/odom</code> - the node subscribes to this odom data. Message type
+   is <code>nav_msgs/Odometry</code>.
+ * <code>/imu</code> - the node subscribes to this IMU data. Message type
+   is <code>sensor_msgs/IMU</code>.
+ * <code>/base_scan</code> - the node subscribes to this laser data. Message type
+   is <code>sensor_msgs/LaserScan</code>.
+ * <code>/cmd_vel</code> - the node publishes rotation commands to this topic, unless
+   manual mode is enabled. Message type is <code>geometry_msgs/Twist</code>.
+
+The output of the node is a new scale for the gyro and the odometry. The application
+of these values is largely dependent on the drivers being used for the robot. For
+robots using _ros_control_ or _robot_control_ there is a track_width parameter
+typically supplied as a ROS parameter in your launch file.
+
+## The _magnetometer_calibration_ node
+
+The _magnetometer_calibration_ node records magnetometer data and can compute
+the _hard iron_ offsets. After calibration, the magnetometer can be used as
+a compass (typically by piping the data through _imu_filter_madgwick_ and
+then _robot_localization_).
+
+Node parameters:
+
+ * <code>~rotation_manual</code> - if set to true, the node will not publish command
+   velocities and the user will have to manually rotate the magnetometer. Default: false.
+ * <code>~rotation_duration</code> - how long to rotate the robot, in seconds.
+ * <code>~rotation_velocity</code> - the yaw velocity to rotate the robot, in rad/s.
+
+Node topics:
+
+ * <code>/imu/mag</code> - the node subscribes to this magnetometer data. Message type
+   is <code>sensor_msgs/MagneticField</code>.
+ * <code>/cmd_vel</code> - the node publishes rotation commands to this topic, unless
+   manual mode is enabled. Message type is <code>geometry_msgs/Twist</code>.
+
+The output of the calibration is three parameters, _mag_bias_x_, _mag_bias_y_,
+and _mag_bias_z_, which can be used with the <code>imu_filter_madgwick</code> package.
 
 # Status
 
