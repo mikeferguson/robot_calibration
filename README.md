@@ -137,31 +137,6 @@ If your robot does not support the "calibration" tags, it might be possible
 to use only free_frames, setting only the rotation in the joint axis to be
 free.
 
-## Updating from Indigo
-
-A number of things have been streamlined since Indigo. Some changes in your
-capture configuration may be required:
-
- * GroundPlaneFinder is gone. A simple replacement is to use the PlaneFinder with the
-   parameter "min_z" set to -2.0. (all other defaults should work fine)
- * PlaneFinder now supports "debug" parameter, which defaults to false. If you still
-   want the point clouds in your bagfile, set this parameter to true.
- * All finders have had their debug topic names updated to include the name of the finder,
-   this makes sure that you can run multiple instances and still know where data came from.
-   Your RVIZ config may need to be updated.
-
-Your calibration error block config will absolutely need updates:
-
- * "camera3d_to_arm" is now "chain3d_to_chain3d". In addition to updating the type, the names
-   of the sensors have changed: "camera" is now "model_a", and "arm" is "model_b". Order
-   of the parameters no longer matters.
- * "camera3d_to_ground" is now "chain3d_to_plane". In addition to updating the type, the
-   names of the sensors have changed: "camera" is now "model_a" and there is no sensor
-   for ground (the plane parameters are fully accessible instead of being hard-coded). The
-   default plane parameters of this error block represent the ground plane.
- * "camera_to_camera" is now "plane_to_plane". In addition to updating the type, the
-   names of the sensors have changed from "camera1" and "camera2" to "model_a" and "model_b".
-
 # Status
 
  * Kinetic Devel Job Status: [![Build Status](http://build.ros.org/buildStatus/icon?job=Kdev__robot_calibration__ubuntu_xenial_amd64)](http://build.ros.org/job/Kdev__robot_calibration__ubuntu_xenial_amd64/)
