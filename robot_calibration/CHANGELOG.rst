@@ -2,8 +2,8 @@
 Changelog for package robot_calibration
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.6.3 (2020-04-27)
+------------------
 * kinetic requires C++11, but doesn't specify it (`#85 <https://github.com/mikeferguson/robot_calibration/issues/85>`_)
 * note topics being published/subscribed
 * some fixes for magnetometer cal (`#84 <https://github.com/mikeferguson/robot_calibration/issues/84>`_)
