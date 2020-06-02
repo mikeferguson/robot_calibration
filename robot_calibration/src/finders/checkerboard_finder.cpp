@@ -174,7 +174,7 @@ bool CheckerboardFinder::findInternal(robot_calibration_msgs::CalibrationData * 
   points.resize(points_x_ * points_y_);
   cv::Size checkerboard_size(points_x_, points_y_);
   int found = cv::findChessboardCorners(bridge->image, checkerboard_size,
-                                        points, CV_CALIB_CB_ADAPTIVE_THRESH);
+                                        points, cv::CALIB_CB_ADAPTIVE_THRESH);
 
   if (found)
   {
