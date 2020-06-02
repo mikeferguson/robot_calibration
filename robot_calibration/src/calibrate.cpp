@@ -121,7 +121,7 @@ int main(int argc, char** argv)
       {
         bag.open(pose_bag_name, rosbag::bagmode::Read);
       }
-      catch (rosbag::BagException)
+      catch (rosbag::BagException&)
       {
         ROS_FATAL_STREAM("Cannot open " << pose_bag_name);
         return -1;

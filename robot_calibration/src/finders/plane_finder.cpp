@@ -156,7 +156,7 @@ bool PlaneFinder::find(robot_calibration_msgs::CalibrationData * msg)
       {
         tfBuffer_.transform(p, p_out, transform_frame_);
       }
-      catch (tf2::TransformException ex)
+      catch (tf2::TransformException& ex)
       {
         ROS_ERROR("%s", ex.what());
         ros::Duration(1.0).sleep();
