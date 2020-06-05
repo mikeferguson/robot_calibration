@@ -137,6 +137,12 @@ bool CheckerboardFinder::findInternal(robot_calibration_msgs::CalibrationData * 
     return false;
   }
 
+  if (cloud_.height == 1)
+  {
+    ROS_ERROR("OpenCV does not support unorganized cloud/image.");
+    return false;
+  }
+
   // Get an image message from point cloud
   sensor_msgs::ImagePtr image_msg(new sensor_msgs::Image);
   sensor_msgs::PointCloud2ConstIterator<uint8_t> rgb(cloud_, "rgb");
