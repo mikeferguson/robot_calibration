@@ -21,6 +21,7 @@
 #include <ros/ros.h>
 #include <robot_calibration/load_bag.h>
 #include <sensor_msgs/JointState.h>
+#include <sensor_msgs/PointCloud2.h>
 #include <visualization_msgs/MarkerArray.h>
 
 #include <urdf/model.h>
@@ -79,6 +80,7 @@ int main(int argc, char** argv)
 
   // Create models for reprojection
   std::map<std::string, robot_calibration::ChainModel*> models;
+  std::map<std::string, ros::Publisher> camera_pubs;
   std::vector<std::string> model_names;
   for (size_t i = 0; i < params.models.size(); ++i)
   {
@@ -98,6 +100,7 @@ int main(int argc, char** argv)
       robot_calibration::Camera3dModel* model = new robot_calibration::Camera3dModel(params.models[i].name, tree, params.base_link, params.models[i].params["frame"]);
       models[params.models[i].name] = model;
       model_names.push_back(params.models[i].name);
+      camera_pubs[params.models[i].name] = nh.advertise<sensor_msgs::PointCloud2>(params.models[i].name, 1);
     }
     else
     {
@@ -223,12 +226,25 @@ int main(int argc, char** argv)
 
     // Publish the joint states
     sensor_msgs::JointState state_msg = data[i].joint_states;
-    for (size_t i = 0; i < state_msg.name.size(); ++i)
+    for (size_t j = 0; j < state_msg.name.size(); ++j)
     {
-      double offset = offsets.get(state_msg.name[i]);
-      state_msg.position[i] += offset;
+      double offset = offsets.get(state_msg.name[j]);
+      state_msg.position[j] += offset;
     }
     state.publish(state_msg);
+
+    // Publish sensor data (if present)
+    for (size_t obs = 0; obs < data[i].observations.size(); ++obs)
+    {
+      if (data[i].observations[obs].cloud.height != 0)
+      {
+        auto pub = camera_pubs.find(data[i].observations[obs].sensor_name);
+        if (pub != camera_pubs.end())
+        {
+          pub->second.publish(data[i].observations[obs].cloud);
+        }
+      }
+    }
 
     // Wait to proceed
     std::cout << "Press enter to continue...";
