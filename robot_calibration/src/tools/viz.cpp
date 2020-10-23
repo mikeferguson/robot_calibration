@@ -222,7 +222,13 @@ int main(int argc, char** argv)
     pub.publish(markers);
 
     // Publish the joint states
-    state.publish(data[i].joint_states);
+    sensor_msgs::JointState state_msg = data[i].joint_states;
+    for (size_t i = 0; i < state_msg.name.size(); ++i)
+    {
+      double offset = offsets.get(state_msg.name[i]);
+      state_msg.position[i] += offset;
+    }
+    state.publish(state_msg);
 
     // Wait to proceed
     std::cout << "Press enter to continue...";
