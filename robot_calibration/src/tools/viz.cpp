@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Michael Ferguson
+ * Copyright (C) 2018-2020 Michael Ferguson
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@
 
 #include <ros/ros.h>
 #include <robot_calibration/load_bag.h>
+#include <sensor_msgs/JointState.h>
 #include <visualization_msgs/MarkerArray.h>
 
 #include <urdf/model.h>
@@ -179,6 +180,9 @@ int main(int argc, char** argv)
     }
   }
 
+  // Publisher of fake joint states
+  ros::Publisher state = nh.advertise<sensor_msgs::JointState>("/fake_controller_joint_states", 1);
+
   // Publisher of visualization
   ros::Publisher pub = nh.advertise<visualization_msgs::MarkerArray>("data", 10);
   for (size_t i = 0; i < data.size(); ++i)
@@ -200,8 +204,9 @@ int main(int argc, char** argv)
       msg.header.frame_id = params.base_link;
       msg.header.stamp = ros::Time::now();
       msg.ns = model_names[m];
-      msg.id = (model_names.size() * i) + m;
+      msg.id = m;
       msg.type = msg.SPHERE_LIST;
+      msg.pose.orientation.w = 1.0;
       msg.scale.x = 0.005;
       msg.scale.y = 0.005;
       msg.scale.z = 0.005;
@@ -215,6 +220,9 @@ int main(int argc, char** argv)
       markers.markers.push_back(msg);
     }
     pub.publish(markers);
+
+    // Publish the joint states
+    state.publish(data[i].joint_states);
 
     // Wait to proceed
     std::cout << "Press enter to continue...";
