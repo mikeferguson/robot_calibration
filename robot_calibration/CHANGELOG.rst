@@ -2,8 +2,8 @@
 Changelog for package robot_calibration
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.6.4 (2020-11-02)
+------------------
 * improve visualization (`#91 <https://github.com/mikeferguson/robot_calibration/issues/91>`_)
   * publish joint states for viz
   * publish point clouds
