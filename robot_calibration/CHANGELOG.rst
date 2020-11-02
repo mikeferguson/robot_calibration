@@ -2,6 +2,20 @@
 Changelog for package robot_calibration
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* improve visualization (`#91 <https://github.com/mikeferguson/robot_calibration/issues/91>`_)
+  * publish joint states for viz
+  * publish point clouds
+* use all features when features are unspecified (`#92 <https://github.com/mikeferguson/robot_calibration/issues/92>`_)
+* only accept organized clouds, fixes `#79 <https://github.com/mikeferguson/robot_calibration/issues/79>`_ (`#90 <https://github.com/mikeferguson/robot_calibration/issues/90>`_)
+* catch by reference to silence warnings (`#89 <https://github.com/mikeferguson/robot_calibration/issues/89>`_)
+* fix opencv build issue (`#88 <https://github.com/mikeferguson/robot_calibration/issues/88>`_)
+* update package.xml for noetic (`#87 <https://github.com/mikeferguson/robot_calibration/issues/87>`_)
+  orocos-kdl is now a system dependency,
+  rosdep key has changed
+* Contributors: Michael Ferguson
+
 0.6.3 (2020-04-27)
 ------------------
 * kinetic requires C++11, but doesn't specify it (`#85 <https://github.com/mikeferguson/robot_calibration/issues/85>`_)

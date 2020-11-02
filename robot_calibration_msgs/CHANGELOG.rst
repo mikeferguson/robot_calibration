@@ -2,6 +2,13 @@
 Changelog for package robot_calibration_msgs
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* update package.xml for noetic (`#87 <https://github.com/mikeferguson/robot_calibration/issues/87>`_)
+  orocos-kdl is now a system dependency,
+  rosdep key has changed
+* Contributors: Michael Ferguson
+
 0.6.3 (2020-04-27)
 ------------------
 
