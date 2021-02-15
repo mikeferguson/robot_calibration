@@ -28,7 +28,8 @@ ChainManager::ChainManager(ros::NodeHandle& nh, double wait_time) :
   // We cannot do much without some kinematic chains
   if (!nh.hasParam("chains"))
   {
-    // TODO raise error
+    ROS_WARN("No chains defined.");
+    return;
   }
 
   // Get chains
@@ -233,6 +234,12 @@ bool ChainManager::moveToState(const sensor_msgs::JointState& state)
 bool ChainManager::waitToSettle()
 {
   sensor_msgs::JointState state;
+
+  if (controllers_.empty())
+  {
+    // Nothing to wait for
+    return true;
+  }
 
   // Reset to invalid so we know state is not stale
   {
