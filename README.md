@@ -58,6 +58,8 @@ YAML file specifies the details needed for data capture:
 The second configuration file specifies the configuration for optimization.
 This specifies several items:
 
+ * base_link - Frame used for internal calculations. Typically, the root of the
+   URDF is used. Often `base_link`.
  * models - Models define how to reproject points. The basic model is a
    kinematic chain. Additional models can reproject through a kinematic
    chain and then a sensor, such as a 3d camera.
