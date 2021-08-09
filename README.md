@@ -62,7 +62,8 @@ This specifies several items:
    URDF is used. Often `base_link`.
  * models - Models define how to reproject points. The basic model is a
    kinematic chain. Additional models can reproject through a kinematic
-   chain and then a sensor, such as a 3d camera.
+   chain and then a sensor, such as a 3d camera. For IK chains, `frame` parameter
+   is the tip of the IK chain.
  * free_params - Defines the names of single-value free parameters. These
    can be the names of a joint for which the joint offset should be calculated,
    camera parameters such as focal lengths, or other parameters, such as
