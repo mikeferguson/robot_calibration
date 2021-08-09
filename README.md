@@ -82,6 +82,11 @@ This specifies several items:
      reprojection between two 3D "sensors" which tell us the position of
      certain features of interest. Sensors might be a 3D camera or an arm
      which is holding a checkerboard.
+   * camera3d_to_arm - A specialization of chain3d_to_chain3d that adds pinhole
+     parameters (cx, cy, fx, fy) when doing projection of the points. Depending
+     on your setup, this doesn't always work (for instance, some drivers don't
+     actually use the camera model/parameters for the 3d projection, but the
+     Primesense/Astra ones do for instance). 
    * chain3d_to_plane - This error block can compute the difference between
      projected 3d points and a desired plane. The most common use case is making
      sure that the ground plane a robot sees is really on the ground.
