@@ -38,9 +38,9 @@ TEST(ChainManagerTests, test_rosparam_loading)
 
   EXPECT_EQ(static_cast<size_t>(2), params.error_blocks.size());
   EXPECT_EQ("hand_eye", params.error_blocks[0].name);
-  EXPECT_EQ("camera3d_to_arm", params.error_blocks[0].type);
-  EXPECT_EQ("arm", static_cast<std::string>(params.error_blocks[0].params["arm"]));
-  EXPECT_EQ("camera", static_cast<std::string>(params.error_blocks[0].params["camera"]));
+  EXPECT_EQ("chain3d_to_chain3d", params.error_blocks[0].type);
+  EXPECT_EQ("camera", static_cast<std::string>(params.error_blocks[0].params["model_a"]));
+  EXPECT_EQ("arm", static_cast<std::string>(params.error_blocks[0].params["model_b"]));
 
   EXPECT_EQ(static_cast<size_t>(1), params.free_frames_initial_values.size());
   EXPECT_EQ("checkerboard", params.free_frames_initial_values[0].name);

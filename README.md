@@ -64,6 +64,15 @@ This specifies several items:
    kinematic chain. Additional models can reproject through a kinematic
    chain and then a sensor, such as a 3d camera. For IK chains, `frame` parameter
    is the tip of the IK chain.
+   * chain - Represents a kinematic chain from the `base_link` to the `frame`
+     parameter (which in MoveIt/KDL terms is usually referred to as the `tip`).
+   * camera3d - Represents a kinematic chain from the `base_link` to the `frame`
+     parameter, and includes the pinhole camera model parameters (cx, cy, fx, fy)
+     when doing projection of the points. This model only works if your sensor
+     publishes CameraInfo. Further, the calibration obtained when this model is
+     used and any of the pinhole parameters are free parameters is only valid if
+     the physical sensor actually uses the CameraInfo for 3d projection (this
+     is generally true for the Primesense/Astra sensors).
  * free_params - Defines the names of single-value free parameters. These
    can be the names of a joint for which the joint offset should be calculated,
    camera parameters such as focal lengths, or other parameters, such as
@@ -84,12 +93,7 @@ This specifies several items:
    * chain3d_to_chain3d - This error block can compute the difference in
      reprojection between two 3D "sensors" which tell us the position of
      certain features of interest. Sensors might be a 3D camera or an arm
-     which is holding a checkerboard.
-   * camera3d_to_arm - A specialization of chain3d_to_chain3d that adds pinhole
-     parameters (cx, cy, fx, fy) when doing projection of the points. Depending
-     on your setup, this doesn't always work (for instance, some drivers don't
-     actually use the camera model/parameters for the 3d projection, but the
-     Primesense/Astra ones do for instance). 
+     which is holding a checkerboard. Was previously called "camera3d_to_arm".
    * chain3d_to_plane - This error block can compute the difference between
      projected 3d points and a desired plane. The most common use case is making
      sure that the ground plane a robot sees is really on the ground.
