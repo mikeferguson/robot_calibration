@@ -215,7 +215,5 @@ and _mag_bias_z_, which can be used with the <code>imu_filter_madgwick</code> pa
 
 # Status
 
- * Kinetic Devel Job Status: [![Build Status](http://build.ros.org/buildStatus/icon?job=Kdev__robot_calibration__ubuntu_xenial_amd64)](http://build.ros.org/job/Kdev__robot_calibration__ubuntu_xenial_amd64/)
- * Kinetic AMD64 Debian Job Status: [![Build Status](http://build.ros.org/buildStatus/icon?job=Kbin_uX64__robot_calibration__ubuntu_xenial_amd64__binary)](http://build.ros.org/job/Kbin_uX64__robot_calibration__ubuntu_xenial_amd64__binary/)
  * Melodic Devel Job Status: [![Build Status](http://build.ros.org/buildStatus/icon?job=Mdev__robot_calibration__ubuntu_bionic_amd64)](http://build.ros.org/job/Mdev__robot_calibration__ubuntu_bionic_amd64/)
  * Melodic Coverage: [![codecov](https://codecov.io/gh/mikeferguson/robot_calibration/branch/master/graph/badge.svg)](https://codecov.io/gh/mikeferguson/robot_calibration)
