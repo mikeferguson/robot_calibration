@@ -39,6 +39,7 @@ find_package(catkin REQUIRED
     tf2_geometry_msgs
     tf2_ros
     visualization_msgs
+    backward_ros
 )
 
 catkin_package(

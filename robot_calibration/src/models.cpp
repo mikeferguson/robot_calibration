@@ -41,8 +41,28 @@ ChainModel::ChainModel(const std::string& name, KDL::Tree model, std::string roo
     root_(root), tip_(tip), name_(name)
 {
   // Create a KDL::Chain
-  if (!model.getChain(root, tip, chain_))
+  if (!model.getChain(root, tip, chain_)){
+    std::cerr << std::endl;
+    std::cerr << "Segs:\t" << model.getNrOfSegments() << std::endl;
+    std::cerr << "Root:\t" << root << std::endl;
+    std::cerr << "Tip:\t" << tip << std::endl;
     std::cerr << "Failed to get chain" << std::endl;
+    std::cerr << std::endl;
+    std::cerr << "Chains:" << std::endl;
+    auto it = model.getRootSegment();
+    for (unsigned int i = 0; i < model.getNrOfSegments(); i++) {
+
+      if (it->first == "base_link"){
+        std::cerr << "\t" << it->first << ", " << std::endl;
+      }
+
+      else {
+        std::cerr << "\t" << it->first << ", " << ((it->second).parent)->first << std::endl;
+      }
+
+      ++it;
+    }
+  }
 }
 
 std::vector<geometry_msgs::PointStamped> ChainModel::project(
@@ -82,25 +102,7 @@ std::vector<geometry_msgs::PointStamped> ChainModel::project(
 
     KDL::Frame p(KDL::Frame::Identity());
     p.p.x(data.observations[sensor_idx].features[i].point.x);
-    p.p.y(data.observations[sensor_idx].features[i].point.y);
-    p.p.z(data.observations[sensor_idx].features[i].point.z);
-
-    // This is primarily for the case of checkerboards
-    //   The observation is in "checkerboard" frame, but the tip of the
-    //   kinematic chain is typically something like "wrist_roll_link".
-    if (data.observations[sensor_idx].features[i].header.frame_id != tip_)
-    {
-      KDL::Frame p2(KDL::Frame::Identity());
-      if (offsets.getFrame(data.observations[sensor_idx].features[i].header.frame_id, p2))
-      {
-        // We have to apply the frame offset before the FK projection
-        p = p2 * p;
-      }
-    }
-
-    // Apply the FK projection
-    p = fk * p;
-
+    p.p.y(data.observations[sensor_idxgit@github.com:jackcenter/robot_calibration.git
     points[i].point.x = p.p.x();
     points[i].point.y = p.p.y();
     points[i].point.z = p.p.z();
