@@ -102,7 +102,25 @@ std::vector<geometry_msgs::PointStamped> ChainModel::project(
 
     KDL::Frame p(KDL::Frame::Identity());
     p.p.x(data.observations[sensor_idx].features[i].point.x);
-    p.p.y(data.observations[sensor_idxgit@github.com:jackcenter/robot_calibration.git
+    p.p.y(data.observations[sensor_idx].features[i].point.y);
+    p.p.z(data.observations[sensor_idx].features[i].point.z);
+
+    // This is primarily for the case of checkerboards
+    //   The observation is in "checkerboard" frame, but the tip of the
+    //   kinematic chain is typically something like "wrist_roll_link".
+    if (data.observations[sensor_idx].features[i].header.frame_id != tip_)
+    {
+      KDL::Frame p2(KDL::Frame::Identity());
+      if (offsets.getFrame(data.observations[sensor_idx].features[i].header.frame_id, p2))
+      {
+        // We have to apply the frame offset before the FK projection
+        p = p2 * p;
+      }
+    }
+
+    // Apply the FK projection
+    p = fk * p;
+
     points[i].point.x = p.p.x();
     points[i].point.y = p.p.y();
     points[i].point.z = p.p.z();
