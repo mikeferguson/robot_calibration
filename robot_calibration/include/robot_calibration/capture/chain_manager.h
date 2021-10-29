@@ -81,6 +81,7 @@ public:
 
   /**
    * @brief Wait for joints to settle.
+   * @return True if joints have settled, false if timeout was hit.
    */
   bool waitToSettle();
 
@@ -119,6 +120,9 @@ private:
   std::vector<boost::shared_ptr<ChainController> > controllers_;
   MoveGroupClientPtr move_group_;
   double velocity_factor_;  // scaling factor to slow down move_group plans
+
+  // Maximum time to wait (in seconds) for settling to occur
+  double settling_timeout_;
 };
 
 }  // namespace robot_calibration

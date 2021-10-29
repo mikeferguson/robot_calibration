@@ -80,6 +80,10 @@ ChainManager::ChainManager(ros::NodeHandle& nh, double wait_time) :
   // Parameter to set velocity scaling factor for move_group
   nh.param<double>("velocity_factor", velocity_factor_, 1.0);
 
+  // Parameter to limit settling time
+  // <= 0.0 disables timeout
+  nh.param<double>("settling_timeout", settling_timeout_, 0.0);
+
   subscriber_ = nh.subscribe("/joint_states", 10, &ChainManager::stateCallback, this);
 }
 
@@ -247,7 +251,8 @@ bool ChainManager::waitToSettle()
     state_is_valid_ = false;
   }
 
-  // TODO: timeout?
+  ros::Rate rate(50.0);
+  ros::Time start_time = ros::Time::now();
   while (true)
   {
     bool settled = true;
@@ -287,8 +292,21 @@ bool ChainManager::waitToSettle()
 
     // If all joints are settled, break out of while loop
     if (settled)
+    {
       break;
+    }
 
+    // Exit if timed out
+    if (settling_timeout_ >= 0.0)
+    {
+      if (ros::Time::now() > start_time + ros::Duration(settling_timeout_))
+      {
+        // Timed out - return failure
+        return false;
+      }
+    }
+
+    rate.sleep();
     ros::spinOnce();
   }
 
