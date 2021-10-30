@@ -2,8 +2,8 @@
 Changelog for package robot_calibration
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.6.5 (2021-10-30)
+------------------
 * add support for static camera calibration (`#101 <https://github.com/mikeferguson/robot_calibration/issues/101>`_)
 * remove references to chain3d_to_arm (`#99 <https://github.com/mikeferguson/robot_calibration/issues/99>`_)
 * Contributors: Michael Ferguson
