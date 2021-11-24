@@ -52,7 +52,7 @@ ChainModel::ChainModel(const std::string& name, KDL::Tree model, std::string roo
     auto it = model.getRootSegment();
     for (unsigned int i = 0; i < model.getNrOfSegments(); i++) {
 
-      if (it->first == "base_link"){
+      if (it->first == "tractor_base"){
         std::cerr << "\t" << it->first << ", " << std::endl;
       }
 
