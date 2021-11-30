@@ -56,7 +56,7 @@ bool load_bag(const std::string& file_name,
   }
 
   // Get robot_description from bag file
-  rosbag::View model_view_(bag_, rosbag::TopicQuery("robot_description"));
+  rosbag::View model_view_(bag_, rosbag::TopicQuery("/robot_description"));
   if (model_view_.size() < 1)
   {
     ROS_FATAL_STREAM("robot_description topic not found in bag file.");
@@ -66,7 +66,7 @@ bool load_bag(const std::string& file_name,
   description_msg = *description_;
 
   // Parse calibration_data topic
-  rosbag::View data_view_(bag_, rosbag::TopicQuery("calibration_data"));
+  rosbag::View data_view_(bag_, rosbag::TopicQuery("/calibration_data"));
   BOOST_FOREACH (rosbag::MessageInstance const m, data_view_)
   {
     robot_calibration_msgs::CalibrationData::ConstPtr msg = m.instantiate<robot_calibration_msgs::CalibrationData>();
