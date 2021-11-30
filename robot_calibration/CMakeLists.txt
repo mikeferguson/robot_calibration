@@ -39,6 +39,7 @@ find_package(catkin REQUIRED
     tf2_geometry_msgs
     tf2_ros
     visualization_msgs
+    backward_ros
 )
 
 catkin_package(
@@ -123,6 +124,16 @@ target_link_libraries(calibrate robot_calibration
                                 ${OpenCV_LIBS})
 add_dependencies(calibrate robot_calibration)
 
+add_executable(capture_features src/capture_features.cpp)
+target_link_libraries(capture_features robot_calibration
+                                ${Boost_LIBRARIES}
+                                ${catkin_LIBRARIES}
+                                ${CERES_LIBRARIES}
+                                ${tinyxml_LIBRARIES}
+                                ${orocos_kdl_LIBRARIES}
+                                ${OpenCV_LIBS})
+add_dependencies(capture_features robot_calibration)
+
 add_executable(to_rpy src/tools/to_rpy.cpp)
 target_link_libraries(to_rpy robot_calibration
                              ${Boost_LIBRARIES}
@@ -144,6 +155,7 @@ install(DIRECTORY include/ DESTINATION include)
 install(TARGETS
 	calibrate
 	calibrate_base
+  capture_features
 	robot_calibration
 	robot_calibration_feature_finders
 	to_rpy

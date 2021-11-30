@@ -45,6 +45,8 @@ bool CheckerboardFinder::init(const std::string& name,
   // Setup Scriber
   std::string topic_name;
   nh.param<std::string>("topic", topic_name, "/points");
+
+  ROS_INFO_STREAM_NAMED("CheckerboardFinder", "Subscribing to: " << topic_name);
   subscriber_ = nh.subscribe(topic_name,
                              1,
                              &CheckerboardFinder::cameraCallback,

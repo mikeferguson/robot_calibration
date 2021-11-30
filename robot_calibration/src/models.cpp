@@ -41,8 +41,28 @@ ChainModel::ChainModel(const std::string& name, KDL::Tree model, std::string roo
     root_(root), tip_(tip), name_(name)
 {
   // Create a KDL::Chain
-  if (!model.getChain(root, tip, chain_))
+  if (!model.getChain(root, tip, chain_)){
+    std::cerr << std::endl;
+    std::cerr << "Segs:\t" << model.getNrOfSegments() << std::endl;
+    std::cerr << "Root:\t" << root << std::endl;
+    std::cerr << "Tip:\t" << tip << std::endl;
     std::cerr << "Failed to get chain" << std::endl;
+    std::cerr << std::endl;
+    std::cerr << "Chains:" << std::endl;
+    auto it = model.getRootSegment();
+    for (unsigned int i = 0; i < model.getNrOfSegments(); i++) {
+
+      if (it->first == "tractor_base"){
+        std::cerr << "\t" << it->first << ", " << std::endl;
+      }
+
+      else {
+        std::cerr << "\t" << it->first << ", " << ((it->second).parent)->first << std::endl;
+      }
+
+      ++it;
+    }
+  }
 }
 
 std::vector<geometry_msgs::PointStamped> ChainModel::project(

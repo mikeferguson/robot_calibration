@@ -88,8 +88,15 @@ public:
       FeatureFinderPtr finder;
       ROS_INFO("  New %s: %s", type.c_str(), name.c_str());
       finder = plugin_loader_.createInstance(type);
-      if (finder && finder->init(name, finder_handle))
-        features[name] = finder;
+      if (!finder) {
+        ROS_ERROR_STREAM("Failed to load feature: " << type);
+        continue;
+      }
+      if (!finder->init(name, finder_handle)) {
+        ROS_ERROR_STREAM("Init of " << name << " failed!");
+        continue;
+      }
+      features[name] = finder;
     }
 
     return true;
