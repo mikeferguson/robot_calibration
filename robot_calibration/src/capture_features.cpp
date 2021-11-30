@@ -1,5 +1,4 @@
 // Author: Jack Center
-// TOOD: attempt to launch as is
 
 #include <fstream>
 #include <ctime>
@@ -31,39 +30,47 @@ int main(int argc, char** argv)
   ros::NodeHandle nh("~");
 
   if (!check_parameters(nh))
-  {
-    ROS_FATAL("Parameters couldn't be properly loaded");
     return -1;
-  }
 
   // Get the robot_description and republish it
-  ros::Publisher urdf_pub = nh.advertise<std_msgs::String>("/robot_description", 1, true);  // latched
+// TODO: describe why this is needed.
   std_msgs::String description_msg;
-  if (!nh.getParam("/robot_description", description_msg.data))
-  {
-    ROS_FATAL("robot_description not set!");
-    return -1;
-  }
+  nh.getParam("/robot_description", description_msg.data);
+  ros::Publisher urdf_pub = nh.advertise<std_msgs::String>("/robot_description", 1, true);  // latched
   urdf_pub.publish(description_msg);
 
-  // The calibration data
-  std::vector<robot_calibration_msgs::CalibrationData> data;
+  // Set up the calibration
+// TODO: make timeout a define
+  robot_calibration::ChainManager chain_manager(nh, 0.1);     // Manages kinematic chains
+
+  robot_calibration::FeatureFinderMap finders;               // Holds the available feature finders  
+  if (!get_feature_finders(nh, finders)) 
+    return -1;    
+
+  std::string feature;
+  nh.getParam("feature_finder", feature);                    // The feature to search for during caputre
+
+  std::string bag_filename;                                   // Absolute path to location to save the bagfile
+  nh.getParam("bag_filename", bag_filename);  
+  rosbag::Bag bag(bag_filename, rosbag::bagmode::Write);
+
   bool capture_successful;
 
   // Auto capture mode
   if (nh.param<bool>("auto_calibration_mode", false))
   {
     ROS_INFO("Using automatic calibration mode...");
-    capture_successful = run_automatic_capture(nh, data);
+    capture_successful = run_automatic_capture(nh, &chain_manager, finders, feature, bag);
   }
 
   // Manual capture mode
   else
   {
     ROS_INFO("Using manual calibration mode...");
-    capture_successful = run_manual_capture(nh, data);
+    capture_successful = run_manual_capture(nh, &chain_manager, finders, feature, bag);
   }
 
+  bag.close();
   ROS_INFO("Done capturing samples");
 
   return 0;
@@ -95,6 +102,7 @@ bool check_parameters(ros::NodeHandle& nh)
   if (!nh.hasParam(bag_filename))
   {
     ROS_ERROR_STREAM("bag filename parameter not set. Setting default location");
+    // TODO: fix this to be a better default
     std::string bag_filename_default = get_absolute_directory("/rosbags/default.bag");
     nh.setParam(bag_filename, bag_filename_default);
   }
@@ -104,7 +112,21 @@ bool check_parameters(ros::NodeHandle& nh)
     nh.setParam(feature_finder_name, "checkerboard_finder");
   }
 
-  ROS_INFO_STREAM("parameters set");
+  if (!nh.hasParam("/robot_description"))
+  {
+    ROS_FATAL("robot_description not set. Exiting the program");
+    success = false;
+  }
+
+  if (success)
+  {
+    ROS_INFO_STREAM("parameters successfully set");
+  }
+
+  else{
+    ROS_FATAL("unable to set the parameters");
+  }
+
   return success;
 }
 
@@ -117,25 +139,35 @@ std::string get_absolute_directory(std::string local_dir)
 }
 
 
-bool run_automatic_capture(ros::NodeHandle& nh, std::vector<robot_calibration_msgs::CalibrationData>& data)
+bool get_feature_finders(ros::NodeHandle& nh, robot_calibration::FeatureFinderMap& finders)
 {
-  // TODO
-  std::string feature; 
-  robot_calibration::FeatureFinderMap finders;                      // The available feature finders
+  bool success = true;
   robot_calibration::FeatureFinderLoader feature_finder_loader;     // Helper to load the feature finders
-  robot_calibration::ChainManager chain_manager(nh);
-  robot_calibration_msgs::CalibrationData msg;
-  bool capture_complete = false;
 
-  if (!nh.getParam("feature_finder", feature))
-  {
-    ROS_FATAL("Unable to load the selected feature");
-  }
-  
+// TODO: why won't this unload?
   if (!feature_finder_loader.load(nh, finders))
   {
     ROS_FATAL("Unable to load feature finders");
+    success = false;
   }
+
+  return success;
+}
+
+
+bool run_automatic_capture(ros::NodeHandle& nh, 
+                        robot_calibration::ChainManager* chain_manager, 
+                        robot_calibration::FeatureFinderMap& finders,
+                        std::string& feature,
+                        rosbag::Bag& bag)
+{
+  // TODO
+  // std::string feature; 
+  // robot_calibration::FeatureFinderMap finders;                      // The available feature finders
+  // robot_calibration::FeatureFinderLoader feature_finder_loader;     // Helper to load the feature finders
+  // robot_calibration::ChainManager chain_manager(nh);
+  robot_calibration_msgs::CalibrationData msg;
+  bool capture_complete = false;
 
   ros::Publisher pub = nh.advertise<robot_calibration_msgs::CalibrationData>("/calibration_data", 10);
 
@@ -151,40 +183,24 @@ bool run_automatic_capture(ros::NodeHandle& nh, std::vector<robot_calibration_ms
         3. Capture the calibration data
     */
     capture_calibration_data(chain_manager, finders, feature, msg);
-    data.emplace_back(msg);
   }
 
   return true;
 }
 
-bool run_manual_capture(ros::NodeHandle& nh, std::vector<robot_calibration_msgs::CalibrationData>& data)
+bool run_manual_capture(ros::NodeHandle& nh, 
+                        robot_calibration::ChainManager* chain_manager, 
+                        robot_calibration::FeatureFinderMap& finders,
+                        std::string& feature,
+                        rosbag::Bag& bag)
 {
-  std::string feature;                                              // Name of the feature finder (ie checkerboard_finder)
-  robot_calibration::FeatureFinderMap finders;                      // The available feature finders
-  robot_calibration::FeatureFinderLoader feature_finder_loader;     // Helper to load the feature finders
-  robot_calibration::ChainManager chain_manager(nh, 0.1);           // Manages kinematic chains
   robot_calibration_msgs::CalibrationData msg;                      // Data message place holder
-  std::string bag_filename;                                         // Absolute path to location to save the bagfile
+  int captured_poses;
+
   bool capture_complete = false;
 
-  if (!nh.getParam("feature_finder", feature))
-  {
-    ROS_FATAL("Unable to load the selected feature finder");
-  }
-
-// TODO: why won't this unload?
-  if (!feature_finder_loader.load(nh, finders))
-  {
-    ROS_FATAL("Unable to load feature finders");
-  }
-
-  if (!nh.getParam("bag_filename", bag_filename))
-  {
-    ROS_FATAL("Unable to create bag file");
-  }
-
   ros::Publisher pub = nh.advertise<robot_calibration_msgs::CalibrationData>("/calibration_data", 10);
-  rosbag::Bag bag(bag_filename, rosbag::bagmode::Write);
+  
 
   // Loop - while poses are still being captured
   while (!capture_complete && ros::ok())
@@ -203,23 +219,21 @@ bool run_manual_capture(ros::NodeHandle& nh, std::vector<robot_calibration_msgs:
     // Capture was successful
     else if (capture_calibration_data(chain_manager, finders, feature, msg))
     {
-      ROS_INFO("Captured pose %lu", data.size());
-      chain_manager.getState(& msg.joint_states);
+      captured_poses++;
+      ROS_INFO("Captured pose %i", captured_poses);
+      chain_manager->getState(& msg.joint_states);
       pub.publish(msg);
-      data.emplace_back(msg);
       bag.write("calibration_data", ros::Time::now(), msg);
     }
 
     // Capture was unsuccessful
     else
     {
-      ROS_WARN("Failed to capture sample %lu.", data.size());
+      ROS_WARN("Failed to capture sample");
     }
   }
 
-  bag.close();
-
-  // TODO: should have this return something more useful
+// TODO: should have this return something more useful
   return capture_complete; 
 }
 
@@ -277,7 +291,7 @@ bool move_to_position()
 }
 
 
-bool capture_calibration_data(robot_calibration::ChainManager& chain_manager, 
+bool capture_calibration_data(robot_calibration::ChainManager* chain_manager, 
                               robot_calibration::FeatureFinderMap& finders, 
                               std::string& feature,
                               robot_calibration_msgs::CalibrationData& msg)
@@ -285,7 +299,7 @@ bool capture_calibration_data(robot_calibration::ChainManager& chain_manager,
   bool feature_found = true;
 
   // Wait for joints to settle
-  chain_manager.waitToSettle();
+  chain_manager->waitToSettle();
 
   // Make sure sensor data is up to date after settling
   ros::Duration(0.1).sleep();

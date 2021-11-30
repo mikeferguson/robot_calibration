@@ -23,27 +23,52 @@ std::string get_absolute_directory(std::string local_dir);
 
 
 /**
+* @brief      Creates a map of the available feature finders
+*
+* @param[in]  nh        node handle reference.
+* @param[in]  finders   the location to store the map of feature finders
+*
+* @return     bool indicating whether the feature finders were loaded 
+*/
+bool get_feature_finders(ros::NodeHandle& nh, robot_calibration::FeatureFinderMap& finders);
+
+
+/**
 * @brief      Executes the steps required to automatically capture the feature from a bag of predetermined pose.
 *             This includes commanding the robot to the specified pose then capturing the feature. 
 *
-* @param[in]  node  node handle reference
-* @param[in]  data  vector reference for where the CalibrationData messages are to be stored.
+* @param[in]  nh                node handle reference.
+* @param[in]  chain_manager     object that handles the kinematic chains
+* @param[in]  finders           map of available feature finders
+* @param[in]  feature           feature to use for calibration
+* @param[in]  bag               rosbag object for storing calibration data
 *
 * @return     bool indicating whether the run was successful 
 */
-bool run_automatic_capture(ros::NodeHandle& node, std::vector<robot_calibration_msgs::CalibrationData>& data);
+bool run_automatic_capture(ros::NodeHandle& nh, 
+                           robot_calibration::ChainManager* chain_manager, 
+                           robot_calibration::FeatureFinderMap& finders,
+                           std::string& feature,
+                           rosbag::Bag& bag);
 
 
 /**
 * @brief      Executes the steps required to manually capture the feature from a bag of predetermined pose.
 *             This includes waiting for the user to move the robot then capturing the feature on their command. 
 *
-* @param[in]  node  node handle reference
-* @param[in]  data  vector reference for where the CalibrationData messages are to be stored.
+* @param[in]  nh                node handle reference.
+* @param[in]  chain_manager     object that handles the kinematic chains
+* @param[in]  finders           map of available feature finders
+* @param[in]  feature           feature to use for calibration
+* @param[in]  bag               rosbag object for storing calibration data
 *
 * @return     bool indicating whether the run was successful   
 */
-bool run_manual_capture(ros::NodeHandle& nh, std::vector<robot_calibration_msgs::CalibrationData>& data);
+bool run_manual_capture(ros::NodeHandle& nh, 
+                        robot_calibration::ChainManager* chain_manager, 
+                        robot_calibration::FeatureFinderMap& finders,
+                        std::string& feature,
+                        rosbag::Bag& bag);
 
 
 /**
@@ -91,9 +116,9 @@ bool move_to_position();
 *
 * @return     CalibrationData message for the capture    
 */
-bool capture_calibration_data(robot_calibration::ChainManager& chain_manager, 
-                                                                 robot_calibration::FeatureFinderMap& finders, 
-                                                                 std::string& feature,
-                                                                 robot_calibration_msgs::CalibrationData& msg);
+bool capture_calibration_data(robot_calibration::ChainManager* chain_manager, 
+                              robot_calibration::FeatureFinderMap& finders, 
+                              std::string& feature,
+                              robot_calibration_msgs::CalibrationData& msg);
 
 #endif  // ROBOT_CALIBRATION_CAPTURE_FEATURES_H
