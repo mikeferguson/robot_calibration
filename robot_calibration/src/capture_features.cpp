@@ -121,8 +121,8 @@ bool run_automatic_capture(ros::NodeHandle& nh, std::vector<robot_calibration_ms
 {
   // TODO
   std::string feature; 
-  robot_calibration::FeatureFinderMap finders;
-  robot_calibration::FeatureFinderLoader feature_finder_loader;
+  robot_calibration::FeatureFinderMap finders;                      // The available feature finders
+  robot_calibration::FeatureFinderLoader feature_finder_loader;     // Helper to load the feature finders
   robot_calibration::ChainManager chain_manager(nh);
   robot_calibration_msgs::CalibrationData msg;
   bool capture_complete = false;
@@ -162,7 +162,7 @@ bool run_manual_capture(ros::NodeHandle& nh, std::vector<robot_calibration_msgs:
   std::string feature;                                              // Name of the feature finder (ie checkerboard_finder)
   robot_calibration::FeatureFinderMap finders;                      // The available feature finders
   robot_calibration::FeatureFinderLoader feature_finder_loader;     // Helper to load the feature finders
-  robot_calibration::ChainManager chain_manager(nh);                // Manages kinematic chains
+  robot_calibration::ChainManager chain_manager(nh, 0.1);           // Manages kinematic chains
   robot_calibration_msgs::CalibrationData msg;                      // Data message place holder
   std::string bag_filename;                                         // Absolute path to location to save the bagfile
   bool capture_complete = false;
@@ -171,7 +171,8 @@ bool run_manual_capture(ros::NodeHandle& nh, std::vector<robot_calibration_msgs:
   {
     ROS_FATAL("Unable to load the selected feature finder");
   }
-  
+
+// TODO: why won't this unload?
   if (!feature_finder_loader.load(nh, finders))
   {
     ROS_FATAL("Unable to load feature finders");
@@ -215,6 +216,8 @@ bool run_manual_capture(ros::NodeHandle& nh, std::vector<robot_calibration_msgs:
       ROS_WARN("Failed to capture sample %lu.", data.size());
     }
   }
+
+  bag.close();
 
   // TODO: should have this return something more useful
   return capture_complete; 
