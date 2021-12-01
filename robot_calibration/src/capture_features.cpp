@@ -32,13 +32,6 @@ int main(int argc, char** argv)
   if (!check_parameters(nh))
     return -1;
 
-  // Get the robot_description and republish it
-// TODO: describe why this is needed.
-  std_msgs::String description_msg;
-  nh.getParam("/robot_description", description_msg.data);
-  ros::Publisher urdf_pub = nh.advertise<std_msgs::String>("/robot_description", 1, true);  // latched
-  urdf_pub.publish(description_msg);
-
   // Set up the calibration
 // TODO: make timeout a define
   robot_calibration::ChainManager chain_manager(nh, 0.1);     // Manages kinematic chains
@@ -53,6 +46,14 @@ int main(int argc, char** argv)
   std::string bag_filename;                                   // Absolute path to location to save the bagfile
   nh.getParam("bag_filename", bag_filename);  
   rosbag::Bag bag(bag_filename, rosbag::bagmode::Write);
+
+  // Get the robot_description and republish it
+// TODO: describe why this is needed.
+  std_msgs::String description_msg;
+  nh.getParam("/robot_description", description_msg.data);
+  ros::Publisher urdf_pub = nh.advertise<std_msgs::String>("/robot_description", 1, true);  // latched
+  urdf_pub.publish(description_msg);
+  bag.write("/robot_description", ros::Time::now(), description_msg);
 
   bool capture_successful;
 
@@ -223,7 +224,7 @@ bool run_manual_capture(ros::NodeHandle& nh,
       ROS_INFO("Captured pose %i", captured_poses);
       chain_manager->getState(& msg.joint_states);
       pub.publish(msg);
-      bag.write("calibration_data", ros::Time::now(), msg);
+      bag.write("/calibration_data", ros::Time::now(), msg);
     }
 
     // Capture was unsuccessful
