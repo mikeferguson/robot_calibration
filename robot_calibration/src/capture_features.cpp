@@ -81,7 +81,6 @@ bool check_parameters(ros::NodeHandle& nh)
 {
   bool success = true;
   std::string auto_capture_mode_name = "auto_capture_mode";
-  std::string verbose_mode_name = "verbose";
 
   std::string bag_filename = "bag_filename";
   std::string feature_finder_name = "feature_finder";
@@ -93,17 +92,10 @@ bool check_parameters(ros::NodeHandle& nh)
     nh.setParam(auto_capture_mode_name, false);
   }
 
-  // Checks that parameter exists and is a bool
-  if (!nh.hasParam(verbose_mode_name))
-  {
-    ROS_ERROR_STREAM("verbose output not set. Defaulting to standard output. The value can be set in the launch file.");
-    nh.setParam(verbose_mode_name, false);
-  }
-
   if (!nh.hasParam(bag_filename))
   {
     ROS_ERROR_STREAM("bag filename parameter not set. Setting default location");
-    // TODO: fix this to be a better default
+// TODO: fix this to be a better default
     std::string bag_filename_default = get_absolute_directory("/rosbags/default.bag");
     nh.setParam(bag_filename, bag_filename_default);
   }
@@ -163,10 +155,6 @@ bool run_automatic_capture(ros::NodeHandle& nh,
                         rosbag::Bag& bag)
 {
   // TODO
-  // std::string feature; 
-  // robot_calibration::FeatureFinderMap finders;                      // The available feature finders
-  // robot_calibration::FeatureFinderLoader feature_finder_loader;     // Helper to load the feature finders
-  // robot_calibration::ChainManager chain_manager(nh);
   robot_calibration_msgs::CalibrationData msg;
   bool capture_complete = false;
 
