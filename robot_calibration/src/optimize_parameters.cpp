@@ -13,7 +13,7 @@
 
 
 // TODO: make topic names not hardcoded 
-
+void publish_messages(ros::NodeHandle&, std::vector<robot_calibration_msgs::CalibrationData>&);
 
 int main(int argc, char** argv)
 {
@@ -38,6 +38,7 @@ int main(int argc, char** argv)
   if(!load_data(bag_filename, description_msg, data))
     return -1;
 
+publish_messages(nh, data);
   // Run optimization
   ROS_INFO("Running optimization");
   robot_calibration::OptimizationParams params;
@@ -191,4 +192,15 @@ bool load_calibration_data(rosbag::Bag& bag, std::vector<robot_calibration_msgs:
   }
 
   return success;
+}
+
+
+void publish_messages(ros::NodeHandle& nh, std::vector<robot_calibration_msgs::CalibrationData>& data) {
+
+  ros::Publisher pub = nh.advertise<robot_calibration_msgs::CalibrationData>("/calibration_data", 10);
+
+  for (auto msg : data)
+  {
+    pub.publish(msg);
+  }
 }
