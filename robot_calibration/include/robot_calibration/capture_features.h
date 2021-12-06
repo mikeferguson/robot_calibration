@@ -9,7 +9,7 @@
 *
 * @return     bool indicating whether the parameters are all set
 */
-bool check_parameters(ros::NodeHandle& node);
+bool check_parameters(const ros::NodeHandle& node);
 
 
 /**
@@ -19,18 +19,28 @@ bool check_parameters(ros::NodeHandle& node);
 *
 * @return     string representing the absolute path to the file
 */
-std::string get_absolute_directory(std::string local_dir);
+std::string get_absolute_directory(const std::string& local_dir);
 
 
 /**
 * @brief      Creates a map of the available feature finders
 *
 * @param[in]  nh        node handle reference.
-* @param[in]  finders   the location to store the map of feature finders
 *
 * @return     bool indicating whether the feature finders were loaded 
 */
-bool get_feature_finders(ros::NodeHandle& nh, robot_calibration::FeatureFinderMap& finders);
+std::optional<robot_calibration::FeatureFinderMap> get_feature_finders(ros::NodeHandle& nh);
+
+
+// TODO: describe why this is needed.
+/**
+* @brief      Gets the robot description and republishes it
+*
+* @param[in]  nh        node handle reference.
+*
+* @return     the published robot descripition message
+*/
+std_msgs::String republish_robot_description(ros::NodeHandle& nh);
 
 
 /**
@@ -38,17 +48,13 @@ bool get_feature_finders(ros::NodeHandle& nh, robot_calibration::FeatureFinderMa
 *             This includes commanding the robot to the specified pose then capturing the feature. 
 *
 * @param[in]  nh                node handle reference.
-* @param[in]  chain_manager     object that handles the kinematic chains
-* @param[in]  finders           map of available feature finders
 * @param[in]  feature           feature to use for calibration
 * @param[in]  bag               rosbag object for storing calibration data
 *
 * @return     bool indicating whether the run was successful 
 */
-bool run_automatic_capture(ros::NodeHandle& nh, 
-                           robot_calibration::ChainManager* chain_manager, 
-                           robot_calibration::FeatureFinderMap& finders,
-                           std::string& feature,
+bool run_automatic_capture(ros::NodeHandle& nh,
+                           const std::string& feature,
                            rosbag::Bag& bag);
 
 
@@ -57,29 +63,34 @@ bool run_automatic_capture(ros::NodeHandle& nh,
 *             This includes waiting for the user to move the robot then capturing the feature on their command. 
 *
 * @param[in]  nh                node handle reference.
-* @param[in]  chain_manager     object that handles the kinematic chains
-* @param[in]  finders           map of available feature finders
 * @param[in]  feature           feature to use for calibration
 * @param[in]  bag               rosbag object for storing calibration data
 *
 * @return     bool indicating whether the run was successful   
 */
-bool run_manual_capture(ros::NodeHandle& nh, 
-                        robot_calibration::ChainManager* chain_manager, 
-                        robot_calibration::FeatureFinderMap& finders,
-                        std::string& feature,
+bool run_manual_capture(ros::NodeHandle& nh,
+                        const std::string& feature,
                         rosbag::Bag& bag);
+
+
+/**
+* @brief      Creates an ordered vector of JointState poses.
+*
+* @param[in]  filename  absolute path to the bag file.
+*
+* @return     vector of poses to be used for calibration.
+*/
+std::vector<robot_calibration_msgs::CaptureConfig> load_calibration_poses(const std::string& filename);
 
 
 /**
 * @brief      Opens the file and creates a bag object.
 *
 * @param[in]  filename  absolute path to the file.
-* @param[in]  bag       the bag object reference
 *
-* @return     bool indicating whether openning the file was successful
+* @return     the rosbag object.
 */
-bool open_bag(std::string filename, rosbag::Bag& bag);
+rosbag::Bag open_bag(const std::string& filename);
 
 
 /**
@@ -93,17 +104,6 @@ bool open_bag(std::string filename, rosbag::Bag& bag);
 bool create_bag(std::string filename, rosbag::Bag& bag);
 
 
-/**
-* @brief      Creates an ordered vector of JointState poses/
-*
-* @param[in]  filename  absolute path to the bag file.
-* @param[in]  pose      vector to store the individual poses in.
-*
-* @return     bool indicating whether creating the vector was successful
-*/
-bool load_calibration_poses(std::string filename, std::vector<robot_calibration_msgs::CaptureConfig>& poses);
-
-
 bool move_to_position();
 
 /**
@@ -112,13 +112,11 @@ bool move_to_position();
 * @param[in]  chain_manager     manages the kinematic chains.
 * @param[in]  finders           map of the available feature finders.
 * @param[in]  feature           name of the feature to search for.
-* @param[in]  msg               location to store new data message.
 *
 * @return     CalibrationData message for the capture    
 */
-bool capture_calibration_data(robot_calibration::ChainManager* chain_manager, 
-                              robot_calibration::FeatureFinderMap& finders, 
-                              std::string& feature,
-                              robot_calibration_msgs::CalibrationData& msg);
+std::optional<robot_calibration_msgs::CalibrationData> capture_calibration_data(robot_calibration::ChainManager& chain_manager, 
+                                                                                robot_calibration::FeatureFinderMap& finders, 
+                                                                                const std::string& feature);
 
 #endif  // ROBOT_CALIBRATION_CAPTURE_FEATURES_H
