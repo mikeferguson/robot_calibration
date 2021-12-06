@@ -1,6 +1,20 @@
-#ifndef ROBOT_CALIBRATION_CAPTURE_FEATURES_H
-#define ROBOT_CALIBRATION_CAPTURE_FEATURES_H
+#pragma once
 
+#include <optional>
+#include <string>
+#include <vector>
+
+#include <ros/ros.h>
+#include <std_msgs/String.h>
+
+#include <robot_calibration_msgs/CalibrationData.h>
+#include <robot_calibration_msgs/CaptureConfig.h>
+
+#include <robot_calibration/capture/chain_manager.h>
+#include <robot_calibration/capture/feature_finder_loader.h>
+#include <robot_calibration/capture_features.h>
+
+namespace capture_features {
 
 /**
 * @brief      Verifies the required parameters have been set and, if not, set default values.
@@ -119,4 +133,4 @@ std::optional<robot_calibration_msgs::CalibrationData> capture_calibration_data(
                                                                                 robot_calibration::FeatureFinderMap& finders, 
                                                                                 const std::string& feature);
 
-#endif  // ROBOT_CALIBRATION_CAPTURE_FEATURES_H
+} // namespac capture_features

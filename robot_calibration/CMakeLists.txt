@@ -128,8 +128,14 @@ target_link_libraries(calibrate robot_calibration
                                 ${OpenCV_LIBS})
 add_dependencies(calibrate robot_calibration)
 
+add_library(capture_features_lib libs/capture_features_lib.cpp)
+target_link_libraries(capture_features_lib
+                                ${Boost_LIBRARIES}
+                                ${catkin_LIBRARIES})
 add_executable(capture_features src/capture_features.cpp)
-target_link_libraries(capture_features robot_calibration
+target_link_libraries(capture_features 
+                                capture_features_lib
+                                robot_calibration
                                 ${Boost_LIBRARIES}
                                 ${catkin_LIBRARIES}
                                 ${CERES_LIBRARIES}
@@ -170,6 +176,7 @@ install(TARGETS
 	calibrate
 	calibrate_base
   capture_features
+  capture_features_lib
   optimize_parameters
 	robot_calibration
 	robot_calibration_feature_finders
