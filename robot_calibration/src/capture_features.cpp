@@ -9,7 +9,7 @@
 
 int main(int argc, char** argv)
 {
-  ros::init(argc, argv,"robot_calibration");
+  ros::init(argc, argv,"capture_features");
   ros::NodeHandle nh("~");
 
   if (!capture_features::check_parameters(nh))
@@ -50,7 +50,7 @@ int main(int argc, char** argv)
 
   if (!capture_successful)
   {
-    ROS_ERROR("Failed to capture all samples");
+    ROS_ERROR("failed to capture all samples");
     return -2;
   }
 
