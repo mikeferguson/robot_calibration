@@ -48,5 +48,14 @@ int main(int argc, char** argv)
   bag.close();
   ROS_INFO("Done capturing samples");
 
-  return 0;
+  if (!capture_successful)
+  {
+    ROS_ERROR("Failed to capture all samples");
+    return -2;
+  }
+
+  else
+  {
+    return 0;
+  }
 }
