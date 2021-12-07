@@ -75,7 +75,7 @@ std::string get_absolute_directory(const std::string& local_dir)
 }
 
 
-std::optional<robot_calibration::FeatureFinderMap> get_feature_finders(ros::NodeHandle& nh)
+std::optional<robot_calibration::FeatureFinderMap> get_feature_finders(const ros::NodeHandle& nh)
 {
   robot_calibration::FeatureFinderLoader feature_finder_loader;     // Helper to load the feature finders
   robot_calibration::FeatureFinderMap finders;
@@ -91,7 +91,7 @@ std::optional<robot_calibration::FeatureFinderMap> get_feature_finders(ros::Node
 }
 
 
-std_msgs::String republish_robot_description(ros::NodeHandle& nh)
+std_msgs::String republish_robot_description(ros::NodeHandle nh)
 {
   std_msgs::String description_msg;
   nh.getParam("/robot_description", description_msg.data);
@@ -102,15 +102,15 @@ std_msgs::String republish_robot_description(ros::NodeHandle& nh)
 }
 
 
-bool run_automatic_capture(ros::NodeHandle& nh,
+bool run_automatic_capture(ros::NodeHandle nh,
                         const std::string& feature,
-                        rosbag::Bag& bag)
+                        rosbag::Bag* bag)
 {
   // TODO
   robot_calibration::ChainManager chain_manager(nh, 0.1);     // Manages kinematic chains
   
   auto finders = get_feature_finders(nh);        // Holds the available feature finders  
-  if (!finders.has_value())
+  if (!finders)
   { 
     ROS_FATAL("the loaded feature finder map is empty.");
     return false;    
@@ -131,15 +131,15 @@ bool run_automatic_capture(ros::NodeHandle& nh,
         2. Wait to settle
         3. Capture the calibration data
     */
-    auto msg = capture_calibration_data(chain_manager, *finders, feature);
+    auto msg = capture_calibration_data(finders->at(feature));
   }
 
   return true;
 }
 
-bool run_manual_capture(ros::NodeHandle& nh,
+bool run_manual_capture(ros::NodeHandle nh,
                         const std::string& feature,
-                        rosbag::Bag& bag)
+                        rosbag::Bag* bag)
 {
   ROS_DEBUG("Running manual capture.");
   bool capture_complete = false;
@@ -147,11 +147,12 @@ bool run_manual_capture(ros::NodeHandle& nh,
   robot_calibration::ChainManager chain_manager(nh, 0.0);     // Manages kinematic chains
 
   auto finders = get_feature_finders(nh);        // Holds the available feature finders  
-  if (!finders.has_value())
+  if (!finders)
   { 
     ROS_WARN("feature finders failed to load");
     return false;
   }
+  auto feature_finder = finders->at(feature);
 
   ros::Publisher pub = nh.advertise<robot_calibration_msgs::CalibrationData>("/calibration_data", 10);
   int captured_poses = 0;
@@ -171,7 +172,9 @@ bool run_manual_capture(ros::NodeHandle& nh,
       continue;
     }
 
-    auto msg = capture_calibration_data(chain_manager, *finders, feature);
+    // Wait for joints to settle
+    chain_manager.waitToSettle();
+    auto msg = capture_calibration_data(feature_finder);
 
     // Capture unsuccessful
     if(!msg.has_value())
@@ -187,7 +190,7 @@ bool run_manual_capture(ros::NodeHandle& nh,
       ROS_INFO("Captured pose %i", captured_poses);
       chain_manager.getState(& msg->joint_states);
       pub.publish(*msg);
-      bag.write("/calibration_data", ros::Time::now(), *msg);
+      bag->write("/calibration_data", ros::Time::now(), *msg);
     }
   }
 
@@ -240,27 +243,22 @@ bool move_to_position()
 }
 
 
-std::optional<robot_calibration_msgs::CalibrationData> capture_calibration_data(robot_calibration::ChainManager& chain_manager, 
-                                                                                robot_calibration::FeatureFinderMap& finders, 
-                                                                                const std::string& feature)
+std::optional<robot_calibration_msgs::CalibrationData> capture_calibration_data(const auto & feature_finder)
 {
   ROS_DEBUG("capturing calibration data from pose.");
-
-  // Wait for joints to settle
-  chain_manager.waitToSettle();
 
   // Make sure sensor data is up to date after settling
   ros::Duration(0.1).sleep();
 
   // Capture the feature
   robot_calibration_msgs::CalibrationData msg; 
-  if (!finders[feature]->find(& msg))
+  if (!feature_finder->find(& msg))
   {
-    ROS_WARN("%s failed to capture features.", feature.c_str());
+    ROS_WARN("failed to capture features.");
     return {};
   }
 
   return msg;
 }
 
-} // namespacer capture_features
+} // namespace capture_features

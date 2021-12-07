@@ -45,7 +45,7 @@ public:
   {
   }
 
-  bool load(ros::NodeHandle& nh,
+  bool load(const ros::NodeHandle& nh,
             FeatureFinderMap& features)
   {
     // Empty the mapping

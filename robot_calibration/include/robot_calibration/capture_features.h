@@ -43,7 +43,7 @@ std::string get_absolute_directory(const std::string& local_dir);
 *
 * @return     bool indicating whether the feature finders were loaded 
 */
-std::optional<robot_calibration::FeatureFinderMap> get_feature_finders(ros::NodeHandle& nh);
+std::optional<robot_calibration::FeatureFinderMap> get_feature_finders(const ros::NodeHandle& nh);
 
 
 // TODO: describe why this is needed.
@@ -54,7 +54,7 @@ std::optional<robot_calibration::FeatureFinderMap> get_feature_finders(ros::Node
 *
 * @return     the published robot descripition message
 */
-std_msgs::String republish_robot_description(ros::NodeHandle& nh);
+std_msgs::String republish_robot_description(ros::NodeHandle nh);
 
 
 /**
@@ -67,9 +67,9 @@ std_msgs::String republish_robot_description(ros::NodeHandle& nh);
 *
 * @return     bool indicating whether the run was successful 
 */
-bool run_automatic_capture(ros::NodeHandle& nh,
+bool run_automatic_capture(ros::NodeHandle nh,
                            const std::string& feature,
-                           rosbag::Bag& bag);
+                           rosbag::Bag* bag);
 
 
 /**
@@ -82,9 +82,9 @@ bool run_automatic_capture(ros::NodeHandle& nh,
 *
 * @return     bool indicating whether the run was successful   
 */
-bool run_manual_capture(ros::NodeHandle& nh,
+bool run_manual_capture(ros::NodeHandle nh,
                         const std::string& feature,
-                        rosbag::Bag& bag);
+                        rosbag::Bag* bag);
 
 
 /**
@@ -107,30 +107,15 @@ std::vector<robot_calibration_msgs::CaptureConfig> load_calibration_poses(const 
 rosbag::Bag open_bag(const std::string& filename);
 
 
-/**
-* @brief      Creates the bag object.
-*
-* @param[in]  filename  absolute path to the file.
-* @param[in]  bag       the bag object reference
-*
-* @return     bool indicating whether creating the file was successful
-*/
-bool create_bag(std::string filename, rosbag::Bag& bag);
-
-
 bool move_to_position();
 
 /**
 * @brief      Creates a single CalibrationData message for a single feature at a single pose.
 *
-* @param[in]  chain_manager     manages the kinematic chains.
-* @param[in]  finders           map of the available feature finders.
-* @param[in]  feature           name of the feature to search for.
+* @param[in]  feature_finder    the feature finder to use for capturing data.
 *
 * @return     CalibrationData message for the capture    
 */
-std::optional<robot_calibration_msgs::CalibrationData> capture_calibration_data(robot_calibration::ChainManager& chain_manager, 
-                                                                                robot_calibration::FeatureFinderMap& finders, 
-                                                                                const std::string& feature);
+std::optional<robot_calibration_msgs::CalibrationData> capture_calibration_data(const auto & feature_finder);
 
 } // namespac capture_features
