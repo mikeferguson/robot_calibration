@@ -9,6 +9,13 @@ target_link_libraries(calibration_offset_parser_tests robot_calibration
                                                       ${orocos_kdl_LIBRARIES}
                                                       ${tinyxml_LIBRARIES})
 
+catkin_add_gtest(chain_model_tests chain_model_tests.cpp)
+target_link_libraries(chain_model_tests robot_calibration
+                                     ${Boost_LIBRARIES}
+                                     ${catkin_LIBRARIES}
+                                     ${CERES_LIBRARIES}
+                                     ${orocos_kdl_LIBRARIES})
+
 catkin_add_gtest(rotation_tests rotation_tests.cpp)
 target_link_libraries(rotation_tests robot_calibration
                                      ${Boost_LIBRARIES}
