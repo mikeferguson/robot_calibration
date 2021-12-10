@@ -177,7 +177,7 @@ bool run_manual_capture(ros::NodeHandle nh,
     auto msg = capture_calibration_data(feature_finder);
 
     // Capture unsuccessful
-    if(!msg.has_value())
+    if(!msg)
     {
       ROS_WARN("Failed to capture sample");
     }
