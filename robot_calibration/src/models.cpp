@@ -17,6 +17,7 @@
 
 // Author: Michael Ferguson
 
+#include <ros/console.h>
 #include <robot_calibration/models/chain.h>
 #include <robot_calibration/models/camera3d.h>
 
@@ -42,7 +43,11 @@ ChainModel::ChainModel(const std::string& name, KDL::Tree model, std::string roo
 {
   // Create a KDL::Chain
   if (!model.getChain(root, tip, chain_))
-    std::cerr << "Failed to get chain" << std::endl;
+  {
+    auto error_msg = std::string{"Failed to build a chain model from "} + root + " to " + tip + ", check the link names";
+    ROS_ERROR("%s", error_msg.c_str());
+    throw std::runtime_error(error_msg);
+  }
 }
 
 std::vector<geometry_msgs::PointStamped> ChainModel::project(
