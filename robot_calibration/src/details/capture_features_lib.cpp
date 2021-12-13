@@ -24,7 +24,6 @@ bool check_parameters(const ros::NodeHandle& nh)
 {
   bool success = true;
   std::string auto_capture_mode_name = "auto_capture_mode";
-
   std::string bag_filename = "bag_filename";
   std::string feature_finder_name = "feature_finder";
 
@@ -56,7 +55,7 @@ bool check_parameters(const ros::NodeHandle& nh)
 
   if (success)
   {
-    ROS_INFO_STREAM("parameters successfully set");
+    ROS_DEBUG_STREAM("parameters successfully set");
   }
 
   else{
@@ -69,8 +68,11 @@ bool check_parameters(const ros::NodeHandle& nh)
 
 std::string get_absolute_directory(const std::string& local_dir)
 {
-  std::string home_dir = getenv("HOME");
-  std::string absolute_path = home_dir + local_dir;
+  ROS_DEBUG_STREAM("getting the absolute path to " << local_dir);
+
+  const auto home_dir = getenv("HOME");
+  const auto absolute_path = home_dir + local_dir;
+
   return absolute_path;
 }
 
