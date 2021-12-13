@@ -1,6 +1,16 @@
-#ifndef ROBOT_CALIBRATION_OPTIMIZE_PARAMETERS_H
-#define ROBOT_CALIBRATION_OPTIMIZE_PARAMETERS_H
+#pragma once
 
+#include <string>
+#include <vector>
+
+#include <ros/ros.h>
+#include <rosbag/bag.h>
+#include <std_msgs/String.h>
+
+#include <robot_calibration_msgs/CalibrationData.h>
+
+
+namespace optimize_parameters {
 
 /**
 * @brief      Verifies the required parameters have been set and, if not, set default values.
@@ -68,4 +78,4 @@ bool load_robot_description(rosbag::Bag& bag, std_msgs::String& description_msg)
 */
 bool load_calibration_data(rosbag::Bag& bag, std::vector<robot_calibration_msgs::CalibrationData>& data);
 
-#endif  // ROBOT_CALIBRATION_OPTIMIZE_PARAMETERS_H
+} // namespace optimize_parameters

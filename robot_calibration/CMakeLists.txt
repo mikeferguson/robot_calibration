@@ -144,15 +144,21 @@ target_link_libraries(capture_features
                                 ${OpenCV_LIBS})
 add_dependencies(capture_features robot_calibration)
 
+add_library(optimize_parameters_lib src/details/optimize_parameters_lib.cpp)
+target_link_libraries(optimize_parameters_lib
+                      ${Boost_LIBRARIES}
+                      ${catkin_LIBRARIES})
 add_executable(optimize_parameters src/optimize_parameters.cpp)
-target_link_libraries(optimize_parameters robot_calibration
-                                ${Boost_LIBRARIES}
-                                ${catkin_LIBRARIES}
-                                ${CERES_LIBRARIES}
-                                ${tinyxml_LIBRARIES}
-                                ${orocos_kdl_LIBRARIES}
-                                ${OpenCV_LIBS})
-add_dependencies(optimize_parameters robot_calibration)
+target_link_libraries(optimize_parameters
+                      optimize_parameters_lib
+                      robot_calibration
+                      ${Boost_LIBRARIES}
+                      ${catkin_LIBRARIES}
+                      ${CERES_LIBRARIES}
+                      ${tinyxml_LIBRARIES}
+                      ${orocos_kdl_LIBRARIES}
+                      ${OpenCV_LIBS})
+add_dependencies(optimize_parameters optimize_parameters_lib robot_calibration)
 
 add_executable(to_rpy src/tools/to_rpy.cpp)
 target_link_libraries(to_rpy robot_calibration
@@ -178,6 +184,7 @@ install(TARGETS
   capture_features
   capture_features_lib
   optimize_parameters
+  optimize_parameters_lib
 	robot_calibration
 	robot_calibration_feature_finders
 	to_rpy
