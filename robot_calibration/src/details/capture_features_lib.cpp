@@ -187,7 +187,6 @@ bool run_manual_capture(ros::NodeHandle nh,
     // Capture successful
     else
     {
-
       captured_poses++;
       ROS_INFO("Captured pose %i", captured_poses);
       chain_manager.getState(& msg->joint_states);
