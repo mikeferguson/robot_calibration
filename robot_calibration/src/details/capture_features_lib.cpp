@@ -146,7 +146,7 @@ bool run_manual_capture(ros::NodeHandle nh,
   ROS_DEBUG("Running manual capture.");
   bool capture_complete = false;
 
-  robot_calibration::ChainManager chain_manager(nh, 0.0);     // Manages kinematic chains
+  robot_calibration::ChainManager chain_manager(nh, 0.1);     // Manages kinematic chains
 
   auto finders = get_feature_finders(nh);        // Holds the available feature finders  
   if (!finders)

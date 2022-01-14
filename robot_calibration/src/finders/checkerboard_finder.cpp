@@ -65,7 +65,7 @@ bool CheckerboardFinder::init(const std::string& name,
 
   if (nh.param<double>("size", square_size_, 0.0245))
   {
-    ROS_WARN("parameter 'size' is not on the serve, using default value.")
+    ROS_WARN("parameter 'size' is not on the serve, using default value.");
   }
 
   // Should we include debug image/cloud in observations
@@ -83,7 +83,7 @@ bool CheckerboardFinder::init(const std::string& name,
     ROS_WARN("parameter 'camera_sensor_name' is not on the serve, using default value.");
   }
 
-  if(!nh.param<std::string>("chain_sensor_name", chain_sensor_name_, "arm")
+  if(!nh.param<std::string>("chain_sensor_name", chain_sensor_name_, "arm"))
   {
     ROS_WARN("parameter 'chain_sensor_name' is not on the serve, using default value.");
   }
