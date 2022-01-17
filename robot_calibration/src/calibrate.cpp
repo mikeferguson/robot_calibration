@@ -170,7 +170,7 @@ int main(int argc, char** argv)
       if (poses.size() == 0)
       {
         // Manual calibration, wait for keypress
-        ROS_INFO("Press key when arm is ready... (type 'done' to finish capture)");
+        ROS_INFO("Press [Enter] to capture a sample... (or type 'done' and [Enter] to finish capture)");
         std::string throwaway;
         std::getline(std::cin, throwaway);
         if (throwaway.compare("done") == 0)

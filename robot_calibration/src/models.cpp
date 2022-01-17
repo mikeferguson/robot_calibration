@@ -17,6 +17,7 @@
 
 // Author: Michael Ferguson
 
+#include <ros/console.h>
 #include <robot_calibration/models/chain.h>
 #include <robot_calibration/models/camera3d.h>
 
