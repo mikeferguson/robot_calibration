@@ -37,6 +37,7 @@
   <depend>libgflags-dev</depend>
   <depend>suitesparse</depend>
   <depend>protobuf-dev</depend>
+  <depend>backward_ros</depend>
 
   <test_depend>code_coverage</test_depend>
 

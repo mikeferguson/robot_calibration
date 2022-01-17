@@ -292,7 +292,7 @@ int main(int argc, char** argv)
       opt.optimize(params, data, verbose);
       if (verbose)
       {
-        std::cout << "Parameter Offsets:" << std::endl;
+        std::cout << "Parameter Offsets with cal_steps:" << std::endl;
         std::cout << opt.getOffsets()->getOffsetYAML() << std::endl;
       }
     }
