@@ -53,19 +53,19 @@ bool CheckerboardFinder::init(const std::string& name,
                              this);
 
   // Size of checkerboard
-  if (!nh.param<int>("points_x", points_x_, 5))
+  if (!nh.param<int>("points_x", points_x_, 6))
   {
-    ROS_WARN("parameter 'points_x' is not on the serve, using default value.");
+    ROS_WARN("parameter 'points_x' is not on the server, using default value.");
   }
 
   if (!nh.param<int>("points_y", points_y_, 4))
   {
-    ROS_WARN("parameter 'points_y' is not on the serve, using default value.");
+    ROS_WARN("parameter 'points_y' is not on the server, using default value.");
   }
 
-  if (nh.param<double>("size", square_size_, 0.0245))
+  if (!nh.param<double>("square_size", square_size_, 0.035))
   {
-    ROS_WARN("parameter 'size' is not on the serve, using default value.");
+      ROS_WARN("parameter 'square_size' is not on the server, using default value.");
   }
 
   // Should we include debug image/cloud in observations
@@ -74,18 +74,18 @@ bool CheckerboardFinder::init(const std::string& name,
   // Name of checkerboard frame that will be used during optimization
   if (!nh.param<std::string>("frame_id", frame_id_, "checkerboard"))
   {
-    ROS_WARN("parameter 'frame_id' is not on the serve, using default value.");
+    ROS_WARN("parameter 'frame_id' is not on the server, using default value.");
   }
 
   // Name of the sensor model that will be used during optimization
   if(!nh.param<std::string>("camera_sensor_name", camera_sensor_name_, "camera"))
   {
-    ROS_WARN("parameter 'camera_sensor_name' is not on the serve, using default value.");
+    ROS_WARN("parameter 'camera_sensor_name' is not on the server, using default value.");
   }
 
   if(!nh.param<std::string>("chain_sensor_name", chain_sensor_name_, "arm"))
   {
-    ROS_WARN("parameter 'chain_sensor_name' is not on the serve, using default value.");
+    ROS_WARN("parameter 'chain_sensor_name' is not on the server, using default value.");
   }
 
   // Publish where checkerboard points were seen
@@ -204,6 +204,10 @@ bool CheckerboardFinder::findInternal(robot_calibration_msgs::CalibrationData * 
   cv::Size checkerboard_size(points_x_, points_y_);
   int found = cv::findChessboardCorners(bridge->image, checkerboard_size,
                                         points, cv::CALIB_CB_ADAPTIVE_THRESH);
+  // for (auto point : points)
+  // {
+  //   ROS_INFO_STREAM("Point: " << point.x << ", " << point.y);
+  // }
 
   if (found)
   {
@@ -258,6 +262,8 @@ bool CheckerboardFinder::findInternal(robot_calibration_msgs::CalibrationData * 
       }
 
       msg->observations[idx_cam].features[i] = rgbd;
+      // ROS_INFO_STREAM("Point: " << rgbd.point.x << ", " << rgbd.point.y);
+
       msg->observations[idx_cam].ext_camera_info = depth_camera_manager_.getDepthCameraInfo();
       msg->observations[idx_chain].features[i] = world;
 
