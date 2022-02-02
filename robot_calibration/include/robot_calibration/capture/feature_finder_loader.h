@@ -46,7 +46,8 @@ public:
   }
 
   bool load(const ros::NodeHandle& nh,
-            FeatureFinderMap& features)
+            FeatureFinderMap& features,
+            bool const head_driver = true)
   {
     // Empty the mapping
     features.clear();
@@ -92,7 +93,7 @@ public:
         ROS_ERROR_STREAM("Failed to load feature: " << type);
         continue;
       }
-      if (!finder->init(name, finder_handle)) {
+      if (!finder->init(name, finder_handle, head_driver)) {
         ROS_ERROR_STREAM("Init of " << name << " failed!");
         continue;
       }

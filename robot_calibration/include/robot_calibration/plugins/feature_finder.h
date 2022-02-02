@@ -45,7 +45,8 @@ public:
    *  @returns True/False if the feature finder was able to be initialized
    */
   virtual bool init(const std::string& name,
-                    ros::NodeHandle & nh)
+                    ros::NodeHandle & nh,
+                    bool const head_driver = true)
   {
     name_ = name;
     return true;

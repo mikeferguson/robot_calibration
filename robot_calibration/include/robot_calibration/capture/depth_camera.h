@@ -35,7 +35,7 @@ public:
   DepthCameraInfoManager() : camera_info_valid_(false) {}
   virtual ~DepthCameraInfoManager() {}
 
-  bool init(ros::NodeHandle& n)
+  bool init(ros::NodeHandle& n, bool const camera_driver = true)
   {
     std::string topic_name;
     n.param<std::string>("camera_info_topic", topic_name, "/head_camera/depth/camera_info");
@@ -46,14 +46,17 @@ public:
                                           this);
 
     // Get parameters of drivers
-    std::string driver_name;
-    n.param<std::string>("camera_driver", driver_name, "/head_camera/driver");
-    if (!n.getParam(driver_name+"/z_offset_mm", z_offset_mm_) ||
-        !n.getParam(driver_name+"/z_scaling", z_scaling_))
+    if (camera_driver)
     {
-      ROS_ERROR("%s is not set, are drivers running?",driver_name.c_str());
-      z_offset_mm_ = 0;
-      z_scaling_ = 1;
+      std::string driver_name;
+      n.param<std::string>("camera_driver", driver_name, "/head_camera/driver");
+      if (!n.getParam(driver_name+"/z_offset_mm", z_offset_mm_) ||
+          !n.getParam(driver_name+"/z_scaling", z_scaling_))
+      {
+        ROS_ERROR("%s is not set, are drivers running?",driver_name.c_str());
+        z_offset_mm_ = 0;
+        z_scaling_ = 1;
+      }
     }
 
     // Wait for camera_info
