@@ -22,8 +22,9 @@
 namespace robot_calibration
 {
 
-ChainManager::ChainManager(ros::NodeHandle& nh, double wait_time) :
-  state_is_valid_(false)
+ChainManager::ChainManager(ros::NodeHandle& nh, double wait_time, bool const mode_auto) :
+  state_is_valid_(false),
+  mode_auto_(mode_auto)
 {
   // We cannot do much without some kinematic chains
   if (!nh.hasParam("chains"))
@@ -55,18 +56,21 @@ ChainManager::ChainManager(ros::NodeHandle& nh, double wait_time) :
         controller->joint_names.push_back(static_cast<std::string>(chains[i]["joints"][j]));
       }
 
-      ROS_INFO("Waiting for %s...", topic.c_str());
-      if (!controller->client.waitForServer(ros::Duration(wait_time)))
+      if (mode_auto)
       {
-        ROS_WARN("Failed to connect to %s", topic.c_str());
-      }
-
-      if (controller->shouldPlan() && (!move_group_))
-      {
-        move_group_.reset(new MoveGroupClient("move_group", true));
-        if (!move_group_->waitForServer(ros::Duration(wait_time)))
+        ROS_INFO("Waiting for %s...", topic.c_str());
+        if (!controller->client.waitForServer(ros::Duration(wait_time)))
         {
-          ROS_WARN("Failed to connect to move_group");
+          ROS_WARN("Failed to connect to %s", topic.c_str());
+        }
+
+        if (controller->shouldPlan() && (!move_group_))
+        {
+          move_group_.reset(new MoveGroupClient("move_group", true));
+          if (!move_group_->waitForServer(ros::Duration(wait_time)))
+          {
+            ROS_WARN("Failed to connect to move_group");
+          }
         }
       }
 

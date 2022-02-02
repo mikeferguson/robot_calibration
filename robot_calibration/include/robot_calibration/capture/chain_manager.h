@@ -70,7 +70,7 @@ public:
    * @param nh The node handle, sets namespace for parameters.
    * @param wait_time The time to wait for each action to come up.
    */
-  ChainManager(ros::NodeHandle& nh, double wait_time = 15.0);
+  ChainManager(ros::NodeHandle& nh, double const wait_time = 15.0, bool const mode_auto = true);
 
   /**
    * @brief Send commands to all managed joints. The ChainManager automatically
@@ -119,6 +119,8 @@ private:
   std::vector<boost::shared_ptr<ChainController> > controllers_;
   MoveGroupClientPtr move_group_;
   double velocity_factor_;  // scaling factor to slow down move_group plans
+
+  bool const mode_auto_;
 };
 
 }  // namespace robot_calibration
