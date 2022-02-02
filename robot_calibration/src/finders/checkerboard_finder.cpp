@@ -37,7 +37,8 @@ CheckerboardFinder::CheckerboardFinder() :
 }
 
 bool CheckerboardFinder::init(const std::string& name,
-                              ros::NodeHandle & nh)
+                              ros::NodeHandle & nh,
+                              bool const head_driver)
 {
   if (!FeatureFinder::init(name, nh))
     return false;
@@ -92,7 +93,7 @@ bool CheckerboardFinder::init(const std::string& name,
   publisher_ = nh.advertise<sensor_msgs::PointCloud2>(getName() + "_points", 10);
 
   // Setup to get camera depth info
-  if (!depth_camera_manager_.init(nh))
+  if (!depth_camera_manager_.init(nh, head_driver))
   {
     // Error will have been printed by manager
     return false;

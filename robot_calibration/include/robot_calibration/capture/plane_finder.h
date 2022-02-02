@@ -31,7 +31,7 @@ class PlaneFinder : public FeatureFinder
 {
 public:
   PlaneFinder();
-  bool init(const std::string& name, ros::NodeHandle & n);
+  bool init(const std::string& name, ros::NodeHandle & n, bool const head_driver = true);
   bool find(robot_calibration_msgs::CalibrationData * msg);
 
 private:

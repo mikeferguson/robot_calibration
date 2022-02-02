@@ -51,7 +51,8 @@ LedFinder::LedFinder() :
 }
 
 bool LedFinder::init(const std::string& name,
-                     ros::NodeHandle& nh)
+                     ros::NodeHandle& nh,
+                     bool const head_driver)
 {
   if (!FeatureFinder::init(name, nh))
     return false;
