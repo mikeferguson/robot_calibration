@@ -40,10 +40,11 @@ std::string get_absolute_directory(const std::string& local_dir);
 * @brief      Creates a map of the available feature finders
 *
 * @param[in]  nh        node handle reference.
+* @param[in]  loader    feature finder loader
 *
 * @return     bool indicating whether the feature finders were loaded 
 */
-std::optional<robot_calibration::FeatureFinderMap> get_feature_finders(const ros::NodeHandle& nh);
+std::optional<robot_calibration::FeatureFinderMap> get_feature_finders(const ros::NodeHandle& nh, robot_calibration::FeatureFinderLoader& loader);
 
 
 // TODO: describe why this is needed.

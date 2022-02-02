@@ -77,13 +77,11 @@ std::string get_absolute_directory(const std::string& local_dir)
 }
 
 
-std::optional<robot_calibration::FeatureFinderMap> get_feature_finders(const ros::NodeHandle& nh)
+std::optional<robot_calibration::FeatureFinderMap> get_feature_finders(const ros::NodeHandle& nh, robot_calibration::FeatureFinderLoader& feature_finder_loader)
 {
-  robot_calibration::FeatureFinderLoader feature_finder_loader;     // Helper to load the feature finders
   robot_calibration::FeatureFinderMap finders;
 
-// TODO: why won't this unload?
-  if (!feature_finder_loader.load(nh, finders))
+  if (!feature_finder_loader.load(nh, finders, false))
   {
     ROS_FATAL("Unable to load feature finders");
     return {};
@@ -111,7 +109,8 @@ bool run_automatic_capture(ros::NodeHandle nh,
   // TODO
   robot_calibration::ChainManager chain_manager(nh, 0.1);     // Manages kinematic chains
   
-  auto finders = get_feature_finders(nh);        // Holds the available feature finders  
+  robot_calibration::FeatureFinderLoader feature_finder_loader;   
+  auto finders = get_feature_finders(nh, feature_finder_loader);        // Holds the available feature finders  
   if (!finders)
   { 
     ROS_FATAL("the loaded feature finder map is empty.");
@@ -146,14 +145,16 @@ bool run_manual_capture(ros::NodeHandle nh,
   ROS_DEBUG("Running manual capture.");
   bool capture_complete = false;
 
-  robot_calibration::ChainManager chain_manager(nh, 0.1);     // Manages kinematic chains
+  robot_calibration::ChainManager chain_manager(nh, 0.1, false);     // Manages kinematic chains
 
-  auto finders = get_feature_finders(nh);        // Holds the available feature finders  
+  robot_calibration::FeatureFinderLoader feature_finder_loader;     
+  auto finders = get_feature_finders(nh, feature_finder_loader);        // Holds the available feature finders  
   if (!finders)
   { 
     ROS_WARN("feature finders failed to load");
     return false;
   }
+
   auto feature_finder = finders->at(feature);
 
   ros::Publisher pub = nh.advertise<robot_calibration_msgs::CalibrationData>("/calibration_data", 10);
