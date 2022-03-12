@@ -19,6 +19,10 @@
 // Author: Niharika Arora, Michael Ferguson
 
 #include <math.h>
+
+#include <Eigen/Core>
+#include <Eigen/Dense>
+
 #include <pluginlib/class_list_macros.h>
 #include <robot_calibration/capture/plane_finder.h>
 #include <sensor_msgs/point_cloud2_iterator.h>
@@ -57,6 +61,9 @@ bool PlaneFinder::init(const std::string& name,
 
   // Maximum number of valid points to include in the observation
   nh.param<int>("points_max", points_max_, 60);
+
+  // Maximum distance from plane that point can be located
+  nh.param<double>("tolerance", plane_tolerance_, 0.02);
 
   // Frame to transform point cloud into before applying limits below
   //   if specified as "none", cloud will be processed in sensor frame
@@ -203,8 +210,84 @@ void PlaneFinder::removeInvalidPoints(sensor_msgs::PointCloud2& cloud,
 
 sensor_msgs::PointCloud2 PlaneFinder::extractPlane(sensor_msgs::PointCloud2& cloud)
 {
-  // TODO: actually find a plane and remove all non-fitting points
-  return cloud;
+  sensor_msgs::PointCloud2ConstIterator<float> xyz(cloud, "x");
+
+  // Copy cloud to eigen matrix for SVD
+  Eigen::MatrixXd points(3, cloud.width);
+  for (size_t i = 0; i < cloud.width; ++i)
+  {
+    points(0, i) = (xyz + i)[X];
+    points(1, i) = (xyz + i)[Y];
+    points(2, i) = (xyz + i)[Z];
+  }
+
+  // Find centroid
+  Eigen::Vector3d centroid(points.row(0).mean(), points.row(1).mean(), points.row(2).mean());
+
+  // Center the cloud
+  points.row(0).array() -= centroid(0);
+  points.row(1).array() -= centroid(1);
+  points.row(2).array() -= centroid(2);
+
+  // Find the plane
+  auto svd = points.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV);
+  Eigen::Vector3d normal = svd.matrixU().rightCols<1>();
+
+  // Get the rest of plane equation
+  double d = -(normal(0) * centroid(0) + normal(1) * centroid(1) + normal(2) * centroid(2));
+
+  ROS_INFO("Found plane with parameters: %f %f %f %f", normal(0), normal(1), normal(2), d);
+
+  // Create a point cloud for the plane
+  sensor_msgs::PointCloud2 plane_cloud;
+  plane_cloud.width = 0;
+  plane_cloud.height = 0;
+  plane_cloud.header.stamp = ros::Time::now();
+  plane_cloud.header.frame_id = cloud.header.frame_id;
+  sensor_msgs::PointCloud2Modifier plane_cloud_mod(plane_cloud);
+  plane_cloud_mod.setPointCloud2FieldsByString(1, "xyz");
+  plane_cloud_mod.resize(cloud.width);
+  sensor_msgs::PointCloud2Iterator<float> plane_iter(plane_cloud, "x");
+
+  // Extract points close to plane
+  sensor_msgs::PointCloud2Iterator<float> cloud_iter(cloud, "x");
+  size_t plane_points = 0;
+  size_t cloud_points = 0;
+  for (size_t i = 0; i < cloud.width; ++i)
+  {
+    // Compute distance to plane
+    double dist = normal(0) * (xyz + i)[X] + normal(1) * (xyz + i)[Y] + normal(2) * (xyz + i)[Z] + d;
+
+    if (std::fabs(dist) < plane_tolerance_)
+    {
+      // Part of the plane
+      (plane_iter + plane_points)[X] = (xyz + i)[X];
+      (plane_iter + plane_points)[Y] = (xyz + i)[Y];
+      (plane_iter + plane_points)[Z] = (xyz + i)[Z];
+      ++plane_points;
+    }
+    else
+    {
+      // Part of cloud, move it forward
+      (cloud_iter + cloud_points)[X] = (xyz + i)[X];
+      (cloud_iter + cloud_points)[Y] = (xyz + i)[Y];
+      (cloud_iter + cloud_points)[Z] = (xyz + i)[Z];
+      ++cloud_points;
+    }
+  }
+
+  // Resize clouds
+  cloud.height = 1;
+  cloud.width  = cloud_points;
+  cloud.data.resize(cloud.width * cloud.point_step);
+
+  plane_cloud.height = 1;
+  plane_cloud.width  = plane_points;
+  plane_cloud.data.resize(plane_cloud.width * plane_cloud.point_step);
+
+  ROS_INFO("Extracted plane with %d points", plane_cloud.width);
+
+  return plane_cloud;
 }
 
 void PlaneFinder::extractObservation(const std::string& sensor_name,
@@ -237,7 +320,7 @@ void PlaneFinder::extractObservation(const std::string& sensor_name,
   size_t index = step / 2;
   sensor_msgs::PointCloud2Iterator<float> viz_cloud_iter(viz_cloud, "x");
   sensor_msgs::PointCloud2ConstIterator<float> xyz(cloud, "x");
-  for (size_t i = 0; index < cloud.width; i++)
+  for (size_t i = 0; index < cloud.width && i < points_total; ++i)
   {
     // Get (untransformed) 3d point
     geometry_msgs::PointStamped rgbd;

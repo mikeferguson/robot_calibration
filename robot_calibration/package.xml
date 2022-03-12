@@ -13,6 +13,8 @@
   
   <buildtool_depend>catkin</buildtool_depend>
 
+  <build_depend>eigen</build_depend>
+
   <depend>actionlib</depend>
   <depend>camera_calibration_parsers</depend>
   <depend>control_msgs</depend>

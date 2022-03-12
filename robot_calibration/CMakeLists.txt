@@ -19,6 +19,7 @@ endif ()
 
 find_package(orocos_kdl)
 find_package(Ceres REQUIRED)
+find_package(Eigen3 REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(catkin REQUIRED
   COMPONENTS
@@ -77,6 +78,7 @@ endif()
 include_directories(include ${Boost_INCLUDE_DIRS}
                             ${catkin_INCLUDE_DIRS}
                             ${CERES_INCLUDES}
+                            ${EIGEN3_INCLUDE_DIRS}
                             ${orocos_kdl_INCLUDE_DIRS})
 link_directories(${orocos_kdl_LIBRARY_DIRS}) # this is a hack, will eventually be unneeded once orocos-kdl is fixed
 
