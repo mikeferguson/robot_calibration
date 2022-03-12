@@ -15,6 +15,7 @@
  */
 
 #include <urdf/model.h>
+#include <robot_calibration/ceres/calibration_data_helpers.h>
 #include <robot_calibration/ceres/optimizer.h>
 #include <gtest/gtest.h>
 

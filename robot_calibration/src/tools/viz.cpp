@@ -16,8 +16,6 @@
 
 // Author: Michael Ferguson
 
-//#include <fstream>
-
 #include <ros/ros.h>
 #include <robot_calibration/load_bag.h>
 #include <sensor_msgs/JointState.h>
