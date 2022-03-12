@@ -295,9 +295,15 @@ void PlaneFinder::extractObservation(const std::string& sensor_name,
                                      robot_calibration_msgs::CalibrationData * msg,
                                      ros::Publisher* publisher)
 {
+  if (static_cast<int>(cloud.width) == 0)
+  {
+    ROS_WARN("No points in observation, skipping");
+    return;
+  }
+
   // Determine number of points to output
   size_t points_total = std::min(points_max_, static_cast<int>(cloud.width));
-  ROS_INFO_STREAM("Got " << cloud.width << " points from plane, using " << points_total);
+  ROS_INFO_STREAM("Got " << cloud.width << " points for observation, using " << points_total);
 
   // Create PointCloud2 to publish
   sensor_msgs::PointCloud2 viz_cloud;
