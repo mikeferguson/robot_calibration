@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Michael Ferguson
+ * Copyright (C) 2018-2022 Michael Ferguson
  * Copyright (C) 2015-2017 Fetch Robotics Inc.
  * Copyright (C) 2013-2014 Unbounded Robotics Inc.
  *
@@ -53,10 +53,10 @@ bool PlaneFinder::init(const std::string& name,
                              this);
 
   // Name of the sensor model that will be used during optimization
-  nh.param<std::string>("camera_sensor_name", camera_sensor_name_, "camera");
+  nh.param<std::string>("camera_sensor_name", plane_sensor_name_, "camera");
 
   // Maximum number of valid points to include in the observation
-  nh.param<double>("points_max", points_max_, 60);
+  nh.param<int>("points_max", points_max_, 60);
 
   // Frame to transform point cloud into before applying limits below
   //   if specified as "none", cloud will be processed in sensor frame
@@ -123,10 +123,21 @@ bool PlaneFinder::find(robot_calibration_msgs::CalibrationData * msg)
     return false;
   }
 
+  removeInvalidPoints(cloud_, min_x_, max_x_, min_y_, max_y_, min_z_, max_z_);
+  sensor_msgs::PointCloud2 plane = extractPlane(cloud_);
+  extractObservation(plane_sensor_name_, plane, msg, &publisher_);
+
+  // Report success
+  return true;
+}
+
+void PlaneFinder::removeInvalidPoints(sensor_msgs::PointCloud2& cloud,
+  double min_x, double max_x, double min_y, double max_y, double min_z, double max_z)
+{
   //  Remove any point that is invalid or not with our tolerance
-  size_t num_points = cloud_.width * cloud_.height;
-  sensor_msgs::PointCloud2ConstIterator<float> xyz(cloud_, "x");
-  sensor_msgs::PointCloud2Iterator<float> cloud_iter(cloud_, "x");
+  size_t num_points = cloud.width * cloud.height;
+  sensor_msgs::PointCloud2ConstIterator<float> xyz(cloud, "x");
+  sensor_msgs::PointCloud2Iterator<float> cloud_iter(cloud, "x");
 
   bool do_transform = transform_frame_ != "none";  // This can go away once the cloud gets transformed outside loop 
   size_t j = 0;
@@ -139,12 +150,16 @@ bool PlaneFinder::find(robot_calibration_msgs::CalibrationData * msg)
 
     // Remove the NaNs in the point cloud
     if (!std::isfinite(p.point.x) || !std::isfinite(p.point.y) || !std::isfinite(p.point.z))
+    {
       continue;
+    }
 
     // Remove the points immediately in front of the camera in the point cloud
     // NOTE : This is to handle sensors that publish zeros instead of NaNs in the point cloud
     if (p.point.z == 0)
+    {
       continue;
+    }
 
     // Get transform (if any)
     geometry_msgs::PointStamped p_out;
@@ -169,8 +184,8 @@ bool PlaneFinder::find(robot_calibration_msgs::CalibrationData * msg)
     }
 
     // Test the transformed point
-    if (p_out.point.x < min_x_ || p_out.point.x > max_x_ || p_out.point.y < min_y_ || p_out.point.y > max_y_ ||
-        p_out.point.z < min_z_ || p_out.point.z > max_z_)
+    if (p_out.point.x < min_x || p_out.point.x > max_x || p_out.point.y < min_y || p_out.point.y > max_y ||
+        p_out.point.z < min_z || p_out.point.z > max_z)
     {
       continue;
     }
@@ -181,35 +196,48 @@ bool PlaneFinder::find(robot_calibration_msgs::CalibrationData * msg)
     (cloud_iter + j)[Z] = (xyz + i)[Z];
     j++;
   }
-  cloud_.height = 1;
-  cloud_.width  = j;
-  cloud_.data.resize(cloud_.width * cloud_.point_step);
+  cloud.height = 1;
+  cloud.width  = j;
+  cloud.data.resize(cloud.width * cloud.point_step);
+}
 
+sensor_msgs::PointCloud2 PlaneFinder::extractPlane(sensor_msgs::PointCloud2& cloud)
+{
+  // TODO: actually find a plane and remove all non-fitting points
+  return cloud;
+}
+
+void PlaneFinder::extractObservation(const std::string& sensor_name,
+                                     const sensor_msgs::PointCloud2& cloud,
+                                     robot_calibration_msgs::CalibrationData * msg,
+                                     ros::Publisher* publisher)
+{
   // Determine number of points to output
-  size_t points_total = std::min(static_cast<size_t>(points_max_), j);
-  ROS_INFO_STREAM("Got " << j << " points from plane, using " << points_total);
+  size_t points_total = std::min(points_max_, static_cast<int>(cloud.width));
+  ROS_INFO_STREAM("Got " << cloud.width << " points from plane, using " << points_total);
 
   // Create PointCloud2 to publish
   sensor_msgs::PointCloud2 viz_cloud;
   viz_cloud.width = 0;
   viz_cloud.height = 0;
   viz_cloud.header.stamp = ros::Time::now();
-  viz_cloud.header.frame_id = cloud_.header.frame_id;
+  viz_cloud.header.frame_id = cloud.header.frame_id;
   sensor_msgs::PointCloud2Modifier cloud_mod(viz_cloud);
   cloud_mod.setPointCloud2FieldsByString(1, "xyz");
   cloud_mod.resize(points_total);
-  sensor_msgs::PointCloud2Iterator<float> viz_cloud_iter(viz_cloud, "x");
 
   // Setup observation
   int idx_cam = msg->observations.size();
   msg->observations.resize(msg->observations.size() + 1);
-  msg->observations[idx_cam].sensor_name = camera_sensor_name_;
+  msg->observations[idx_cam].sensor_name = sensor_name;
   msg->observations[idx_cam].ext_camera_info = depth_camera_manager_.getDepthCameraInfo();
 
   // Fill in observation
-  size_t step = cloud_.width / points_total;
+  size_t step = cloud.width / points_total;
   size_t index = step / 2;
-  for (size_t i = 0; index < cloud_.width; i++)
+  sensor_msgs::PointCloud2Iterator<float> viz_cloud_iter(viz_cloud, "x");
+  sensor_msgs::PointCloud2ConstIterator<float> xyz(cloud, "x");
+  for (size_t i = 0; index < cloud.width; i++)
   {
     // Get (untransformed) 3d point
     geometry_msgs::PointStamped rgbd;
@@ -233,14 +261,14 @@ bool PlaneFinder::find(robot_calibration_msgs::CalibrationData * msg)
   // Add debug cloud to message
   if (output_debug_)
   {
-    msg->observations[idx_cam].cloud = cloud_;
+    msg->observations[idx_cam].cloud = cloud;
   }
 
-  // Publish debug info
-  publisher_.publish(viz_cloud);
-
-  // Report success
-  return true;
+  if (publisher)
+  {
+    // Publish debug info
+    publisher->publish(viz_cloud);
+  }
 }
 
 }  // namespace robot_calibration

@@ -1,4 +1,5 @@
 /*
+ * Copyright (C) 2022 Michael Ferguson
  * Copyright (C) 2014-2017 Fetch Robotics Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -31,12 +32,52 @@ class PlaneFinder : public FeatureFinder
 {
 public:
   PlaneFinder();
-  bool init(const std::string& name, ros::NodeHandle & n);
-  bool find(robot_calibration_msgs::CalibrationData * msg);
+  virtual ~PlaneFinder() = default;
+  virtual bool init(const std::string& name, ros::NodeHandle & n);
+  virtual bool find(robot_calibration_msgs::CalibrationData * msg);
 
-private:
-  void cameraCallback(const sensor_msgs::PointCloud2& cloud);
-  bool waitForCloud();
+protected:
+  /**
+   * @brief ROS callback - updates cloud_ and resets waiting_ to false
+   */
+  virtual void cameraCallback(const sensor_msgs::PointCloud2& cloud);
+
+  /**
+   * @brief Remove invalid points from a cloud
+   * @param cloud The point cloud to remove invalid points from
+   *
+   * Invalid points include:
+   *  * points with NAN values
+   *  * points with infinite values
+   *  * points with z-distance of 0
+   *  * points outside our min/max x,y,z parameters
+   */
+  virtual void removeInvalidPoints(sensor_msgs::PointCloud2& cloud,
+                                   double min_x, double max_x, double min_y, double max_y, double min_z, double max_z);
+
+  /**
+   * @brief Extract a plane from the point cloud
+   * @brief cloud The cloud to extract plane from - non-plane points will remain
+   * @return New point cloud comprising only the points in the plane
+   */
+  virtual sensor_msgs::PointCloud2 extractPlane(sensor_msgs::PointCloud2& cloud);
+
+  /**
+   * @brief Extract points from a cloud into a calibration message
+   * @param sensor_name Used to fill in observation "sensor_name"
+   * @param cloud Point cloud from which to extract observations
+   * @param msg CalibrationData to fill with observation
+   * @param publisher Optional pointer to publish the observations as a cloud
+   */
+  virtual void extractObservation(const std::string& sensor_name,
+                                  const sensor_msgs::PointCloud2& cloud,
+                                  robot_calibration_msgs::CalibrationData * msg,
+                                  ros::Publisher* publisher);
+
+  /**
+   * @brief Wait until a new cloud has arrived
+   */
+  virtual bool waitForCloud();
 
   ros::Subscriber subscriber_;
   ros::Publisher publisher_;
@@ -48,8 +89,8 @@ private:
   sensor_msgs::PointCloud2 cloud_;
   DepthCameraInfoManager depth_camera_manager_;
 
-  std::string camera_sensor_name_;
-  double points_max_;
+  std::string plane_sensor_name_;
+  int points_max_;
   double min_x_;
   double max_x_;
   double min_y_;
