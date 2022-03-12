@@ -18,4 +18,10 @@
     <description>Feature finder that detects points corresponding to planes.</description>
   </class>
 
+  <class name="robot_calibration/RobotFinder"
+         type="robot_calibration::RobotFinder"
+         base_class_type="robot_calibration::FeatureFinder">
+    <description>Feature finder that detects points corresponding to the ground plane and the robot.</description>
+  </class>
+
 </library>
