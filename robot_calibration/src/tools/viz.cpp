@@ -49,6 +49,12 @@ int main(int argc, char** argv)
   ros::init(argc, argv, "robot_calibration_viz");
   ros::NodeHandle nh("~");
 
+  // Publisher of fake joint states (latched)
+  ros::Publisher state = nh.advertise<sensor_msgs::JointState>("/fake_controller_joint_states", 1, true);
+
+  // Publisher of visualization (latched)
+  ros::Publisher pub = nh.advertise<visualization_msgs::MarkerArray>("data", 10, true);
+
   // The calibration data
   std_msgs::String description_msg;
   std::vector<robot_calibration_msgs::CalibrationData> data;
@@ -183,11 +189,7 @@ int main(int argc, char** argv)
     }
   }
 
-  // Publisher of fake joint states
-  ros::Publisher state = nh.advertise<sensor_msgs::JointState>("/fake_controller_joint_states", 1);
-
-  // Publisher of visualization
-  ros::Publisher pub = nh.advertise<visualization_msgs::MarkerArray>("data", 10);
+  // Publish messages
   for (size_t i = 0; i < data.size(); ++i)
   {
     // Break out if ROS is dead
@@ -201,6 +203,11 @@ int main(int argc, char** argv)
       // Project through model
       std::vector<geometry_msgs::PointStamped> points;
       points = models[model_names[m]]->project(data[i], offsets);
+
+      if (points.empty())
+      {
+        continue;
+      }
 
       // Convert into marker
       visualization_msgs::Marker msg;
