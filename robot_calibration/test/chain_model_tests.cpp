@@ -77,12 +77,12 @@ TEST(Camera3dModelTests, BadChainThrows)
   ASSERT_TRUE(kdl_parser::treeFromString(robot_description, tree));
 
   ASSERT_NO_THROW(
-      { auto uut = Camera3dModel("uut", tree, "link_0", "link_3"); });
+      { auto uut = Camera3dModel("uut", "uut", tree, "link_0", "link_3"); });
 
-  ASSERT_THROW({ auto uut = Camera3dModel("uut", tree, "link_99", "link_3"); },
+  ASSERT_THROW({ auto uut = Camera3dModel("uut", "uut", tree, "link_99", "link_3"); },
                std::runtime_error);
 
-  ASSERT_THROW({ auto uut = Camera3dModel("uut", tree, "link_0", "link_99"); },
+  ASSERT_THROW({ auto uut = Camera3dModel("uut", "uut", tree, "link_0", "link_99"); },
                std::runtime_error);
 }
 
