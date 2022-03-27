@@ -34,7 +34,7 @@ namespace robot_calibration
 {
 
 /**
- * @brief Get the distance line segment A-B for point C
+ * @brief Get the squared distance line segment A-B for point C
  *
  * Based on "Real Time Collision Detection", pg 130
  */
@@ -51,7 +51,7 @@ double distToLine(Eigen::Vector3d& a, Eigen::Vector3d& b, Eigen::Vector3d c)
     return ac.dot(ac);
   }
   double f = ab.dot(ab);
-  if (e <= f)
+  if (e >= f)
   {
     // Point B is closest to C
     return bc.dot(bc);
@@ -101,9 +101,6 @@ struct Chain3dToMesh
     for (size_t i = 0; i < chain_pts.size() ; ++i)
     {
       Eigen::Vector3d p(chain_pts[i].point.x, chain_pts[i].point.y, chain_pts[i].point.z);
-      //double px = chain_pts[i].point.x;
-      //double py = chain_pts[i].point.y;
-      //double pz = chain_pts[i].point.z;
 
       // Find shortest distance to any line segment forming a triangle
       double dist = std::numeric_limits<double>::max();
@@ -123,7 +120,7 @@ struct Chain3dToMesh
         d = std::min(d, distToLine(C, A, p));
         dist = std::min(d, dist);
       }
-      residuals[i] = dist;
+      residuals[i] = std::sqrt(dist);
     }
     return true;
   }

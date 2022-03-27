@@ -17,6 +17,7 @@
 #include <urdf/model.h>
 #include <robot_calibration/ceres/calibration_data_helpers.h>
 #include <robot_calibration/ceres/optimizer.h>
+#include <robot_calibration/ceres/chain3d_to_mesh_error.h>
 #include <gtest/gtest.h>
 
 std::string robot_description =
@@ -302,6 +303,22 @@ TEST(ErrorBlockTests, error_blocks_maxwell)
   // This does exist, we should get what is in our YAML file
   double scale = params.getParam(params.error_blocks[1], "joint_scale", 10.0);
   EXPECT_EQ(0.0, scale);
+
+  // Validate distToLine()
+  Eigen::Vector3d A(0, 0, 0);
+  Eigen::Vector3d B(5, 0, 0);
+
+  // C is below A
+  Eigen::Vector3d C(-1, 1, 0);
+  EXPECT_EQ(2, robot_calibration::distToLine(A, B, C));
+
+  // C is above B
+  C[0] = 6;
+  EXPECT_EQ(2, robot_calibration::distToLine(A, B, C));
+
+  // C projects
+  C[0] = 2;
+  EXPECT_EQ(1, robot_calibration::distToLine(A, B, C));
 }
 
 int main(int argc, char** argv)
