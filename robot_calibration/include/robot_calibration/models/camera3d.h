@@ -33,12 +33,14 @@ class Camera3dModel : public ChainModel
 public:
   /**
    *  \brief Create a new camera 3d model (Kinect/Primesense).
+   *  \param name The name for this sensor, will be be used to select observations
+   *  \param param_name The name to use when finding camera parameters, often the same as name
    *  \param model The KDL model of the robot's kinematics.
    *  \param root The name of the root link, must be consistent across all
    *         models used for error modeling. Usually 'base_link'.
    *  \param tip The tip of the chain.
    */
-  Camera3dModel(const std::string& name, KDL::Tree model, std::string root, std::string tip);
+  Camera3dModel(const std::string& name, const std::string& param_name, KDL::Tree model, std::string root, std::string tip);
   virtual ~Camera3dModel() {}
 
   /**
@@ -47,6 +49,9 @@ public:
   virtual std::vector<geometry_msgs::PointStamped> project(
     const robot_calibration_msgs::CalibrationData& data,
     const CalibrationOffsetParser& offsets);
+
+protected:
+  std::string param_name_;
 };
 
 }  // namespace robot_calibration
