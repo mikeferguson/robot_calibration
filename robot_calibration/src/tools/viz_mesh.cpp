@@ -104,7 +104,7 @@ int main(int argc, char** argv)
     v3.x = mesh->vertices[(3 * v3_idx) + 0];
     v3.y = mesh->vertices[(3 * v3_idx) + 1];
     v3.z = mesh->vertices[(3 * v3_idx) + 2];
-    // Add triangle
+    // Add triangle as 3 line segments v1->v2, v2->v3 and v3->v1
     msg.points.push_back(v1);
     msg.points.push_back(v2);
     msg.points.push_back(v3);

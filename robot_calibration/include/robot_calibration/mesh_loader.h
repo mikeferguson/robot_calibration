@@ -37,7 +37,7 @@ public:
   MeshLoader(urdf::Model& model);
 
   /**
-   * @brief Get the mesh associated with a link.
+   * @brief Get the collision mesh associated with a link in a URDF.
    */
   MeshPtr getCollisionMesh(const std::string& link_name);
 
