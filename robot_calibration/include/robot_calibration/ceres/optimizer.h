@@ -25,13 +25,9 @@
 #include <urdf/model.h>
 #include <kdl_parser/kdl_parser.hpp>
 #include <robot_calibration_msgs/CalibrationData.h>
-
+#include <robot_calibration/mesh_loader.h>
 #include <robot_calibration/calibration_offset_parser.h>
 #include <robot_calibration/ceres/optimization_params.h>
-#include <robot_calibration/ceres/chain3d_to_chain3d_error.h>
-#include <robot_calibration/ceres/chain3d_to_plane_error.h>
-#include <robot_calibration/ceres/plane_to_plane_error.h>
-#include <robot_calibration/ceres/outrageous_error.h>
 #include <robot_calibration/models/camera3d.h>
 #include <robot_calibration/models/chain.h>
 #include <boost/shared_ptr.hpp>
@@ -86,6 +82,8 @@ private:
   std::string root_frame_;
   std::string led_frame_;
   KDL::Tree tree_;
+
+  boost::shared_ptr<MeshLoader> mesh_loader_;
 
   std::map<std::string, ChainModel*> models_;
 
