@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2020 Michael Ferguson
+ * Copyright (C) 2018-2022 Michael Ferguson
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -217,9 +217,9 @@ int main(int argc, char** argv)
       msg.id = m;
       msg.type = msg.SPHERE_LIST;
       msg.pose.orientation.w = 1.0;
-      msg.scale.x = 0.005;
-      msg.scale.y = 0.005;
-      msg.scale.z = 0.005;
+      msg.scale.x = 0.01;
+      msg.scale.y = 0.01;
+      msg.scale.z = 0.01;
       msg.points.push_back(points[0].point);
       msg.colors.push_back(model_colors[0]);
       for (size_t p = 1; p < points.size(); ++p)
