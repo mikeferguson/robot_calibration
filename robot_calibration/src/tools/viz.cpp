@@ -103,7 +103,13 @@ int main(int argc, char** argv)
     {
       ROS_INFO_STREAM("Creating camera3d '" << params.models[i].name << "' in frame " <<
                                                params.models[i].params["frame"]);
-      robot_calibration::Camera3dModel* model = new robot_calibration::Camera3dModel(params.models[i].name, tree, params.base_link, params.models[i].params["frame"]);
+      std::string param_name = params.models[i].params["param_name"];
+      if (param_name == "")
+      {
+        // Default to same name as sensor
+        param_name = params.models[i].name;
+      }
+      robot_calibration::Camera3dModel* model = new robot_calibration::Camera3dModel(params.models[i].name, param_name, tree, params.base_link, params.models[i].params["frame"]);
       models[params.models[i].name] = model;
       model_names.push_back(params.models[i].name);
       camera_pubs[params.models[i].name] = nh.advertise<sensor_msgs::PointCloud2>(params.models[i].name, 1);

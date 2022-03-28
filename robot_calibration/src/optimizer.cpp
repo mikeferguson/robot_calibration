@@ -79,7 +79,13 @@ int Optimizer::optimize(OptimizationParams& params,
     {
       ROS_INFO_STREAM("Creating camera3d '" << params.models[i].name << "' in frame " <<
                                                params.models[i].params["frame"]);
-      Camera3dModel* model = new Camera3dModel(params.models[i].name, tree_, params.base_link, params.models[i].params["frame"]);
+      std::string param_name = params.models[i].params["param_name"];
+      if (param_name == "")
+      {
+        // Default to same name as sensor
+        param_name = params.models[i].name;
+      }
+      Camera3dModel* model = new Camera3dModel(params.models[i].name, param_name, tree_, params.base_link, params.models[i].params["frame"]);
       models_[params.models[i].name] = model;
     }
     else
