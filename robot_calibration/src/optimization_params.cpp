@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Michael Ferguson
+ * Copyright (C) 2018-2022 Michael Ferguson
  * Copyright (C) 2014-2015 Fetch Robotics Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -30,6 +30,7 @@ OptimizationParams::OptimizationParams() :
 bool OptimizationParams::LoadFromROS(ros::NodeHandle& nh)
 {
   nh.param("base_link", base_link, base_link);
+  nh.param("max_num_iterations", max_num_iterations, 1000);
 
   if (nh.hasParam("free_params"))
   {

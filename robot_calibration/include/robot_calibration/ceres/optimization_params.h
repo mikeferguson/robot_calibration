@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Michael Ferguson
+ * Copyright (C) 2018-2022 Michael Ferguson
  * Copyright (C) 2014 Fetch Robotics Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -63,6 +63,9 @@ struct OptimizationParams
   std::vector<FreeFrameInitialValue> free_frames_initial_values;
   std::vector<Params> models;
   std::vector<Params> error_blocks;
+
+  // Parameters for the optimizer itself
+  int max_num_iterations;
 
   OptimizationParams();
   bool LoadFromROS(ros::NodeHandle& nh);

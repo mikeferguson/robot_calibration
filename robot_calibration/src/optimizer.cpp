@@ -372,9 +372,8 @@ int Optimizer::optimize(OptimizationParams& params,
   options.use_nonmonotonic_steps = true;
   options.function_tolerance = 1e-10;
   options.linear_solver_type = ceres::DENSE_QR;
-  options.max_num_iterations = 1000;
+  options.max_num_iterations = params.max_num_iterations;
   options.minimizer_progress_to_stdout = progress_to_stdout;
-  //  options.use_nonmonotonic_steps = true;
 
   if (progress_to_stdout)
     std::cout << "\nSolver output:" << std::endl;
