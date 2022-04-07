@@ -175,6 +175,8 @@ int main(int argc, char** argv)
         std::getline(std::cin, throwaway);
         if (throwaway.compare("done") == 0)
           break;
+        if (throwaway.compare("exit") == 0)
+          return 0;
         if (!ros::ok())
           break;
       }
