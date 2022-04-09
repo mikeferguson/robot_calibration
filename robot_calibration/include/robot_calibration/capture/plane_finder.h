@@ -27,7 +27,9 @@
 
 namespace robot_calibration
 {
-
+/**
+ * @brief Finds the largest plane in a point cloud.
+ */
 class PlaneFinder : public FeatureFinder
 {
 public:
@@ -91,6 +93,7 @@ protected:
 
   std::string plane_sensor_name_;
   int points_max_;
+  double initial_sampling_distance_;
   double plane_tolerance_;
   double min_x_;
   double max_x_;
