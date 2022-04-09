@@ -76,6 +76,10 @@ bool PlaneFinder::init(const std::string& name,
   nh.param<double>("min_z", min_z_, 0.0);
   nh.param<double>("max_z", max_z_, 2.0);
 
+  // Parameters for RANSAC
+  nh.param<int>("ransac_iterations", ransac_iterations_, 100);
+  nh.param<int>("ransac_points", ransac_points_, 35);
+
   // Should we include debug image/cloud in observations
   nh.param<bool>("debug", output_debug_, false);
 
@@ -224,11 +228,11 @@ sensor_msgs::PointCloud2 PlaneFinder::extractPlane(sensor_msgs::PointCloud2& clo
   Eigen::Vector3d best_normal(0, 0, 1);
   double best_d = 0.0;
   int best_fit = -1;
-  for (size_t i = 0; i < 100; ++i)
+  for (int i = 0; i < ransac_iterations_; ++i)
   {
     // Select random points
-    Eigen::MatrixXd test_points(3, 35);
-    for (size_t p = 0; p < 35; ++p)
+    Eigen::MatrixXd test_points(3, ransac_points_);
+    for (int p = 0; p < ransac_points_; ++p)
     {
       int index = rand() % cloud.width;
       test_points(0, p) = points(0, index);

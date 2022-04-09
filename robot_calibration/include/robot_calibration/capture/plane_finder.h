@@ -99,6 +99,8 @@ protected:
   double min_z_;
   double max_z_;
   std::string transform_frame_;
+  int ransac_iterations_;
+  int ransac_points_;
 
   bool output_debug_;
 };
