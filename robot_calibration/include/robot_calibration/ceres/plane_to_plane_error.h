@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Michael Ferguson
+ * Copyright (C) 2018-2022 Michael Ferguson
  * Copyright (C) 2015-2017 Fetch Robotics Inc.
  * Copyright (C) 2013-2014 Unbounded Robotics Inc.
  *
@@ -24,13 +24,9 @@
 #include <string>
 #include <ceres/ceres.h>
 #include <robot_calibration/calibration_offset_parser.h>
-#include <robot_calibration/ceres/calibration_data_helpers.h>
-#include <robot_calibration/models/camera3d.h>
+#include <robot_calibration/eigen_geometry.h>
 #include <robot_calibration/models/chain.h>
 #include <robot_calibration_msgs/CalibrationData.h>
-
-#include <opencv2/calib3d/calib3d.hpp>
-#include <cv_bridge/cv_bridge.h>
 
 namespace robot_calibration
 {
@@ -67,8 +63,7 @@ struct PlaneToPlaneError
     scale_offset_ = scale_offset;
   }
 
-  virtual ~PlaneToPlaneError()
-  {}
+  virtual ~PlaneToPlaneError() = default;
 
   /**
    *  \brief Operator called by CERES optimizer.
@@ -82,35 +77,35 @@ struct PlaneToPlaneError
     offsets_->update(free_params[0]);
 
     // Project the first camera observations
-    std::vector <geometry_msgs::PointStamped> a_pts =
+    std::vector<geometry_msgs::PointStamped> a_pts =
         model_a_->project(data_, *offsets_);
 
+    // Get plane parameters for first set of points
+    Eigen::MatrixXd matrix_a = getMatrix(a_pts);
+    Eigen::Vector3d normal_a;
+    double d_a = 0.0;
+    getPlane(matrix_a, normal_a, d_a);
+
     // Project the second camera estimation
-    std::vector <geometry_msgs::PointStamped> b_pts =
+    std::vector<geometry_msgs::PointStamped> b_pts =
         model_b_->project(data_, *offsets_);
 
-    // Calculate plane normals using SVD
-    std::vector <cv::Point3f> a_points;
-    std::vector <cv::Point3f> b_points;
-
-    for (size_t i = 0; i < a_pts.size(); ++i)
-    {
-      a_points.push_back(cv::Point3f(a_pts[i].point.x, a_pts[i].point.y, a_pts[i].point.z));
-    }
-    for (size_t i = 0; i < b_pts.size(); ++i)
-    {
-      b_points.push_back(cv::Point3f(b_pts[i].point.x, b_pts[i].point.y, b_pts[i].point.z));
-    }
-
-    // Find the planes
-    cv::Mat plane_1 = getPlane(a_points);
-    cv::Mat plane_2 = getPlane(b_points);
+    // Get plane parameters for second set of points
+    Eigen::MatrixXd matrix_b = getMatrix(b_pts);
+    Eigen::Vector3d normal_b;
+    double d_b = 0.0;
+    getPlane(matrix_b, normal_b, d_b);
 
     // Compute the residuals by minimizing the normals of the calculated planes
-    residuals[0] = (std::fabs(plane_1.at<float>(0, 0)) - std::fabs(plane_2.at<float>(0, 0))) * scale_normal_;
-    residuals[1] = (std::fabs(plane_1.at<float>(0, 1)) - std::fabs(plane_2.at<float>(0, 1))) * scale_normal_;
-    residuals[2] = (std::fabs(plane_1.at<float>(0, 2)) - std::fabs(plane_2.at<float>(0, 2))) * scale_normal_;
-    //residuals[3] = TODO
+    residuals[0] = std::fabs(normal_a(0) - normal_b(0)) * scale_normal_;
+    residuals[1] = std::fabs(normal_a(1) - normal_b(1)) * scale_normal_;
+    residuals[2] = std::fabs(normal_a(2) - normal_b(2)) * scale_normal_;
+
+    // Final residual is the distance between the centroid of one plane and the second plane itself
+    Eigen::Vector3d centroid_a = getCentroid(matrix_a);
+    residuals[3] = std::fabs((normal_b(0) * centroid_a(0)) +
+                             (normal_b(1) * centroid_a(1)) +
+                             (normal_b(2) * centroid_a(2)) + d_b) * scale_offset_;
 
     return true;  // always return true
   }
@@ -125,55 +120,13 @@ struct PlaneToPlaneError
                                      robot_calibration_msgs::CalibrationData &data,
                                      double scale_normal, double scale_offset)
   {
-    int index = getSensorIndex(data, model_a->name());
-    if (index == -1)
-    {
-      // In theory, we should never get here, because the optimizer does a check
-      std::cerr << "Sensor name doesn't match any of the existing finders" << std::endl;
-      return 0;
-    }
-
     ceres::DynamicNumericDiffCostFunction <PlaneToPlaneError> *func;
     func = new ceres::DynamicNumericDiffCostFunction<PlaneToPlaneError>(
         new PlaneToPlaneError(model_a, model_b, offsets, data, scale_normal, scale_offset));
     func->AddParameterBlock(offsets->size());
     func->SetNumResiduals(4);
 
-    return static_cast<ceres::CostFunction *>(func);
-  }
-
-  /**
-   *  \brief Does a plane fit to the points and calculates the normals
-   *  \param points The points sampled from the point cloud
-   *  \return The normals
-   */
-  cv::Mat getPlane(std::vector <cv::Point3f> points) const
-  {
-    // Calculate centroid
-    cv::Point3f centroid(0, 0, 0);
-    for (size_t i = 0; i < points.size(); i++)
-    {
-      centroid += points.at(i);
-    }
-
-    centroid.x = centroid.x / points.size();
-    centroid.y = centroid.y / points.size();
-    centroid.z = centroid.z / points.size();
-
-    // subtract centroid from all points
-    cv::Mat pts_mat(points.size(), 3, CV_32F);
-    for (size_t i = 0; i < points.size(); i++)
-    {
-      pts_mat.at<float>(i, 0) = points[i].x - centroid.x;
-      pts_mat.at<float>(i, 1) = points[i].y - centroid.y;
-      pts_mat.at<float>(i, 2) = points[i].z - centroid.z;
-    }
-
-    // SVD
-    cv::SVD svd(pts_mat, cv::SVD::FULL_UV);
-    cv::Mat normal = svd.vt.row(2);
-
-    return normal;
+    return static_cast<ceres::CostFunction*>(func);
   }
 
   ChainModel *model_a_;
