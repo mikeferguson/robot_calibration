@@ -36,6 +36,58 @@ const unsigned X = 0;
 const unsigned Y = 1;
 const unsigned Z = 2;
 
+// Helper function to sample points from a cloud
+int sampleCloud(const sensor_msgs::PointCloud2& points,
+                double sample_distance, size_t max_points,
+                std::vector<geometry_msgs::PointStamped>& sampled_points)
+{
+  // Square distance for efficiency
+  double max_dist_sq = sample_distance * sample_distance;
+
+  // Iterate through cloud
+  sensor_msgs::PointCloud2ConstIterator<float> points_iter(points, "x");
+  for (size_t i = 0; i < points.width; ++i)
+  {
+    // Get (untransformed) 3d point
+    geometry_msgs::PointStamped rgbd;
+    rgbd.point.x = (points_iter + i)[X];
+    rgbd.point.y = (points_iter + i)[Y];
+    rgbd.point.z = (points_iter + i)[Z];
+
+    // Is this far enough from our current points?
+    bool include_point = true;
+    for (auto point : sampled_points)
+    {
+      double dx = point.point.x - rgbd.point.x;
+      double dy = point.point.y - rgbd.point.y;
+      double dz = point.point.z - rgbd.point.z;
+
+      double dist_sq = dx * dx + dy * dy + dz * dz;
+      if (dist_sq < max_dist_sq)
+      {
+        include_point = false;
+        break;
+      }
+    }
+
+    if (include_point)
+    {
+      // Add this to samples
+      sampled_points.push_back(rgbd);
+    }
+
+    if (sampled_points.size() >= max_points)
+    {
+      // Done sampling
+      break;
+    }
+  }
+
+  ROS_INFO("Extracted %lu points with sampling distance of %f", sampled_points.size(), sample_distance);
+
+  return sampled_points.size();
+}
+
 PlaneFinder::PlaneFinder() :
   tfListener_(tfBuffer_), waiting_(false)
 {
@@ -60,6 +112,9 @@ bool PlaneFinder::init(const std::string& name,
 
   // Maximum number of valid points to include in the observation
   nh.param<int>("points_max", points_max_, 60);
+
+  // When downsampling cloud, start by selecting points at least this far apart
+  nh.param<double>("initial_sample_distance", initial_sampling_distance_, 0.2);
 
   // Maximum distance from plane that point can be located
   nh.param<double>("tolerance", plane_tolerance_, 0.02);
@@ -350,19 +405,20 @@ void PlaneFinder::extractObservation(const std::string& sensor_name,
   msg->observations[idx_cam].sensor_name = sensor_name;
   msg->observations[idx_cam].ext_camera_info = depth_camera_manager_.getDepthCameraInfo();
 
+  // Get observation points
+  std::vector<geometry_msgs::PointStamped> sampled_points;
+  double sample_distance = initial_sampling_distance_;
+  while (sampled_points.size() < points_total)
+  {
+    sampleCloud(cloud, sample_distance, points_total, sampled_points);
+    sample_distance /= 2;
+  }
+
   // Fill in observation
-  size_t step = cloud.width / points_total;
-  size_t index = step / 2;
   sensor_msgs::PointCloud2Iterator<float> viz_cloud_iter(viz_cloud, "x");
   sensor_msgs::PointCloud2ConstIterator<float> xyz(cloud, "x");
-  for (size_t i = 0; index < cloud.width && i < points_total; ++i)
+  for (auto rgbd : sampled_points)
   {
-    // Get (untransformed) 3d point
-    geometry_msgs::PointStamped rgbd;
-    rgbd.point.x = (xyz + index)[X];
-    rgbd.point.y = (xyz + index)[Y];
-    rgbd.point.z = (xyz + index)[Z];
-
     // Add to observation
     msg->observations[idx_cam].features.push_back(rgbd);
 
@@ -371,9 +427,6 @@ void PlaneFinder::extractObservation(const std::string& sensor_name,
     viz_cloud_iter[1] = rgbd.point.y;
     viz_cloud_iter[2] = rgbd.point.z;
     ++viz_cloud_iter;
-
-    // Next point
-    index += step;
   }
 
   // Add debug cloud to message
