@@ -111,7 +111,8 @@ add_dependencies(robot_calibration robot_calibration_msgs_generate_messages_cpp)
 add_library(robot_calibration_feature_finders src/finders/checkerboard_finder.cpp
                                               src/finders/led_finder.cpp
                                               src/finders/plane_finder.cpp
-                                              src/finders/robot_finder.cpp)
+                                              src/finders/robot_finder.cpp
+                                              src/finders/scan_finder.cpp)
 target_link_libraries(robot_calibration_feature_finders robot_calibration
                                                         ${Boost_LIBRARIES}
                                                         ${catkin_LIBRARIES}
