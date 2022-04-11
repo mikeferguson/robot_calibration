@@ -102,10 +102,10 @@ struct PlaneToPlaneError
     residuals[2] = std::fabs(normal_a(2) - normal_b(2)) * scale_normal_;
 
     // Final residual is the distance between the centroid of one plane and the second plane itself
-    Eigen::Vector3d centroid = getCentroid(matrix_a);
-    residuals[3] = std::fabs((normal_b(0) * centroid(0)) +
-                             (normal_b(1) * centroid(1)) +
-                             (normal_b(2) * centroid(2)) + d_b) * scale_offset_;
+    Eigen::Vector3d centroid_a = getCentroid(matrix_a);
+    residuals[3] = std::fabs((normal_b(0) * centroid_a(0)) +
+                             (normal_b(1) * centroid_a(1)) +
+                             (normal_b(2) * centroid_a(2)) + d_b) * scale_offset_;
 
     return true;  // always return true
   }
