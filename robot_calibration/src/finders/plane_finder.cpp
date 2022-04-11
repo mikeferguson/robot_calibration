@@ -19,12 +19,11 @@
 // Author: Niharika Arora, Michael Ferguson
 
 #include <math.h>
-
-#include <Eigen/Core>
-#include <Eigen/Dense>
+#include <stdlib.h>
 
 #include <pluginlib/class_list_macros.h>
 #include <robot_calibration/capture/plane_finder.h>
+#include <robot_calibration/eigen_geometry.h>
 #include <sensor_msgs/point_cloud2_iterator.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
@@ -76,6 +75,10 @@ bool PlaneFinder::init(const std::string& name,
   nh.param<double>("max_y", max_y_, 2.0);
   nh.param<double>("min_z", min_z_, 0.0);
   nh.param<double>("max_z", max_z_, 2.0);
+
+  // Parameters for RANSAC
+  nh.param<int>("ransac_iterations", ransac_iterations_, 100);
+  nh.param<int>("ransac_points", ransac_points_, 35);
 
   // Should we include debug image/cloud in observations
   nh.param<bool>("debug", output_debug_, false);
@@ -146,7 +149,7 @@ void PlaneFinder::removeInvalidPoints(sensor_msgs::PointCloud2& cloud,
   sensor_msgs::PointCloud2ConstIterator<float> xyz(cloud, "x");
   sensor_msgs::PointCloud2Iterator<float> cloud_iter(cloud, "x");
 
-  bool do_transform = transform_frame_ != "none";  // This can go away once the cloud gets transformed outside loop 
+  bool do_transform = transform_frame_ != "none";  // This can go away once the cloud gets transformed outside loop
   size_t j = 0;
   for (size_t i = 0; i < num_points; i++)
   {
@@ -221,22 +224,48 @@ sensor_msgs::PointCloud2 PlaneFinder::extractPlane(sensor_msgs::PointCloud2& clo
     points(2, i) = (xyz + i)[Z];
   }
 
-  // Find centroid
-  Eigen::Vector3d centroid(points.row(0).mean(), points.row(1).mean(), points.row(2).mean());
+  // Find the best fit plane
+  Eigen::Vector3d best_normal(0, 0, 1);
+  double best_d = 0.0;
+  int best_fit = -1;
+  for (int i = 0; i < ransac_iterations_; ++i)
+  {
+    // Select random points
+    Eigen::MatrixXd test_points(3, ransac_points_);
+    for (int p = 0; p < ransac_points_; ++p)
+    {
+      int index = rand() % cloud.width;
+      test_points(0, p) = points(0, index);
+      test_points(1, p) = points(1, index);
+      test_points(2, p) = points(2, index);
+    }
 
-  // Center the cloud
-  points.row(0).array() -= centroid(0);
-  points.row(1).array() -= centroid(1);
-  points.row(2).array() -= centroid(2);
+    // Get plane for this test set
+    Eigen::Vector3d normal;
+    double d = 0.0;
+    getPlane(test_points, normal, d);
 
-  // Find the plane
-  auto svd = points.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV);
-  Eigen::Vector3d normal = svd.matrixU().rightCols<1>();
+    // Test how many fit
+    int fit_count = 0;
+    for (size_t i = 0; i < cloud.width; ++i)
+    {
+      // Compute distance to plane
+      double dist = normal(0) * (xyz + i)[X] + normal(1) * (xyz + i)[Y] + normal(2) * (xyz + i)[Z] + d;
+      if (std::fabs(dist) < plane_tolerance_)
+      {
+        ++fit_count;
+      }
+    }
 
-  // Get the rest of plane equation
-  double d = -(normal(0) * centroid(0) + normal(1) * centroid(1) + normal(2) * centroid(2));
-
-  ROS_INFO("Found plane with parameters: %f %f %f %f", normal(0), normal(1), normal(2), d);
+    if (fit_count > best_fit)
+    {
+      // Accept this as our best fit
+      best_fit = fit_count;
+      best_normal = normal;
+      best_d = d;
+    }
+  }
+  ROS_INFO("Found plane with parameters: %f %f %f %f", best_normal(0), best_normal(1), best_normal(2), best_d);
 
   // Create a point cloud for the plane
   sensor_msgs::PointCloud2 plane_cloud;
@@ -256,7 +285,7 @@ sensor_msgs::PointCloud2 PlaneFinder::extractPlane(sensor_msgs::PointCloud2& clo
   for (size_t i = 0; i < cloud.width; ++i)
   {
     // Compute distance to plane
-    double dist = normal(0) * (xyz + i)[X] + normal(1) * (xyz + i)[Y] + normal(2) * (xyz + i)[Z] + d;
+    double dist = best_normal(0) * (xyz + i)[X] + best_normal(1) * (xyz + i)[Y] + best_normal(2) * (xyz + i)[Z] + best_d;
 
     if (std::fabs(dist) < plane_tolerance_)
     {
