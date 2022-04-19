@@ -315,7 +315,8 @@ sensor_msgs::PointCloud2 PlaneFinder::extractPlane(sensor_msgs::PointCloud2& clo
     if (desired_normal_.norm() > 0.1)
     {
       // a.dot(b) = norm(a) * norm(b) * cos(angle between a & b)
-      if (normal.dot(desired_normal_) / desired_normal_.norm() / normal.norm() < cos_normal_angle_)
+      double angle = normal.dot(desired_normal_) / desired_normal_.norm() / normal.norm();
+      if (std::fabs(angle) < cos_normal_angle_)
       {
         continue;
       }
