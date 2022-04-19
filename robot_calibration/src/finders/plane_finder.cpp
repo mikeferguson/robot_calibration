@@ -311,7 +311,7 @@ sensor_msgs::PointCloud2 PlaneFinder::extractPlane(sensor_msgs::PointCloud2& clo
     double d = 0.0;
     getPlane(test_points, normal, d);
 
-    // If we have desired normal, check if plane matche
+    // If we have desired normal, check if plane is well enough aligned
     if (desired_normal_.norm() > 0.1)
     {
       // a.dot(b) = norm(a) * norm(b) * cos(angle between a & b)
