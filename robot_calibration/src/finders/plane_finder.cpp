@@ -314,8 +314,32 @@ sensor_msgs::PointCloud2 PlaneFinder::extractPlane(sensor_msgs::PointCloud2& clo
     // If we have desired normal, check if plane is well enough aligned
     if (desired_normal_.norm() > 0.1)
     {
+      // We might have to transform the normal to a different frame
+      geometry_msgs::Vector3Stamped transformed_normal;
+      transformed_normal.header = cloud.header;
+      transformed_normal.vector.x = normal(0);
+      transformed_normal.vector.y = normal(1);
+      transformed_normal.vector.z = normal(2);
+
+      if (transform_frame_ != "none")
+      {
+        try
+        {
+          tf_buffer_.transform(transformed_normal, transformed_normal, transform_frame_);
+        }
+        catch (tf2::TransformException& ex)
+        {
+          ROS_ERROR("%s", ex.what());
+          continue;
+        }
+      }
+
+      Eigen::Vector3d transformed(transformed_normal.vector.x,
+                                  transformed_normal.vector.y,
+                                  transformed_normal.vector.z);
+
       // a.dot(b) = norm(a) * norm(b) * cos(angle between a & b)
-      double angle = normal.dot(desired_normal_) / desired_normal_.norm() / normal.norm();
+      double angle = transformed.dot(desired_normal_) / desired_normal_.norm() / transformed.norm();
       if (std::fabs(angle) < cos_normal_angle_)
       {
         continue;
