@@ -89,7 +89,7 @@ int sampleCloud(const sensor_msgs::PointCloud2& points,
 }
 
 PlaneFinder::PlaneFinder() :
-  tfListener_(tfBuffer_), waiting_(false)
+  tf_listener_(tf_buffer_), waiting_(false)
 {
 }
 
@@ -134,6 +134,17 @@ bool PlaneFinder::init(const std::string& name,
   // Parameters for RANSAC
   nh.param<int>("ransac_iterations", ransac_iterations_, 100);
   nh.param<int>("ransac_points", ransac_points_, 35);
+
+  // Optional normal vector that found plane should align with
+  // Leave all parameters set to 0 to disable check and simply take best fitting plane
+  double a, b, c;
+  nh.param<double>("normal_a", a, 0.0);
+  nh.param<double>("normal_b", b, 0.0);
+  nh.param<double>("normal_c", c, 0.0);
+  desired_normal_ = Eigen::Vector3d(a, b, c);
+  // If normal vector is defined, the plane normal must be aligned within this angle (in radians)
+  nh.param<double>("normal_angle", cos_normal_angle_, 0.349065);  // Default is 20 degrees
+  cos_normal_angle_ = cos(cos_normal_angle_);
 
   // Should we include debug image/cloud in observations
   nh.param<bool>("debug", output_debug_, false);
@@ -234,7 +245,7 @@ void PlaneFinder::removeInvalidPoints(sensor_msgs::PointCloud2& cloud,
       p.header.frame_id = cloud_.header.frame_id;
       try
       {
-        tfBuffer_.transform(p, p_out, transform_frame_);
+        tf_buffer_.transform(p, p_out, transform_frame_);
       }
       catch (tf2::TransformException& ex)
       {
@@ -300,6 +311,41 @@ sensor_msgs::PointCloud2 PlaneFinder::extractPlane(sensor_msgs::PointCloud2& clo
     double d = 0.0;
     getPlane(test_points, normal, d);
 
+    // If we have desired normal, check if plane is well enough aligned
+    if (desired_normal_.norm() > 0.1)
+    {
+      // We might have to transform the normal to a different frame
+      geometry_msgs::Vector3Stamped transformed_normal;
+      transformed_normal.header = cloud.header;
+      transformed_normal.vector.x = normal(0);
+      transformed_normal.vector.y = normal(1);
+      transformed_normal.vector.z = normal(2);
+
+      if (transform_frame_ != "none")
+      {
+        try
+        {
+          tf_buffer_.transform(transformed_normal, transformed_normal, transform_frame_);
+        }
+        catch (tf2::TransformException& ex)
+        {
+          ROS_ERROR("%s", ex.what());
+          continue;
+        }
+      }
+
+      Eigen::Vector3d transformed(transformed_normal.vector.x,
+                                  transformed_normal.vector.y,
+                                  transformed_normal.vector.z);
+
+      // a.dot(b) = norm(a) * norm(b) * cos(angle between a & b)
+      double angle = transformed.dot(desired_normal_) / desired_normal_.norm() / transformed.norm();
+      if (std::fabs(angle) < cos_normal_angle_)
+      {
+        continue;
+      }
+    }
+
     // Test how many fit
     int fit_count = 0;
     for (size_t i = 0; i < cloud.width; ++i)
@@ -320,6 +366,7 @@ sensor_msgs::PointCloud2 PlaneFinder::extractPlane(sensor_msgs::PointCloud2& clo
       best_d = d;
     }
   }
+  // Note: parameters are in cloud.header.frame_id and not transform_frame
   ROS_INFO("Found plane with parameters: %f %f %f %f", best_normal(0), best_normal(1), best_normal(2), best_d);
 
   // Create a point cloud for the plane

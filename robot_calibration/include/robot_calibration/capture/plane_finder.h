@@ -20,6 +20,7 @@
 
 #include <ros/ros.h>
 #include <robot_calibration/capture/depth_camera.h>
+#include <robot_calibration/eigen_geometry.h>
 #include <robot_calibration/plugins/feature_finder.h>
 #include <robot_calibration_msgs/CalibrationData.h>
 #include <cv_bridge/cv_bridge.h>
@@ -84,23 +85,23 @@ protected:
   ros::Subscriber subscriber_;
   ros::Publisher publisher_;
 
-  tf2_ros::Buffer tfBuffer_;
-  tf2_ros::TransformListener tfListener_;
+  tf2_ros::Buffer tf_buffer_;
+  tf2_ros::TransformListener tf_listener_;
 
   bool waiting_;
   sensor_msgs::PointCloud2 cloud_;
   DepthCameraInfoManager depth_camera_manager_;
 
+  // See init() function for parameter definitions
   std::string plane_sensor_name_;
   int points_max_;
   double initial_sampling_distance_;
   double plane_tolerance_;
-  double min_x_;
-  double max_x_;
-  double min_y_;
-  double max_y_;
-  double min_z_;
-  double max_z_;
+  double min_x_, max_x_;
+  double min_y_, max_y_;
+  double min_z_, max_z_;
+  Eigen::Vector3d desired_normal_;
+  double cos_normal_angle_;
   std::string transform_frame_;
   int ransac_iterations_;
   int ransac_points_;
