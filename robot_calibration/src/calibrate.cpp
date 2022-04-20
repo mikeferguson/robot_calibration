@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2019 Michael Ferguson
+ * Copyright (C) 2018-2022 Michael Ferguson
  * Copyright (C) 2015 Fetch Robotics Inc.
  * Copyright (C) 2013-2014 Unbounded Robotics Inc.
  *
@@ -18,27 +18,18 @@
 
 // Author: Michael Ferguson
 
-#include <fstream>
 #include <ctime>
-
 #include <ros/ros.h>
-#include <rosbag/bag.h>
-#include <rosbag/view.h>
-#include <rosbag/query.h>
-
 #include <std_msgs/String.h>
 #include <robot_calibration_msgs/CalibrationData.h>
 #include <robot_calibration_msgs/CaptureConfig.h>
 
-#include <robot_calibration/capture/chain_manager.h>
-#include <robot_calibration/capture/feature_finder_loader.h>
+#include "robot_calibration/capture/capture_manager.h"
+#include "robot_calibration/capture/poses.h"
+#include "robot_calibration/calibration/export.h"
 
-#include <camera_calibration_parsers/parse.h>
 #include <robot_calibration/ceres/optimizer.h>
-#include <robot_calibration/camera_info.h>
 #include <robot_calibration/load_bag.h>
-
-#include <boost/foreach.hpp>  // for rosbag iterator
 
 /** \mainpage
  * \section parameters Parameters of the Optimization:
@@ -91,68 +82,20 @@ int main(int argc, char** argv)
   if (pose_bag_name.compare("--from-bag") != 0)
   {
     // No name provided for a calibration bag file, must do capture
-    robot_calibration::ChainManager chain_manager_(nh);
-    robot_calibration::FeatureFinderLoader feature_finder_loader;
-    robot_calibration::FeatureFinderMap finders_;
-    if (!feature_finder_loader.load(nh, finders_))
-    {
-      ROS_FATAL("Unable to load feature finders!");
-      return -1;
-    }
+    robot_calibration::CaptureManager capture_manager;
+    capture_manager.init(nh);
 
-    ros::Publisher pub = nh.advertise<robot_calibration_msgs::CalibrationData>("/calibration_data", 10);
-    ros::Publisher urdf_pub = nh.advertise<std_msgs::String>("/robot_description", 1, true);  // latched
-
-    // Get the robot_description and republish it
-    if (!nh.getParam("/robot_description", description_msg.data))
-    {
-      ROS_FATAL("robot_description not set!");
-      return -1;
-    }
-    urdf_pub.publish(description_msg);
+    // Save URDF for calibration/export step
+    description_msg.data = capture_manager.getUrdf();
 
     // Load a set of calibration poses
     std::vector<robot_calibration_msgs::CaptureConfig> poses;
     if (pose_bag_name.compare("--manual") != 0)
     {
-      ROS_INFO_STREAM("Opening " << pose_bag_name);
-      rosbag::Bag bag;
-      try
+      if (!robot_calibration::getPosesFromBag(pose_bag_name, poses))
       {
-        bag.open(pose_bag_name, rosbag::bagmode::Read);
-      }
-      catch (rosbag::BagException&)
-      {
-        ROS_FATAL_STREAM("Cannot open " << pose_bag_name);
+        // Error will be printed in function
         return -1;
-      }
-      rosbag::View data_view(bag, rosbag::TopicQuery("calibration_joint_states"));
-
-      BOOST_FOREACH (rosbag::MessageInstance const m, data_view)
-      {
-        robot_calibration_msgs::CaptureConfig::ConstPtr msg = m.instantiate<robot_calibration_msgs::CaptureConfig>();
-        if (msg == NULL)
-        {
-          // Try to load older style bags
-          sensor_msgs::JointState::ConstPtr js_msg = m.instantiate<sensor_msgs::JointState>();
-          if (js_msg != NULL)
-          {
-            robot_calibration_msgs::CaptureConfig config;
-            config.joint_states = *js_msg;
-            // Assume all finders should find this pose (old style config):
-            for (robot_calibration::FeatureFinderMap::iterator it = finders_.begin();
-                 it != finders_.end();
-                 it++)
-            {
-              config.features.push_back(it->first);
-            }
-            poses.push_back(config);
-          }
-        }
-        else
-        {
-          poses.push_back(*msg);
-        }
       }
     }
     else
@@ -165,8 +108,6 @@ int main(int argc, char** argv)
          (pose_idx < poses.size() || poses.size() == 0) && ros::ok();
          ++pose_idx)
     {
-      robot_calibration_msgs::CalibrationData msg;
-
       if (poses.size() == 0)
       {
         // Manual calibration, wait for keypress
@@ -183,67 +124,25 @@ int main(int argc, char** argv)
       else
       {
         // Move head/arm to pose
-        if (!chain_manager_.moveToState(poses[pose_idx].joint_states))
+        if (!capture_manager.moveToState(poses[pose_idx].joint_states))
         {
           ROS_WARN("Unable to move to desired state for sample %u.", pose_idx);
           continue;
         }
       }
 
-      // Regardless of manual vs. automatic, wait for joints to settle
-      chain_manager_.waitToSettle();
-
       // Make sure sensor data is up to date after settling
       ros::Duration(0.1).sleep();
 
       // Get pose of the features
-      bool found_all_features = true;
-      if (poses.size() == 0 || poses[pose_idx].features.empty())
-      {
-        // In manual mode, or if features are unspecified, we need to capture all features
-        for (robot_calibration::FeatureFinderMap::iterator it = finders_.begin();
-             it != finders_.end();
-             it++)
-        {
-          if (!it->second->find(&msg))
-          {
-            ROS_WARN("%s failed to capture features.", it->first.c_str());
-            found_all_features = false;
-            break;
-          }
-        }
-      }
-      else
-      {
-        // Capture only the intended features for this sample
-        for (size_t i = 0; i < poses[pose_idx].features.size(); i++)
-        {
-          std::string feature = poses[pose_idx].features[i];
-          if (!finders_[feature]->find(&msg))
-          {
-            ROS_WARN("%s failed to capture features.", feature.c_str());
-            found_all_features = false;
-            break;
-          }
-        }
-      }
-
-      // Make sure we succeeded
-      if (found_all_features)
-      {
-        ROS_INFO("Captured pose %u", pose_idx);
-      }
-      else
+      robot_calibration_msgs::CalibrationData msg;
+      if (!capture_manager.captureFeatures(poses[pose_idx].features, msg))
       {
         ROS_WARN("Failed to capture sample %u.", pose_idx);
         continue;
       }
 
-      // Fill in joint values
-      chain_manager_.getState(&msg.joint_states);
-
-      // Publish calibration data message.
-      pub.publish(msg);
+      ROS_INFO("Captured pose %u", pose_idx);
 
       // Add to samples
       data.push_back(msg);
@@ -311,59 +210,8 @@ int main(int argc, char** argv)
     }
   }
 
-  // Generate datecode
-  char datecode[80];
-  {
-    std::time_t t = std::time(NULL);
-    std::strftime(datecode, 80, "%Y_%m_%d_%H_%M_%S", std::localtime(&t));
-  }
-
-  // Save updated URDF
-  {
-    std::string s = opt.getOffsets()->updateURDF(description_msg.data);
-    std::stringstream urdf_name;
-    urdf_name << "/tmp/calibrated_" << datecode << ".urdf";
-    std::ofstream file;
-    file.open(urdf_name.str().c_str());
-    file << s;
-    file.close();
-  }
-
-  // Output camera calibration
-  {
-    std::stringstream depth_name;
-    depth_name << "/tmp/depth_" << datecode << ".yaml";
-    camera_calibration_parsers::writeCalibration(depth_name.str(), "",
-        robot_calibration::updateCameraInfo(
-                         opt.getOffsets()->get("camera_fx"),
-                         opt.getOffsets()->get("camera_fy"),
-                         opt.getOffsets()->get("camera_cx"),
-                         opt.getOffsets()->get("camera_cy"),
-                         data[0].observations[0].ext_camera_info.camera_info));  // TODO avoid hardcoding index
-
-    std::stringstream rgb_name;
-    rgb_name << "/tmp/rgb_" << datecode << ".yaml";
-    camera_calibration_parsers::writeCalibration(rgb_name.str(), "",
-        robot_calibration::updateCameraInfo(
-                         opt.getOffsets()->get("camera_fx"),
-                         opt.getOffsets()->get("camera_fy"),
-                         opt.getOffsets()->get("camera_cx"),
-                         opt.getOffsets()->get("camera_cy"),
-                         data[0].observations[0].ext_camera_info.camera_info));  // TODO avoid hardcoding index
-  }
-
-  // Output the calibration yaml
-  {
-    std::stringstream yaml_name;
-    yaml_name << "/tmp/calibration_" << datecode << ".yaml";
-    std::ofstream file;
-    file.open(yaml_name.str().c_str());
-    file << opt.getOffsets()->getOffsetYAML();
-    file << "depth_info: depth_" << datecode << ".yaml" << std::endl;
-    file << "rgb_info: rgb_" << datecode << ".yaml" << std::endl;
-    file << "urdf: calibrated_" << datecode << ".urdf" << std::endl;
-    file.close();
-  }
+  // Write outputs
+  robot_calibration::exportResults(opt, description_msg.data, data);
 
   ROS_INFO("Done calibrating");
 

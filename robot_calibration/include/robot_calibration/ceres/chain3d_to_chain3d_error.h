@@ -104,7 +104,7 @@ struct Chain3dToChain3d
                                      CalibrationOffsetParser* offsets,
                                      robot_calibration_msgs::CalibrationData& data)
   {
-    int index = getSensorIndex(data, a_model->name());
+    int index = getSensorIndex(data, a_model->getName());
     if (index == -1)
     {
       // In theory, we should never get here, because the optimizer does a check

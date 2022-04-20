@@ -1,4 +1,5 @@
 /*
+ * Copyright (C) 2018-2022 Michael Ferguson
  * Copyright (C) 2014 Fetch Robotics Inc.
  * Copyright (C) 2013-2014 Unbounded Robotics Inc.
  *
@@ -26,7 +27,7 @@
 #include <kdl_parser/kdl_parser.hpp>
 #include <robot_calibration_msgs/CalibrationData.h>
 #include <robot_calibration/mesh_loader.h>
-#include <robot_calibration/calibration_offset_parser.h>
+#include <robot_calibration/calibration/offset_parser.h>
 #include <robot_calibration/ceres/optimization_params.h>
 #include <robot_calibration/models/camera3d.h>
 #include <robot_calibration/models/chain.h>
@@ -56,7 +57,9 @@ public:
                std::vector<robot_calibration_msgs::CalibrationData> data,
                bool progress_to_stdout = false);
 
-  /** \brief Returns the summary of the optimization last run. */
+  /**
+   * @brief Returns the summary of the optimization last run.
+   */
   boost::shared_ptr<ceres::Solver::Summary> summary()
   {
     return summary_;
@@ -76,6 +79,13 @@ public:
   {
     return num_residuals_;
   }
+
+  /**
+   * @brief Get the names of all camera models.
+   *
+   * This is mainly used when deciding what camera_info to export.
+   */
+  std::vector<std::string> getCameraNames();
 
 private:
   urdf::Model model_;

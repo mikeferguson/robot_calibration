@@ -106,7 +106,7 @@ struct Chain3dToPlane
                                      double a, double b, double c, double d,
                                      double scale)
   {
-    int index = getSensorIndex(data, a_model->name());
+    int index = getSensorIndex(data, a_model->getName());
     if (index == -1)
     {
       // In theory, we should never get here, because the optimizer does a check

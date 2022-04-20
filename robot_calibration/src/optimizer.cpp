@@ -396,4 +396,17 @@ int Optimizer::optimize(OptimizationParams& params,
   return 0;
 }
 
+std::vector<std::string> Optimizer::getCameraNames()
+{
+  std::vector<std::string> camera_names;
+  for (auto it = models_.begin(); it != models_.end(); ++it)
+  {
+    if (it->second->getType() == "Camera3dModel")
+    {
+       camera_names.push_back(it->first);
+    }
+  }
+  return camera_names;
+}
+
 }  // namespace robot_calibration
