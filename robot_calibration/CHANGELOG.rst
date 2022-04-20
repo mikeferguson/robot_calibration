@@ -2,8 +2,8 @@
 Changelog for package robot_calibration
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.7.0 (2022-04-20)
+------------------
 * filter planes by closeness to desired normal (`#124 <https://github.com/mikeferguson/robot_calibration/issues/124>`_)
 * add finder for laser scan data (`#123 <https://github.com/mikeferguson/robot_calibration/issues/123>`_)
   best way to use this right now is to create point laser scanner at a
