@@ -2,6 +2,56 @@
 Changelog for package robot_calibration
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* filter planes by closeness to desired normal (`#124 <https://github.com/mikeferguson/robot_calibration/issues/124>`_)
+* add finder for laser scan data (`#123 <https://github.com/mikeferguson/robot_calibration/issues/123>`_)
+  best way to use this right now is to create point laser scanner at a
+  wall, create a plane from the laser scan, and align it with a plane
+  that has been seen by a camera
+* sample observation more evenly (`#122 <https://github.com/mikeferguson/robot_calibration/issues/122>`_)
+  the plane finder previously took points that were equally distributed by
+  point cloud index - however this doesn't actually always represent a
+  point cloud that is geometry well distributed. change the sampling so
+  that we make one or more passes through the cloud sampling points that
+  are at least a minimum distance away from the already sampled points
+* refactor plane finder (`#121 <https://github.com/mikeferguson/robot_calibration/issues/121>`_)
+  * use new eigen_geometry.h functions
+  * use ransac to find the best plane
+* refactor and improve plane_to_plane cost function (`#120 <https://github.com/mikeferguson/robot_calibration/issues/120>`_)
+  * use Eigen rather than OpenCV
+  * break plane parameter functions into separate header for reuse
+  * make final residual distance between planes
+  * make plane parameters always in same direction
+* make it easier to exit out of calibration (`#119 <https://github.com/mikeferguson/robot_calibration/issues/119>`_)
+* parameterize max_num_iterations (`#118 <https://github.com/mikeferguson/robot_calibration/issues/118>`_)
+* add chain3dToMesh calibration (`#116 <https://github.com/mikeferguson/robot_calibration/issues/116>`_)
+  * add cost function
+  * add mesh loader utilities
+  * add node to visualize meshes load
+* allow using the same camera model with different finders (`#112 <https://github.com/mikeferguson/robot_calibration/issues/112>`_)
+  the use case here is that a single camera is used in multiple
+  finders. When that happens we want the same parameters to
+  be used when calibrating the camera intrinsics, but we
+  need a different camera name to differentiate which
+  observation should be associated with which error block
+  (this is especially true for the upcoming robot/plane
+  finder)
+* add robot finder (`#111 <https://github.com/mikeferguson/robot_calibration/issues/111>`_)
+  The robot finder can be used to find the base of the robot and the floor at the same time
+* increase marker size (`#117 <https://github.com/mikeferguson/robot_calibration/issues/117>`_)
+* minor improvements and fixes for viz node (`#110 <https://github.com/mikeferguson/robot_calibration/issues/110>`_)
+  * move publishers earlier and make latching
+  * don't crash if no points in observation after projecting
+* refactor and improve plane finder (`#109 <https://github.com/mikeferguson/robot_calibration/issues/109>`_)
+  * break up the find() function so that it is more re-usable
+  * change points_max parameter to an integer rather than double
+  * actually find the plane rather than just assuming everything is part of the plane
+* bump cmake version to silence warnings on noetic (`#107 <https://github.com/mikeferguson/robot_calibration/issues/107>`_)
+* Updated the press key message (`#106 <https://github.com/mikeferguson/robot_calibration/issues/106>`_)
+* Add exception when the chain cannot be created (`#105 <https://github.com/mikeferguson/robot_calibration/issues/105>`_)
+* Contributors: Gerardo Puga, Michael Ferguson
+
 0.6.5 (2021-10-30)
 ------------------
 * add support for static camera calibration (`#101 <https://github.com/mikeferguson/robot_calibration/issues/101>`_)

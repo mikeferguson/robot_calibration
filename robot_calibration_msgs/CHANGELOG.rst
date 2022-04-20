@@ -2,6 +2,11 @@
 Changelog for package robot_calibration_msgs
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* bump cmake version to silence warnings on noetic (`#107 <https://github.com/mikeferguson/robot_calibration/issues/107>`_)
+* Contributors: Michael Ferguson
+
 0.6.5 (2021-10-30)
 ------------------
 
