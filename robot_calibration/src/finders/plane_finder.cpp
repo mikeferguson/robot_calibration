@@ -366,6 +366,7 @@ sensor_msgs::PointCloud2 PlaneFinder::extractPlane(sensor_msgs::PointCloud2& clo
       best_d = d;
     }
   }
+  // Note: parameters are in cloud.header.frame_id and not transform_frame
   ROS_INFO("Found plane with parameters: %f %f %f %f", best_normal(0), best_normal(1), best_normal(2), best_d);
 
   // Create a point cloud for the plane
