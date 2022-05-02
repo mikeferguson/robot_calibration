@@ -41,12 +41,18 @@ BaseCalibration::BaseCalibration(ros::NodeHandle& n) : ready_(false)
   // Get params
   ros::NodeHandle nh("~");
 
-  // Min/Max acceptable error when aligning with wall
+  // Min/Max acceptable error to continue aligning with wall
   nh.param<double>("min_angle", min_angle_, -0.5);
   nh.param<double>("max_angle", max_angle_, 0.5);
 
   // How fast to accelerate
   nh.param<double>("accel_limit", accel_limit_, 2.0);
+  // Maximum velocity to command base during alignment
+  nh.param<double>("align_velocity", align_velocity_, 0.2);
+  // Gain to turn alignment error into velocity
+  nh.param<double>("align_gain", align_gain_, 2.0);
+  // Tolerance when aligning the base
+  nh.param<double>("align_tolerance", align_tolerance_, 0.2);
 
   // Command publisher
   cmd_pub_ = n.advertise<geometry_msgs::Twist>("cmd_vel", 10);
@@ -110,20 +116,18 @@ bool BaseCalibration::align(double angle, bool verbose)
   std::cout << "aligning..." << std::endl;
 
   double error = scan_angle_ - angle;
-
-  double velocity = 0.2;
-  if (error < 0)
-  {
-    velocity = -0.2;
-  }
-
-  while (fabs(error) > 0.2 || (scan_r2_ < 0.1))
+  while (fabs(error) > align_tolerance_ || (scan_r2_ < 0.1))
   {
     if (verbose)
     {
       std::cout << scan_r2_ << " " << scan_angle_ << std::endl;
     }
+
+    // Send command
+    double velocity = std::min(std::max(error * align_gain_, -align_velocity_), align_velocity_);
     sendVelocityCommand(velocity);
+
+    // Sleep a moment
     ros::Duration(0.02).sleep();
 
     // Update error before comparing again

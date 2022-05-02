@@ -33,6 +33,10 @@ namespace robot_calibration
 class BaseCalibration
 {
 public:
+  /**
+   * @brief Create a base calibration instance.
+   * @param n NodeHandle at global scope - will subscribe to odom, imu, and base_scan in that namespace.
+   */
   BaseCalibration(ros::NodeHandle& n);
 
   /** @brief Clear any received messages. */
@@ -82,6 +86,7 @@ private:
 
   double min_angle_, max_angle_;
   double accel_limit_;
+  double align_velocity_, align_gain_, align_tolerance_;
 
   std::vector<double> scan_;
   std::vector<double> imu_;
