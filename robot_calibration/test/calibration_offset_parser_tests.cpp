@@ -1,6 +1,6 @@
 #include <boost/algorithm/string.hpp>
 #include <urdf/model.h>
-#include <robot_calibration/calibration_offset_parser.h>
+#include <robot_calibration/calibration/offset_parser.h>
 #include <robot_calibration/models/chain.h>  // for rotation functions
 #include <gtest/gtest.h>
 

@@ -24,12 +24,11 @@
 #include <robot_calibration_msgs/CalibrationData.h>
 #include <robot_calibration_msgs/CaptureConfig.h>
 
+#include "robot_calibration/ceres/optimizer.h"
 #include "robot_calibration/capture/capture_manager.h"
 #include "robot_calibration/capture/poses.h"
 #include "robot_calibration/calibration/export.h"
-
-#include <robot_calibration/ceres/optimizer.h>
-#include <robot_calibration/load_bag.h>
+#include "robot_calibration/load_bag.h"
 
 /** \mainpage
  * \section parameters Parameters of the Optimization:
