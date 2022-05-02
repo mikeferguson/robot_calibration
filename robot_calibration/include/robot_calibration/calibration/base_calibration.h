@@ -44,8 +44,12 @@ public:
   /** @brief Print out the calibration data. */
   std::string printCalibrationData();
 
-  /** @brief Align to the wall. */
-  bool align(bool verbose = false);
+  /**
+   * @brief Align to the wall.
+   * @param Angle angle to align to wall.
+   * @param verbose Should the console output be stupidly verbose?
+   */
+  bool align(double angle, bool verbose = false);
 
   /** @brief Spin and record imu, odom, scan. */
   bool spin(double velocity, int rotations, bool verbose = false);

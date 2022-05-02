@@ -100,7 +100,7 @@ std::string BaseCalibration::printCalibrationData()
   return ss.str();
 }
 
-bool BaseCalibration::align(bool verbose)
+bool BaseCalibration::align(double angle, bool verbose)
 {
   while (!ready_)
   {
@@ -109,13 +109,15 @@ bool BaseCalibration::align(bool verbose)
 
   std::cout << "aligning..." << std::endl;
 
+  double error = scan_angle_ - angle;
+
   double velocity = 0.2;
-  if (scan_angle_ < 0)
+  if (error < 0)
   {
     velocity = -0.2;
   }
 
-  while (fabs(scan_angle_) > 0.2 || (scan_r2_ < 0.1))
+  while (fabs(error) > 0.2 || (scan_r2_ < 0.1))
   {
     if (verbose)
     {
@@ -123,8 +125,12 @@ bool BaseCalibration::align(bool verbose)
     }
     sendVelocityCommand(velocity);
     ros::Duration(0.02).sleep();
+
+    // Update error before comparing again
+    error = scan_angle_ - angle;
   }
 
+  // Done - stop the robot
   sendVelocityCommand(0.0);
   std::cout << "...done" << std::endl;
   ros::Duration(0.25).sleep();
@@ -136,7 +142,8 @@ bool BaseCalibration::spin(double velocity, int rotations, bool verbose)
 {
   double scan_start = scan_angle_;
 
-  align();
+  // Align straight at the wall
+  align(0.0, verbose);
   resetInternal();
   std::cout << "spin..." << std::endl;
 
