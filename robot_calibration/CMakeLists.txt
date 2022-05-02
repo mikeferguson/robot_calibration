@@ -85,74 +85,99 @@ include_directories(include
                     ${orocos_kdl_INCLUDE_DIRS})
 link_directories(${orocos_kdl_LIBRARY_DIRS}) # this is a hack, will eventually be unneeded once orocos-kdl is fixed
 
-add_executable(calibrate_base src/calibrate_base.cpp)
-target_link_libraries(calibrate_base ${Boost_LIBRARIES}
-                                     ${catkin_LIBRARIES})
+add_library(robot_calibration
+  src/base_calibration.cpp
+  src/calibration_export.cpp
+  src/calibration_offset_parser.cpp
+  src/capture_manager.cpp
+  src/capture_poses.cpp
+  src/chain_manager.cpp
+  src/mesh_loader.cpp
+  src/models.cpp
+  src/optimization_params.cpp
+  src/optimizer.cpp
+)
+target_link_libraries(robot_calibration
+  ${Boost_LIBRARIES}
+  ${catkin_LIBRARIES}
+  ${CERES_LIBRARIES}
+  ${tinyxml_LIBRARIES}
+  ${orocos_kdl_LIBRARIES}
+)
+add_dependencies(robot_calibration
+  robot_calibration_msgs_generate_messages_cpp
+)
+
+add_library(robot_calibration_feature_finders
+  src/finders/checkerboard_finder.cpp
+  src/finders/led_finder.cpp
+  src/finders/plane_finder.cpp
+  src/finders/robot_finder.cpp
+  src/finders/scan_finder.cpp
+)
+target_link_libraries(robot_calibration_feature_finders
+  robot_calibration
+  ${Boost_LIBRARIES}
+  ${catkin_LIBRARIES}
+  ${tinyxml_LIBRARIES}
+  ${orocos_kdl_LIBRARIES}
+  ${OpenCV_LIBS}
+)
+add_dependencies(robot_calibration_feature_finders
+  robot_calibration_msgs_generate_messages_cpp
+)
+
+add_executable(calibrate src/calibrate.cpp)
+target_link_libraries(calibrate
+  robot_calibration
+  ${Boost_LIBRARIES}
+  ${catkin_LIBRARIES}
+  ${CERES_LIBRARIES}
+  ${tinyxml_LIBRARIES}
+  ${orocos_kdl_LIBRARIES}
+  ${OpenCV_LIBS}
+)
+add_dependencies(calibrate robot_calibration)
+
+add_executable(base_calibration_node src/base_calibration_node.cpp)
+target_link_libraries(base_calibration_node
+  robot_calibration
+  ${Boost_LIBRARIES}
+  ${catkin_LIBRARIES}
+)
 
 add_executable(magnetometer_calibration src/magnetometer_calibration.cpp)
 target_link_libraries(magnetometer_calibration
   ${Boost_LIBRARIES}
   ${catkin_LIBRARIES}
-  ${CERES_LIBRARIES})
-
-add_library(robot_calibration src/calibration_export.cpp
-                              src/calibration_offset_parser.cpp
-                              src/capture_manager.cpp
-                              src/capture_poses.cpp
-                              src/chain_manager.cpp
-                              src/mesh_loader.cpp
-                              src/models.cpp
-                              src/optimization_params.cpp
-                              src/optimizer.cpp)
-target_link_libraries(robot_calibration ${Boost_LIBRARIES}
-                                        ${catkin_LIBRARIES}
-                                        ${CERES_LIBRARIES}
-                                        ${tinyxml_LIBRARIES}
-                                        ${orocos_kdl_LIBRARIES})
-add_dependencies(robot_calibration robot_calibration_msgs_generate_messages_cpp)
-
-add_library(robot_calibration_feature_finders src/finders/checkerboard_finder.cpp
-                                              src/finders/led_finder.cpp
-                                              src/finders/plane_finder.cpp
-                                              src/finders/robot_finder.cpp
-                                              src/finders/scan_finder.cpp)
-target_link_libraries(robot_calibration_feature_finders robot_calibration
-                                                        ${Boost_LIBRARIES}
-                                                        ${catkin_LIBRARIES}
-                                                        ${tinyxml_LIBRARIES}
-                                                        ${orocos_kdl_LIBRARIES}
-                                                        ${OpenCV_LIBS})
-add_dependencies(robot_calibration_feature_finders robot_calibration_msgs_generate_messages_cpp)
-
-add_executable(calibrate src/calibrate.cpp)
-target_link_libraries(calibrate robot_calibration
-                                ${Boost_LIBRARIES}
-                                ${catkin_LIBRARIES}
-                                ${CERES_LIBRARIES}
-                                ${tinyxml_LIBRARIES}
-                                ${orocos_kdl_LIBRARIES}
-                                ${OpenCV_LIBS})
-add_dependencies(calibrate robot_calibration)
+  ${CERES_LIBRARIES}
+)
 
 add_executable(to_rpy src/tools/to_rpy.cpp)
-target_link_libraries(to_rpy robot_calibration
-                             ${Boost_LIBRARIES}
-                             ${catkin_LIBRARIES}
-                             ${orocos_kdl_LIBRARIES})
+target_link_libraries(to_rpy
+  robot_calibration
+  ${Boost_LIBRARIES}
+  ${catkin_LIBRARIES}
+  ${orocos_kdl_LIBRARIES}
+)
 add_dependencies(to_rpy robot_calibration)
 
 add_executable(viz src/tools/viz.cpp)
-target_link_libraries(viz robot_calibration
-                             ${Boost_LIBRARIES}
-                             ${catkin_LIBRARIES}
-                             ${orocos_kdl_LIBRARIES})
+target_link_libraries(viz
+  robot_calibration
+  ${Boost_LIBRARIES}
+  ${catkin_LIBRARIES}
+  ${orocos_kdl_LIBRARIES}
+)
 add_dependencies(viz robot_calibration)
 
 add_executable(viz_mesh src/tools/viz_mesh.cpp)
-target_link_libraries(viz_mesh robot_calibration
-                               ${Boost_LIBRARIES}
-                               ${catkin_LIBRARIES}
-                               ${orocos_kdl_LIBRARIES})
+target_link_libraries(viz_mesh
+  robot_calibration
+  ${Boost_LIBRARIES}
+  ${catkin_LIBRARIES}
+  ${orocos_kdl_LIBRARIES}
+)
 add_dependencies(viz_mesh robot_calibration)
 
 add_subdirectory(test)
@@ -160,12 +185,13 @@ add_subdirectory(test)
 install(DIRECTORY include/ DESTINATION include)
 
 install(TARGETS
-	calibrate
-	calibrate_base
-	robot_calibration
-	robot_calibration_feature_finders
-	to_rpy
-	viz
+  base_calibration_node
+  calibrate
+  magnetometer_calibration
+  robot_calibration
+  robot_calibration_feature_finders
+  to_rpy
+  viz
   viz_mesh
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}

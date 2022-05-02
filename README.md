@@ -12,7 +12,7 @@ configuration YAML in the case of camera intrinsics.
 
 Two additional ROS nodes are used for mobile-base related parameter tuning:
 
- * _calibrate_base_ - can determine scaling factors for gyro and track
+ * _base_calibration_node_ - can determine scaling factors for gyro and track
    width parameters by rotating the robot in place and tracking the actual
    rotation based on the laser scanner view of a wall.
  * _magnetometer_calibration_ - can be used to do hard iron calibration
@@ -158,9 +158,9 @@ If your robot does not support the "calibration" tags, it might be possible
 to use only free_frames, setting only the rotation in the joint axis to be
 free.
 
-## The _calibrate_base_ node
+## The _base_calibration_node_
 
-To run the _calibrate_base_ node, you need a somewhat open space with a large
+To run the _base_calibration_node_ node, you need a somewhat open space with a large
 (~3 meters wide) wall that you can point the robot at. The robot should be
 pointed at the wall and it will then spin around at several different speeds.
 On each rotation it will stop and capture the laser data. Afterwards, the
