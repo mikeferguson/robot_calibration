@@ -23,7 +23,7 @@
 #include <string>
 #include <kdl/chain.hpp>
 #include <kdl/tree.hpp>
-#include <robot_calibration/calibration_offset_parser.h>
+#include <robot_calibration/calibration/offset_parser.h>
 
 #include <geometry_msgs/PointStamped.h>
 #include <sensor_msgs/JointState.h>

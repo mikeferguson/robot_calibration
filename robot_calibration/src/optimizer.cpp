@@ -26,7 +26,7 @@
 #include <kdl_parser/kdl_parser.hpp>
 #include <robot_calibration_msgs/CalibrationData.h>
 
-#include <robot_calibration/calibration_offset_parser.h>
+#include <robot_calibration/calibration/offset_parser.h>
 #include <robot_calibration/ceres/calibration_data_helpers.h>
 #include <robot_calibration/ceres/chain3d_to_chain3d_error.h>
 #include <robot_calibration/ceres/chain3d_to_mesh_error.h>

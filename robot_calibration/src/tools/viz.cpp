@@ -25,7 +25,7 @@
 #include <urdf/model.h>
 #include <kdl_parser/kdl_parser.hpp>
 
-#include <robot_calibration/calibration_offset_parser.h>
+#include <robot_calibration/calibration/offset_parser.h>
 #include <robot_calibration/ceres/optimization_params.h>
 #include <robot_calibration/models/camera3d.h>
 #include <robot_calibration/models/chain.h>
