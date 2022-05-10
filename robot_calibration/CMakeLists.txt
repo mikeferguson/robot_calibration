@@ -95,7 +95,10 @@ target_link_libraries(magnetometer_calibration
   ${catkin_LIBRARIES}
   ${CERES_LIBRARIES})
 
-add_library(robot_calibration src/calibration_offset_parser.cpp
+add_library(robot_calibration src/calibration_export.cpp
+                              src/calibration_offset_parser.cpp
+                              src/capture_manager.cpp
+                              src/capture_poses.cpp
                               src/chain_manager.cpp
                               src/mesh_loader.cpp
                               src/models.cpp

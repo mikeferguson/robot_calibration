@@ -26,7 +26,7 @@
 #include <kdl_parser/kdl_parser.hpp>
 #include <robot_calibration_msgs/CalibrationData.h>
 
-#include <robot_calibration/calibration_offset_parser.h>
+#include <robot_calibration/calibration/offset_parser.h>
 #include <robot_calibration/ceres/calibration_data_helpers.h>
 #include <robot_calibration/ceres/chain3d_to_chain3d_error.h>
 #include <robot_calibration/ceres/chain3d_to_mesh_error.h>
@@ -394,6 +394,19 @@ int Optimizer::optimize(OptimizationParams& params,
   delete problem;
 
   return 0;
+}
+
+std::vector<std::string> Optimizer::getCameraNames()
+{
+  std::vector<std::string> camera_names;
+  for (auto it = models_.begin(); it != models_.end(); ++it)
+  {
+    if (it->second->getType() == "Camera3dModel")
+    {
+       camera_names.push_back(it->first);
+    }
+  }
+  return camera_names;
 }
 
 }  // namespace robot_calibration

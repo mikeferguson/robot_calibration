@@ -149,6 +149,16 @@ KDL::Frame ChainModel::getChainFK(const CalibrationOffsetParser& offsets,
   return p_out;
 }
 
+std::string ChainModel::getName() const
+{
+  return name_;
+}
+
+std::string ChainModel::getType() const
+{
+  return "ChainModel";
+}
+
 Camera3dModel::Camera3dModel(const std::string& name, const std::string& param_name, KDL::Tree model, std::string root, std::string tip) :
     ChainModel(name, model, root, tip),
     param_name_(param_name)
@@ -249,6 +259,11 @@ std::vector<geometry_msgs::PointStamped> Camera3dModel::project(
   }
 
   return points;
+}
+
+std::string Camera3dModel::getType() const
+{
+  return "Camera3dModel";
 }
 
 KDL::Rotation rotation_from_axis_magnitude(const double x, const double y, const double z)

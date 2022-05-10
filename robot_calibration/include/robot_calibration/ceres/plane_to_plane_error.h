@@ -23,7 +23,7 @@
 
 #include <string>
 #include <ceres/ceres.h>
-#include <robot_calibration/calibration_offset_parser.h>
+#include <robot_calibration/calibration/offset_parser.h>
 #include <robot_calibration/eigen_geometry.h>
 #include <robot_calibration/models/chain.h>
 #include <robot_calibration_msgs/CalibrationData.h>

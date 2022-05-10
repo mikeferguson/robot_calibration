@@ -22,7 +22,7 @@
 #include <string>
 #include <math.h>
 #include <ceres/ceres.h>
-#include <robot_calibration/calibration_offset_parser.h>
+#include <robot_calibration/calibration/offset_parser.h>
 #include <robot_calibration/ceres/calibration_data_helpers.h>
 #include <robot_calibration/models/camera3d.h>
 #include <robot_calibration/models/chain.h>
@@ -106,7 +106,7 @@ struct Chain3dToPlane
                                      double a, double b, double c, double d,
                                      double scale)
   {
-    int index = getSensorIndex(data, a_model->name());
+    int index = getSensorIndex(data, a_model->getName());
     if (index == -1)
     {
       // In theory, we should never get here, because the optimizer does a check

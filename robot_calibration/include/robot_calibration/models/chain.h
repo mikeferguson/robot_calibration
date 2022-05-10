@@ -23,18 +23,18 @@
 #include <string>
 #include <kdl/chain.hpp>
 #include <kdl/tree.hpp>
-#include <robot_calibration/calibration_offset_parser.h>
+#include <robot_calibration/calibration/offset_parser.h>
 
 #include <geometry_msgs/PointStamped.h>
 #include <sensor_msgs/JointState.h>
 #include <robot_calibration_msgs/CalibrationData.h>
 
-/** \brief Calibration code lives under this namespace */
+/** @brief Calibration code lives under this namespace */
 namespace robot_calibration
 {
 
 /**
- *  \brief Model of a kinematic chain. This is the basic instance where we
+ *  @brief Model of a kinematic chain. This is the basic instance where we
  *         transform the world observations into the proper root frame.
  *
  *  Each world observation is an estimated point in some frame. In the case
@@ -108,32 +108,40 @@ class ChainModel
 {
 public:
   /**
-   *  \brief Create a new chain model.
-   *  \param model The KDL model of the robot's kinematics.
-   *  \param root The name of the root link, must be consistent across all
+   *  @brief Create a new chain model.
+   *  @param model The KDL model of the robot's kinematics.
+   *  @param root The name of the root link, must be consistent across all
    *         models used for error modeling. Usually 'base_link'.
-   *  \param tip The tip of the chain.
+   *  @param tip The tip of the chain.
    */
   ChainModel(const std::string& name, KDL::Tree model, std::string root, std::string tip);
   virtual ~ChainModel() {}
 
   /**
-   *  \brief Compute the position of the estimated points.
-   *  \param data The calibration data for this observation.
-   *  \param offsets The offsets that the solver wants to examine.
+   *  @brief Compute the position of the estimated points.
+   *  @param data The calibration data for this observation.
+   *  @param offsets The offsets that the solver wants to examine.
    */
   virtual std::vector<geometry_msgs::PointStamped> project(
     const robot_calibration_msgs::CalibrationData& data,
     const CalibrationOffsetParser& offsets);
 
   /**
-   *  \brief Compute the forward kinematics of the chain, based on the
+   *  @brief Compute the forward kinematics of the chain, based on the
    *         offsets and the joint positions of the state message.
    */
   KDL::Frame getChainFK(const CalibrationOffsetParser& offsets,
                         const sensor_msgs::JointState& state);
 
-  std::string name() const;
+  /**
+   * @brief Get the name of this model (as provided in the YAML config)
+   */
+  virtual std::string getName() const;
+
+  /**
+   * @brief Get the type of this model.
+   */
+  virtual std::string getType() const;
 
 private:
   KDL::Chain chain_;
@@ -144,16 +152,11 @@ protected:
   std::string name_;
 };
 
-/** \brief Converts our angle-axis-with-integrated-magnitude representation to a KDL::Rotation */
+/** @brief Converts our angle-axis-with-integrated-magnitude representation to a KDL::Rotation */
 KDL::Rotation rotation_from_axis_magnitude(const double x, const double y, const double z);
 
-/** \brief Converts from KDL::Rotation to angle-axis-with-integrated-magnitude */
+/** @brief Converts from KDL::Rotation to angle-axis-with-integrated-magnitude */
 void axis_magnitude_from_rotation(const KDL::Rotation& r, double& x, double& y, double& z);
-
-inline std::string ChainModel::name() const
-{
-  return name_;
-}
 
 }  // namespace robot_calibration
 

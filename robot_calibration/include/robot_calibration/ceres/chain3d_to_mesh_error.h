@@ -23,7 +23,7 @@
 #include <string>
 #include <math.h>
 #include <ceres/ceres.h>
-#include <robot_calibration/calibration_offset_parser.h>
+#include <robot_calibration/calibration/offset_parser.h>
 #include <robot_calibration/mesh_loader.h>
 #include <robot_calibration/ceres/calibration_data_helpers.h>
 #include <robot_calibration/models/camera3d.h>
@@ -137,7 +137,7 @@ struct Chain3dToMesh
                                      robot_calibration_msgs::CalibrationData& data,
                                      MeshPtr mesh)
   {
-    int index = getSensorIndex(data, a_model->name());
+    int index = getSensorIndex(data, a_model->getName());
     if (index == -1)
     {
       // In theory, we should never get here, because the optimizer does a check

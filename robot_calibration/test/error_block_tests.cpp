@@ -304,6 +304,11 @@ TEST(ErrorBlockTests, error_blocks_maxwell)
   double scale = params.getParam(params.error_blocks[1], "joint_scale", 10.0);
   EXPECT_EQ(0.0, scale);
 
+  // Validate getCameraNames()
+  std::vector<std::string> camera_names = opt.getCameraNames();
+  EXPECT_EQ(1, camera_names.size());
+  EXPECT_EQ("camera", camera_names.front());
+
   // Validate distToLine()
   Eigen::Vector3d A(0, 0, 0);
   Eigen::Vector3d B(5, 0, 0);

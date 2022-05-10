@@ -26,29 +26,34 @@ namespace robot_calibration
 {
 
 /**
- *  \brief Model of a camera on a kinematic chain.
+ *  @brief Model of a camera on a kinematic chain.
  */
 class Camera3dModel : public ChainModel
 {
 public:
   /**
-   *  \brief Create a new camera 3d model (Kinect/Primesense).
-   *  \param name The name for this sensor, will be be used to select observations
-   *  \param param_name The name to use when finding camera parameters, often the same as name
-   *  \param model The KDL model of the robot's kinematics.
-   *  \param root The name of the root link, must be consistent across all
+   *  @brief Create a new camera 3d model (Kinect/Primesense).
+   *  @param name The name for this sensor, will be be used to select observations
+   *  @param param_name The name to use when finding camera parameters, often the same as name
+   *  @param model The KDL model of the robot's kinematics.
+   *  @param root The name of the root link, must be consistent across all
    *         models used for error modeling. Usually 'base_link'.
-   *  \param tip The tip of the chain.
+   *  @param tip The tip of the chain.
    */
   Camera3dModel(const std::string& name, const std::string& param_name, KDL::Tree model, std::string root, std::string tip);
   virtual ~Camera3dModel() {}
 
   /**
-   *  \brief Compute the updated positions of the observed points
+   *  @brief Compute the updated positions of the observed points
    */
   virtual std::vector<geometry_msgs::PointStamped> project(
     const robot_calibration_msgs::CalibrationData& data,
     const CalibrationOffsetParser& offsets);
+
+  /**
+   * @brief Get the type for this model.
+   */
+  virtual std::string getType() const;
 
 protected:
   std::string param_name_;

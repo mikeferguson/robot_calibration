@@ -23,7 +23,7 @@
 #include <tinyxml.h>
 #include <boost/algorithm/string.hpp>
 #include <boost/lexical_cast.hpp>
-#include <robot_calibration/calibration_offset_parser.h>
+#include <robot_calibration/calibration/offset_parser.h>
 #include <robot_calibration/models/chain.h>  // for rotation functions
 
 namespace robot_calibration
