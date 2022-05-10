@@ -306,7 +306,7 @@ TEST(ErrorBlockTests, error_blocks_maxwell)
 
   // Validate getCameraNames()
   std::vector<std::string> camera_names = opt.getCameraNames();
-  EXPECT_EQ(1, camera_names.size());
+  EXPECT_EQ(1, static_cast<int>(camera_names.size()));
   EXPECT_EQ("camera", camera_names.front());
 
   // Validate distToLine()
