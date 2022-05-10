@@ -33,6 +33,10 @@ namespace robot_calibration
 class BaseCalibration
 {
 public:
+  /**
+   * @brief Create a base calibration instance.
+   * @param n NodeHandle at global scope - will subscribe to odom, imu, and base_scan in that namespace.
+   */
   BaseCalibration(ros::NodeHandle& n);
 
   /** @brief Clear any received messages. */
@@ -44,8 +48,12 @@ public:
   /** @brief Print out the calibration data. */
   std::string printCalibrationData();
 
-  /** @brief Align to the wall. */
-  bool align(bool verbose = false);
+  /**
+   * @brief Align to the wall.
+   * @param Angle angle to align to wall.
+   * @param verbose Should the console output be stupidly verbose?
+   */
+  bool align(double angle, bool verbose = false);
 
   /** @brief Spin and record imu, odom, scan. */
   bool spin(double velocity, int rotations, bool verbose = false);
@@ -78,6 +86,7 @@ private:
 
   double min_angle_, max_angle_;
   double accel_limit_;
+  double align_velocity_, align_gain_, align_tolerance_;
 
   std::vector<double> scan_;
   std::vector<double> imu_;

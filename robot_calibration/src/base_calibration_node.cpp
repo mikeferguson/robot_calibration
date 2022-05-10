@@ -41,13 +41,16 @@ int main(int argc, char** argv)
   robot_calibration::BaseCalibration b(nh);
   b.clearMessages();
 
+  bool verbose = false;
+  nh.param<bool>("verbose", verbose, verbose);
+
   // Rotate at several different speeds
-  b.spin(0.5, 1);
-  b.spin(1.5, 1);
-  b.spin(3.0, 2);
-  b.spin(-0.5, 1);
-  b.spin(-1.5, 1);
-  b.spin(-3.0, 2);
+  b.spin(0.5, 1, verbose);
+  b.spin(1.5, 1, verbose);
+  b.spin(3.0, 2, verbose);
+  b.spin(-0.5, 1, verbose);
+  b.spin(-1.5, 1, verbose);
+  b.spin(-3.0, 2, verbose);
 
   // TODO: drive towards wall, to calibrate rollout
 
