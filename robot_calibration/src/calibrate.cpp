@@ -104,10 +104,11 @@ int main(int argc, char** argv)
 
     // For each pose in the capture sequence.
     for (unsigned pose_idx = 0;
-         (pose_idx < poses.size() || poses.size() == 0) && ros::ok();
+         (pose_idx < poses.size() || poses.empty()) && ros::ok();
          ++pose_idx)
     {
-      if (poses.size() == 0)
+      robot_calibration_msgs::CalibrationData msg;
+      if (poses.empty())
       {
         // Manual calibration, wait for keypress
         ROS_INFO("Press [Enter] to capture a sample... (or type 'done' and [Enter] to finish capture)");
@@ -119,6 +120,14 @@ int main(int argc, char** argv)
           return 0;
         if (!ros::ok())
           break;
+
+        // Empty vector causes us to capture all features
+        std::vector<std::string> features;
+        if (!capture_manager.captureFeatures(features, msg))
+        {
+          ROS_WARN("Failed to capture sample %u.", pose_idx);
+          continue;
+        }
       }
       else
       {
@@ -128,17 +137,16 @@ int main(int argc, char** argv)
           ROS_WARN("Unable to move to desired state for sample %u.", pose_idx);
           continue;
         }
-      }
 
-      // Make sure sensor data is up to date after settling
-      ros::Duration(0.1).sleep();
+        // Make sure sensor data is up to date after settling
+        ros::Duration(0.1).sleep();
 
-      // Get pose of the features
-      robot_calibration_msgs::CalibrationData msg;
-      if (!capture_manager.captureFeatures(poses[pose_idx].features, msg))
-      {
-        ROS_WARN("Failed to capture sample %u.", pose_idx);
-        continue;
+        // Get pose of the features
+        if (!capture_manager.captureFeatures(poses[pose_idx].features, msg))
+        {
+          ROS_WARN("Failed to capture sample %u.", pose_idx);
+          continue;
+        }
       }
 
       ROS_INFO("Captured pose %u", pose_idx);
