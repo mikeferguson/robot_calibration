@@ -82,7 +82,7 @@ private:
   double imu_angle_;
 
   ros::Time last_scan_stamp_;
-  double scan_angle_, scan_r2_, scan_dist_;
+  double scan_angle_, scan_r2_, scan_dist_, r2_tolerance_;
 
   double min_angle_, max_angle_;
   double accel_limit_;
