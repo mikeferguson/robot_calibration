@@ -53,6 +53,8 @@ BaseCalibration::BaseCalibration(ros::NodeHandle& n) : ready_(false)
   nh.param<double>("align_gain", align_gain_, 2.0);
   // Tolerance when aligning the base
   nh.param<double>("align_tolerance", align_tolerance_, 0.2);
+  // Tolerance for r2
+  nh.param<double>("r2_tolerance", r2_tolerance_, 0.1);
 
   // Command publisher
   cmd_pub_ = n.advertise<geometry_msgs::Twist>("cmd_vel", 10);
@@ -110,13 +112,15 @@ bool BaseCalibration::align(double angle, bool verbose)
 {
   while (!ready_)
   {
+    ROS_WARN("Not ready!");
     ros::Duration(0.1).sleep();
+    ros::spinOnce();
   }
 
   std::cout << "aligning..." << std::endl;
 
   double error = scan_angle_ - angle;
-  while (fabs(error) > align_tolerance_ || (scan_r2_ < 0.1))
+  while (fabs(error) > align_tolerance_ || (scan_r2_ < r2_tolerance_))
   {
     if (verbose)
     {
@@ -124,14 +128,22 @@ bool BaseCalibration::align(double angle, bool verbose)
     }
 
     // Send command
-    double velocity = std::min(std::max(error * align_gain_, -align_velocity_), align_velocity_);
+    double velocity = std::min(std::max(-error * align_gain_, -align_velocity_), align_velocity_);
     sendVelocityCommand(velocity);
 
     // Sleep a moment
     ros::Duration(0.02).sleep();
+    ros::spinOnce();
 
     // Update error before comparing again
     error = scan_angle_ - angle;
+
+    // Exit if shutting down
+    if (!ros::ok())
+    {
+      sendVelocityCommand(0.0);
+      return false;
+    }
   }
 
   // Done - stop the robot
@@ -162,6 +174,14 @@ bool BaseCalibration::spin(double velocity, int rotations, bool verbose)
     }
     sendVelocityCommand(velocity);
     ros::Duration(0.02).sleep();
+    ros::spinOnce();
+
+    // Exit if shutting down
+    if (!ros::ok())
+    {
+      sendVelocityCommand(0.0);
+      return false;
+    }
   }
 
   // Stop the robot
@@ -220,7 +240,12 @@ void BaseCalibration::laserCallback(const sensor_msgs::LaserScan::Ptr& scan)
     {
       continue;
     }
-    
+
+    if (std::isnan(scan->ranges[i]))
+    {
+      continue;
+    }
+
     if (start < 0)
     {
       start = i;
@@ -251,6 +276,11 @@ void BaseCalibration::laserCallback(const sensor_msgs::LaserScan::Ptr& scan)
     if (angle > max_angle_)
     {
       break;
+    }
+
+    if (std::isnan(scan->ranges[i]))
+    {
+      continue;
     }
 
     // Compute point
