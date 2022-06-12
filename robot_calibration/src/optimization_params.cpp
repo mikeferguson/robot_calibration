@@ -27,103 +27,68 @@ OptimizationParams::OptimizationParams() :
 {
 }
 
-bool OptimizationParams::LoadFromROS(ros::NodeHandle& nh)
+bool OptimizationParams::LoadFromROS(rclcpp::Node::SharedPtr node)
 {
-  nh.param("base_link", base_link, base_link);
-  nh.param("max_num_iterations", max_num_iterations, 1000);
+  base_link = node->declare_parameter<std::string>("base_link", "base_link");
+  max_num_iterations = node->declare_parameter<int>("max_num_iterations", 1000);
 
-  if (nh.hasParam("free_params"))
+  free_params = node->declare_parameter<std::vector<std::string>>(
+    "free_params", std::vector<std::string>());
+    
+  free_frames.clear();
+  auto free_frame_names = node->declare_parameter<std::vector<std::string>>(
+    "free_frames", std::vector<std::string>());
+  for (auto name : free_frame_names)
   {
-    free_params.clear();
-
-    XmlRpc::XmlRpcValue names;
-    nh.getParam("free_params", names);
-    ROS_ASSERT(names.getType() == XmlRpc::XmlRpcValue::TypeArray);
-
-    for (int i = 0; i < names.size(); ++i)
-    {
-      free_params.push_back(static_cast<std::string>(names[i]));
-    }
+    FreeFrameParams params;
+    params.name = name;
+    params.x = node->declare_parameter<bool>(name + ".x", false);
+    params.y = node->declare_parameter<bool>(name + ".y", false);
+    params.z = node->declare_parameter<bool>(name + ".z", false);
+    params.roll = node->declare_parameter<bool>(name + ".roll", false);
+    params.pitch = node->declare_parameter<bool>(name + ".pitch", false);
+    params.yaw = node->declare_parameter<bool>(name + ".yaw", false);
+    free_frames.push_back(params);
   }
 
-  if (nh.hasParam("free_frames"))
+  free_frames_initial_values.clear();
+  free_frame_names = node->declare_parameter<std::vector<std::string>>(
+    "free_frames_initial_values", std::vector<std::string>());
+  for (auto name : free_frame_names)
   {
-    free_frames.clear();
-
-    XmlRpc::XmlRpcValue free_frame_params;
-    nh.getParam("free_frames", free_frame_params);
-    ROS_ASSERT(free_frame_params.getType() == XmlRpc::XmlRpcValue::TypeArray);
-
-    for (int i = 0; i < free_frame_params.size(); ++i)
-    {
-      FreeFrameParams params;
-      params.name = static_cast<std::string>(free_frame_params[i]["name"]);
-      params.x = static_cast<bool>(free_frame_params[i]["x"]);
-      params.y = static_cast<bool>(free_frame_params[i]["y"]);
-      params.z = static_cast<bool>(free_frame_params[i]["z"]);
-      params.roll = static_cast<bool>(free_frame_params[i]["roll"]);
-      params.pitch = static_cast<bool>(free_frame_params[i]["pitch"]);
-      params.yaw = static_cast<bool>(free_frame_params[i]["yaw"]);
-      free_frames.push_back(params);
-    }
+    FreeFrameInitialValue params;
+    params.name = name;
+    params.x = node->declare_parameter<double>(name + ".x", 0.0);
+    params.y = node->declare_parameter<double>(name + ".y", 0.0);
+    params.z = node->declare_parameter<double>(name + ".z", 0.0);
+    params.roll = node->declare_parameter<double>(name + ".roll", 0.0);
+    params.pitch = node->declare_parameter<double>(name + ".pitch", 0.0);
+    params.yaw = node->declare_parameter<double>(name + ".yaw", 0.0);
+    free_frames_initial_values.push_back(params);
   }
 
-  if (nh.hasParam("free_frames_initial_values"))
+  models.clear();
+  auto model_names = node->declare_parameter<std::vector<std::string>>(
+    "models", std::vector<std::string>());
+  for (auto name : model_names)
   {
-    free_frames_initial_values.clear();
-
-    XmlRpc::XmlRpcValue initial_value_params;
-    nh.getParam("free_frames_initial_values", initial_value_params);
-    ROS_ASSERT(initial_value_params.getType() == XmlRpc::XmlRpcValue::TypeArray);
-
-    for (int i = 0; i < initial_value_params.size(); ++i)
-    {
-      FreeFrameInitialValue params;
-      params.name = static_cast<std::string>(initial_value_params[i]["name"]);
-      params.x = static_cast<double>(initial_value_params[i]["x"]);
-      params.y = static_cast<double>(initial_value_params[i]["y"]);
-      params.z = static_cast<double>(initial_value_params[i]["z"]);
-      params.roll = static_cast<double>(initial_value_params[i]["roll"]);
-      params.pitch = static_cast<double>(initial_value_params[i]["pitch"]);
-      params.yaw = static_cast<double>(initial_value_params[i]["yaw"]);
-      free_frames_initial_values.push_back(params);
-    }
+    Params params;
+    params.name = name;
+    params.type = node->declare_parameter<std::string>(name + ".type", std::string());
+    //params.params = model_params[i];
+    models.push_back(params);
   }
 
-  if (nh.hasParam("models"))
+  error_blocks.clear();
+  auto error_block_names = node->declare_parameter<std::vector<std::string>>(
+    "error_blocks", std::vector<std::string>());
+  for (auto name : error_block_names)
   {
-    models.clear();
-
-    XmlRpc::XmlRpcValue model_params;
-    nh.getParam("models", model_params);
-    ROS_ASSERT(model_params.getType() == XmlRpc::XmlRpcValue::TypeArray);
-
-    for (int i = 0; i < model_params.size(); ++i)
-    {
-      Params params;
-      params.name = static_cast<std::string>(model_params[i]["name"]);
-      params.type = static_cast<std::string>(model_params[i]["type"]);
-      params.params = model_params[i];
-      models.push_back(params);
-    }
-  }
-
-  if (nh.hasParam("error_blocks"))
-  {
-    error_blocks.clear();
-
-    XmlRpc::XmlRpcValue error_params;
-    nh.getParam("error_blocks", error_params);
-    ROS_ASSERT(error_params.getType() == XmlRpc::XmlRpcValue::TypeArray);
-
-    for (int i = 0; i < error_params.size(); ++i)
-    {
-      Params params;
-      params.name = static_cast<std::string>(error_params[i]["name"]);
-      params.type = static_cast<std::string>(error_params[i]["type"]);
-      params.params = error_params[i];
-      error_blocks.push_back(params);
-    }
+    Params params;
+    params.name = name;
+    params.type = node->declare_parameter<std::string>(name + ".type", std::string());
+    //params.params = error_params[i];
+    error_blocks.push_back(params);
   }
 
   return true;

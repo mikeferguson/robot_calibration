@@ -25,9 +25,9 @@
 #include <kdl/tree.hpp>
 #include <robot_calibration/calibration/offset_parser.h>
 
-#include <geometry_msgs/PointStamped.h>
-#include <sensor_msgs/JointState.h>
-#include <robot_calibration_msgs/CalibrationData.h>
+#include <geometry_msgs/msg/point_stamped.hpp>
+#include <sensor_msgs/msg/joint_state.hpp>
+#include <robot_calibration_msgs/msg/calibration_data.hpp>
 
 /** @brief Calibration code lives under this namespace */
 namespace robot_calibration
@@ -122,8 +122,8 @@ public:
    *  @param data The calibration data for this observation.
    *  @param offsets The offsets that the solver wants to examine.
    */
-  virtual std::vector<geometry_msgs::PointStamped> project(
-    const robot_calibration_msgs::CalibrationData& data,
+  virtual std::vector<geometry_msgs::msg::PointStamped> project(
+    const robot_calibration_msgs::msg::CalibrationData& data,
     const CalibrationOffsetParser& offsets);
 
   /**
@@ -131,7 +131,7 @@ public:
    *         offsets and the joint positions of the state message.
    */
   KDL::Frame getChainFK(const CalibrationOffsetParser& offsets,
-                        const sensor_msgs::JointState& state);
+                        const sensor_msgs::msg::JointState& state);
 
   /**
    * @brief Get the name of this model (as provided in the YAML config)

@@ -20,13 +20,13 @@
 
 #include <fstream>
 #include <sstream>
-#include <camera_calibration_parsers/parse.h>
+#include <camera_calibration_parsers/parse.hpp>
 #include "robot_calibration/calibration/export.h"
 
 namespace robot_calibration
 {
 bool exportResults(Optimizer& optimizer, const std::string& initial_urdf,
-                   const std::vector<robot_calibration_msgs::CalibrationData>& data)
+                   const std::vector<robot_calibration_msgs::msg::CalibrationData>& data)
 {
   // Generate datecode
   char datecode[80];
@@ -51,7 +51,7 @@ bool exportResults(Optimizer& optimizer, const std::string& initial_urdf,
   for (auto it = camera_names.begin(); it != camera_names.end(); ++it)
   {
     // Find original CameraInfo
-    sensor_msgs::CameraInfo camera_info;
+    sensor_msgs::msg::CameraInfo camera_info;
     bool found_camera_info = false;
     for (auto obs = data.front().observations.begin();
          obs != data.front().observations.end(); ++obs)
@@ -66,7 +66,7 @@ bool exportResults(Optimizer& optimizer, const std::string& initial_urdf,
 
     if (!found_camera_info)
     {
-      ROS_WARN("Unable to export camera_info for %s", it->c_str());
+      //ROS_WARN("Unable to export camera_info for %s", it->c_str());
       continue;
     }
 

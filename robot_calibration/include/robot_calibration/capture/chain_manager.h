@@ -1,4 +1,5 @@
 /*
+ * Copyright (C) 2022 Michael Ferguson
  * Copyright (C) 2014-2015 Fetch Robotics Inc.
  * Copyright (C) 2013-2014 Unbounded Robotics Inc.
  *
@@ -23,9 +24,9 @@
 #include <ros/ros.h>
 #include <boost/thread/mutex.hpp>
 #include <sensor_msgs/JointState.h>
-#include <actionlib/client/simple_action_client.h>
-#include <control_msgs/FollowJointTrajectoryAction.h>
-#include <moveit_msgs/MoveGroupAction.h>
+//#include <actionlib/client/simple_action_client.h>
+#include <control_msgs/msg/follow_joint_trajectory_action.hpp>
+#include <moveit_msgs/msg/move_group_action.hpp>
 
 namespace robot_calibration
 {
@@ -105,13 +106,13 @@ public:
 private:
   void stateCallback(const sensor_msgs::JointStateConstPtr& msg);
 
-  trajectory_msgs::JointTrajectoryPoint makePoint(const sensor_msgs::JointState& state,
-                                                  const std::vector<std::string>& joints);
+  trajectory_msgs::msg::JointTrajectoryPoint makePoint(const sensor_msgs::msg::JointState& state,
+                                                       const std::vector<std::string>& joints);
 
   // Subscriber for joint_states topic, storage of message
   ros::Subscriber subscriber_;
   boost::mutex state_mutex_;
-  sensor_msgs::JointState state_;
+  sensor_msgs::msg::JointState state_;
   bool state_is_valid_;
 
   // Mechanisms for passing commands to controllers

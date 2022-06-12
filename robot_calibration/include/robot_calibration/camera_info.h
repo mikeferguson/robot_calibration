@@ -1,4 +1,5 @@
 /*
+ * Copyright (C) 2022 Michael Ferguson
  * Copyright (C) 2015 Fetch Robotics Inc.
  * Copyright (C) 2013-2014 Unbounded Robotics Inc.
  *
@@ -20,8 +21,7 @@
 #ifndef ROBOT_CALIBRATION_CAMERA_INFO_H
 #define ROBOT_CALIBRATION_CAMERA_INFO_H
 
-#include <ros/ros.h>
-#include <sensor_msgs/CameraInfo.h>
+#include <sensor_msgs/msg/camera_info.hpp>
 
 namespace robot_calibration
 {
@@ -51,21 +51,22 @@ enum {CAMERA_PARAMS_CX_INDEX=0,
 
 
 /** @brief Update the camera calibration with the new offsets */
-inline sensor_msgs::CameraInfo updateCameraInfo(double camera_fx, double camera_fy,
-                                                double camera_cx, double camera_cy,
-                                                const sensor_msgs::CameraInfo& info)
+inline sensor_msgs::msg::CameraInfo updateCameraInfo(
+  double camera_fx, double camera_fy,
+  double camera_cx, double camera_cy,
+  const sensor_msgs::msg::CameraInfo& info)
 {
-  sensor_msgs::CameraInfo new_info = info;
+  sensor_msgs::msg::CameraInfo new_info = info;
 
-  new_info.P[CAMERA_INFO_P_CX_INDEX] *= camera_cx + 1.0;  // CX
-  new_info.P[CAMERA_INFO_P_CY_INDEX] *= camera_cy + 1.0;  // CY
-  new_info.P[CAMERA_INFO_P_FX_INDEX] *= camera_fx + 1.0;  // FX
-  new_info.P[CAMERA_INFO_P_FY_INDEX] *= camera_fy + 1.0;  // FY
+  new_info.p[CAMERA_INFO_P_CX_INDEX] *= camera_cx + 1.0;  // CX
+  new_info.p[CAMERA_INFO_P_CY_INDEX] *= camera_cy + 1.0;  // CY
+  new_info.p[CAMERA_INFO_P_FX_INDEX] *= camera_fx + 1.0;  // FX
+  new_info.p[CAMERA_INFO_P_FY_INDEX] *= camera_fy + 1.0;  // FY
 
-  new_info.K[CAMERA_INFO_K_CX_INDEX] *= camera_cx + 1.0;  // CX
-  new_info.K[CAMERA_INFO_K_CY_INDEX] *= camera_cy + 1.0;  // CY
-  new_info.K[CAMERA_INFO_K_FX_INDEX] *= camera_fx + 1.0;  // FX
-  new_info.K[CAMERA_INFO_K_FY_INDEX] *= camera_fy + 1.0;  // FY
+  new_info.k[CAMERA_INFO_K_CX_INDEX] *= camera_cx + 1.0;  // CX
+  new_info.k[CAMERA_INFO_K_CY_INDEX] *= camera_cy + 1.0;  // CY
+  new_info.k[CAMERA_INFO_K_FX_INDEX] *= camera_fx + 1.0;  // FX
+  new_info.k[CAMERA_INFO_K_FY_INDEX] *= camera_fy + 1.0;  // FY
 
   return new_info;
 }

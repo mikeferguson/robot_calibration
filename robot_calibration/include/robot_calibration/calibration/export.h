@@ -33,7 +33,7 @@ namespace robot_calibration
  * @param data The raw calibration data, currently used only to get CameraInfo
  */
 bool exportResults(Optimizer& optimizer, const std::string& initial_urdf,
-                   const std::vector<robot_calibration_msgs::CalibrationData>& data);
+                   const std::vector<robot_calibration_msgs::msg::CalibrationData>& data);
 
 }  // namespace robot_calibration
 

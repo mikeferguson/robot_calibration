@@ -20,11 +20,12 @@
 
 #include <robot_calibration/ceres/optimizer.h>
 
+#include <memory>
 #include <ceres/ceres.h>
 
 #include <urdf/model.h>
 #include <kdl_parser/kdl_parser.hpp>
-#include <robot_calibration_msgs/CalibrationData.h>
+#include <robot_calibration_msgs/msg/calibration_data.hpp>
 
 #include <robot_calibration/calibration/offset_parser.h>
 #include <robot_calibration/ceres/calibration_data_helpers.h>
@@ -35,7 +36,6 @@
 #include <robot_calibration/ceres/outrageous_error.h>
 #include <robot_calibration/models/camera3d.h>
 #include <robot_calibration/models/chain.h>
-#include <boost/shared_ptr.hpp>
 #include <string>
 #include <map>
 
@@ -46,7 +46,8 @@ Optimizer::Optimizer(const std::string& robot_description) :
   num_params_(0),
   num_residuals_(0)
 {
-  if (!model_.initString(robot_description))
+  model_ = std::make_shared<urdf::Model>();
+  if (!model_->initString(robot_description))
     std::cerr << "Failed to parse URDF." << std::endl;
 
   // Maintain consistent offset parser so we hold onto offsets
@@ -61,11 +62,11 @@ Optimizer::~Optimizer()
 }
 
 int Optimizer::optimize(OptimizationParams& params,
-                        std::vector<robot_calibration_msgs::CalibrationData> data,
+                        std::vector<robot_calibration_msgs::msg::CalibrationData> data,
                         bool progress_to_stdout)
 {
   // Load KDL from URDF
-  if (!kdl_parser::treeFromUrdfModel(model_, tree_))
+  if (!kdl_parser::treeFromUrdfModel(*model_, tree_))
   {
     std::cerr << "Failed to construct KDL tree" << std::endl;
     return -1;
@@ -76,24 +77,24 @@ int Optimizer::optimize(OptimizationParams& params,
   {
     if (params.models[i].type == "chain")
     {
-      ROS_INFO_STREAM("Creating chain '" << params.models[i].name << "' from " <<
-                                            params.base_link << " to " <<
-                                            params.models[i].params["frame"]);
-      ChainModel* model = new ChainModel(params.models[i].name, tree_, params.base_link, params.models[i].params["frame"]);
-      models_[params.models[i].name] = model;
+      //ROS_INFO_STREAM("Creating chain '" << params.models[i].name << "' from " <<
+      //                                      params.base_link << " to " <<
+      //                                      params.models[i].params["frame"]);
+      //ChainModel* model = new ChainModel(params.models[i].name, tree_, params.base_link, params.models[i].params["frame"]);
+      //models_[params.models[i].name] = model;
     }
     else if (params.models[i].type == "camera3d")
     {
-      ROS_INFO_STREAM("Creating camera3d '" << params.models[i].name << "' in frame " <<
-                                               params.models[i].params["frame"]);
-      std::string param_name = params.models[i].params["param_name"];
-      if (param_name == "")
+      //ROS_INFO_STREAM("Creating camera3d '" << params.models[i].name << "' in frame " <<
+      //                                         params.models[i].params["frame"]);
+      //std::string param_name = params.models[i].params["param_name"];
+      if (0) //param_name == "")
       {
         // Default to same name as sensor
-        param_name = params.models[i].name;
+        //param_name = params.models[i].name;
       }
-      Camera3dModel* model = new Camera3dModel(params.models[i].name, param_name, tree_, params.base_link, params.models[i].params["frame"]);
-      models_[params.models[i].name] = model;
+      //Camera3dModel* model = new Camera3dModel(params.models[i].name, param_name, tree_, params.base_link, params.models[i].params["frame"]);
+      //models_[params.models[i].name] = model;
     }
     else
     {
@@ -129,8 +130,8 @@ int Optimizer::optimize(OptimizationParams& params,
                             params.free_frames_initial_values[i].pitch,
                             params.free_frames_initial_values[i].yaw))
     {
-      ROS_ERROR_STREAM("Error setting initial value for " <<
-                       params.free_frames_initial_values[i].name);
+      //ROS_ERROR_STREAM("Error setting initial value for " <<
+      //                 params.free_frames_initial_values[i].name);
     }
   }
 
@@ -152,13 +153,13 @@ int Optimizer::optimize(OptimizationParams& params,
         // CheckboardFinder, or any other finder that can sample the pose
         // of one or more data points that are connected at a constant offset
         // from a link a kinematic chain (the "arm").
-        std::string a_name = static_cast<std::string>(params.error_blocks[j].params["model_a"]);
-        std::string b_name = static_cast<std::string>(params.error_blocks[j].params["model_b"]);
+        std::string a_name = "model_a"; //static_cast<std::string>(params.error_blocks[j].params["model_a"]);
+        std::string b_name = "model_b"; //static_cast<std::string>(params.error_blocks[j].params["model_b"]);
 
         // Do some basic error checking for bad params
         if (a_name == "" || b_name == "" || a_name == b_name)
         {
-          ROS_ERROR("chain3d_to_chain3d improperly configured: model_a and model_b params must be set!");
+          //ROS_ERROR("chain3d_to_chain3d improperly configured: model_a and model_b params must be set!");
           return 0;
         }
 
@@ -200,12 +201,12 @@ int Optimizer::optimize(OptimizationParams& params,
       else if (params.error_blocks[j].type == "chain3d_to_plane")
       {
         // This error block can process data generated by the PlaneFinder
-        std::string chain_name = static_cast<std::string>(params.error_blocks[j].params["model_a"]);
+        std::string chain_name = "chain"; //static_cast<std::string>(params.error_blocks[j].params["model_a"]);
 
         // Do some basic error checking for bad params
         if (chain_name == "")
         {
-          ROS_ERROR("chain3d_to_plane improperly configured: model_a param must be set!");
+          //ROS_ERROR("chain3d_to_plane improperly configured: model_a param must be set!");
           return 0;
         }
 
@@ -246,12 +247,12 @@ int Optimizer::optimize(OptimizationParams& params,
       else if (params.error_blocks[j].type == "chain3d_to_mesh")
       {
         // This error block can process data generated by the RobotFinder
-        std::string chain_name = static_cast<std::string>(params.error_blocks[j].params["model_a"]);
+        std::string chain_name = "model_a"; //static_cast<std::string>(params.error_blocks[j].params["model_a"]);
 
         // Do some basic error checking for bad params
         if (chain_name == "")
         {
-          ROS_ERROR("chain3d_to_mesh improperly configured: model_a param must be set!");
+          //ROS_ERROR("chain3d_to_mesh improperly configured: model_a param must be set!");
           return 0;
         }
 
@@ -264,7 +265,7 @@ int Optimizer::optimize(OptimizationParams& params,
         MeshPtr mesh = mesh_loader_->getCollisionMesh(link_name);
         if (!mesh)
         {
-          ROS_ERROR("chain3d_to_mesh improperly configured: cannot load mesh for %s", link_name.c_str());
+          //ROS_ERROR("chain3d_to_mesh improperly configured: cannot load mesh for %s", link_name.c_str());
           return 0;
         }
 
@@ -301,13 +302,13 @@ int Optimizer::optimize(OptimizationParams& params,
         // This error block can process data generated by the PlaneFinder,
         // CheckerboardFinder, or any other finder that returns a series of
         // planar points.
-        std::string a_name = static_cast<std::string>(params.error_blocks[j].params["model_a"]);
-        std::string b_name = static_cast<std::string>(params.error_blocks[j].params["model_b"]);
+        std::string a_name = "model_a"; //static_cast<std::string>(params.error_blocks[j].params["model_a"]);
+        std::string b_name = "model_b"; //static_cast<std::string>(params.error_blocks[j].params["model_b"]);
 
         // Do some basic error checking for bad params
         if (a_name == "" || b_name == "" || a_name == b_name)
         {
-          ROS_ERROR("plane_to_plane improperly configured: model_a and model_a params must be set!");
+          //ROS_ERROR("plane_to_plane improperly configured: model_a and model_a params must be set!");
           return 0;
         }
 
@@ -350,6 +351,7 @@ int Optimizer::optimize(OptimizationParams& params,
       else if (params.error_blocks[j].type == "outrageous")
       {
         // Outrageous error block requires no particular sensors, add to every sample
+        /*
         problem->AddResidualBlock(
           OutrageousError::Create(offsets_.get(),
                                   static_cast<std::string>(params.error_blocks[j].params["param"]),
@@ -358,10 +360,11 @@ int Optimizer::optimize(OptimizationParams& params,
                                   params.getParam(params.error_blocks[j], "rotation_scale", 1.0)),
           NULL, // squared loss
           free_params);
+        */
       }
       else
       {
-        ROS_ERROR_STREAM("Unknown error block: " << params.error_blocks[j].type);
+        //ROS_ERROR_STREAM("Unknown error block: " << params.error_blocks[j].type);
         return 0;
       }
     }

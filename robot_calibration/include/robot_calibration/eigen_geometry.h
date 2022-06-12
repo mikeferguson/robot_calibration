@@ -24,7 +24,7 @@
 #include <vector>
 #include <Eigen/Core>
 #include <Eigen/Dense>
-#include <geometry_msgs/PointStamped.h>
+#include <geometry_msgs/msg/point_stamped.hpp>
 
 namespace robot_calibration
 {
@@ -32,7 +32,7 @@ namespace robot_calibration
 /**
  * @brief Get an Eigen::MatrixXd from a vector of PointStamped
  */
-inline Eigen::MatrixXd getMatrix(const std::vector<geometry_msgs::PointStamped>& points)
+inline Eigen::MatrixXd getMatrix(const std::vector<geometry_msgs::msg::PointStamped>& points)
 {
   Eigen::MatrixXd matrix(3, points.size());
   for (size_t i = 0; i < points.size(); ++i)

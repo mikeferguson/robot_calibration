@@ -20,7 +20,8 @@
 #ifndef ROBOT_CALIBRATION_CERES_OPTIMIZATION_PARAMS_H
 #define ROBOT_CALIBRATION_CERES_OPTIMIZATION_PARAMS_H
 
-#include <ros/ros.h>
+#include <rclcpp/logger.hpp>
+#include <rclcpp/node.hpp>
 
 namespace robot_calibration
 {
@@ -54,7 +55,6 @@ struct OptimizationParams
   {
     std::string name;
     std::string type;
-    XmlRpc::XmlRpcValue params;
   };
 
   std::string base_link;
@@ -68,18 +68,19 @@ struct OptimizationParams
   int max_num_iterations;
 
   OptimizationParams();
-  bool LoadFromROS(ros::NodeHandle& nh);
+  bool LoadFromROS(rclcpp::Node::SharedPtr node);
 
   template<typename T>
   T getParam(Params& params, const std::string& name, T default_value)
   {
-    if (!params.params.hasMember(name))
-    {
-      ROS_WARN_STREAM(name << " was not set, using default of " << default_value);
-      return default_value;
-    }
+    return default_value;
+    //if (!params.params.hasMember(name))
+    //{
+      //RCLCPP_WARN(LOGGER, name << " was not set, using default of " << default_value);
+      //return default_value;
+    //}
 
-    return static_cast<T>(params.params[name]);
+    //return static_cast<T>(params.params[name]);
   }
 };
 

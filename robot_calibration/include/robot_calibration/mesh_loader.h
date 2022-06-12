@@ -34,7 +34,7 @@ using MeshPtr = std::shared_ptr<shapes::Mesh>;
 class MeshLoader
 {
 public:
-  MeshLoader(urdf::Model& model);
+  MeshLoader(std::shared_ptr<urdf::Model> model);
 
   /**
    * @brief Get the collision mesh associated with a link in a URDF.
@@ -42,7 +42,7 @@ public:
   MeshPtr getCollisionMesh(const std::string& link_name);
 
 private:
-  urdf::Model model_;
+  std::shared_ptr<urdf::Model> model_;
   std::vector<std::string> link_names_;
   std::vector<MeshPtr> meshes_;
 };

@@ -26,7 +26,7 @@
 #include <robot_calibration/ceres/calibration_data_helpers.h>
 #include <robot_calibration/models/camera3d.h>
 #include <robot_calibration/models/chain.h>
-#include <robot_calibration_msgs/CalibrationData.h>
+#include <robot_calibration_msgs/msg/calibration_data.hpp>
 
 namespace robot_calibration
 {
@@ -52,7 +52,7 @@ struct Chain3dToPlane
    */
   Chain3dToPlane(ChainModel* chain_model,
                  CalibrationOffsetParser* offsets,
-                 robot_calibration_msgs::CalibrationData& data,
+                 robot_calibration_msgs::msg::CalibrationData& data,
                  double a, double b, double c, double d,
                  double scale)
   {
@@ -83,7 +83,7 @@ struct Chain3dToPlane
     offsets_->update(free_params[0]);
 
     // Project the camera observations
-    std::vector<geometry_msgs::PointStamped> chain_pts =
+    std::vector<geometry_msgs::msg::PointStamped> chain_pts =
         chain_model_->project(data_, *offsets_);
 
     // Compute residuals
@@ -102,7 +102,7 @@ struct Chain3dToPlane
    */
   static ceres::CostFunction* Create(ChainModel* a_model,
                                      CalibrationOffsetParser* offsets,
-                                     robot_calibration_msgs::CalibrationData& data,
+                                     robot_calibration_msgs::msg::CalibrationData& data,
                                      double a, double b, double c, double d,
                                      double scale)
   {
@@ -125,7 +125,7 @@ struct Chain3dToPlane
 
   ChainModel * chain_model_;
   CalibrationOffsetParser * offsets_;
-  robot_calibration_msgs::CalibrationData data_;
+  robot_calibration_msgs::msg::CalibrationData data_;
   double a_, b_, c_, d_;
   double scale_, denom_;
 };

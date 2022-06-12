@@ -27,7 +27,7 @@
 #include <robot_calibration/ceres/calibration_data_helpers.h>
 #include <robot_calibration/models/camera3d.h>
 #include <robot_calibration/models/chain.h>
-#include <robot_calibration_msgs/CalibrationData.h>
+#include <robot_calibration_msgs/msg/calibration_data.hpp>
 
 namespace robot_calibration
 {
@@ -49,7 +49,7 @@ struct Chain3dToChain3d
   Chain3dToChain3d(ChainModel* a_model,
                    ChainModel* b_model,
                    CalibrationOffsetParser* offsets,
-                   robot_calibration_msgs::CalibrationData& data)
+                   robot_calibration_msgs::msg::CalibrationData& data)
   {
     a_model_ = a_model;
     b_model_ = b_model;
@@ -71,9 +71,9 @@ struct Chain3dToChain3d
     offsets_->update(free_params[0]);
 
     // Project the observations into common base frame
-    std::vector<geometry_msgs::PointStamped> a_pts =
+    std::vector<geometry_msgs::msg::PointStamped> a_pts =
         a_model_->project(data_, *offsets_);
-    std::vector<geometry_msgs::PointStamped> b_pts =
+    std::vector<geometry_msgs::msg::PointStamped> b_pts =
         b_model_->project(data_, *offsets_);
 
     if (a_pts.size() != b_pts.size())
@@ -102,7 +102,7 @@ struct Chain3dToChain3d
   static ceres::CostFunction* Create(ChainModel* a_model,
                                      ChainModel* b_model,
                                      CalibrationOffsetParser* offsets,
-                                     robot_calibration_msgs::CalibrationData& data)
+                                     robot_calibration_msgs::msg::CalibrationData& data)
   {
     int index = getSensorIndex(data, a_model->getName());
     if (index == -1)
@@ -124,7 +124,7 @@ struct Chain3dToChain3d
   ChainModel * a_model_;
   ChainModel * b_model_;
   CalibrationOffsetParser * offsets_;
-  robot_calibration_msgs::CalibrationData data_;
+  robot_calibration_msgs::msg::CalibrationData data_;
 };
 
 }  // namespace robot_calibration

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Michael Ferguson
+ * Copyright (C) 2018-2022 Michael Ferguson
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@
 #ifndef ROBOT_CALIBRATION_CERES_CALIBRATION_DATA_HELPERS_H
 #define ROBOT_CALIBRATION_CERES_CALIBRATION_DATA_HELPERS_H
 
-#include <robot_calibration_msgs/CalibrationData.h>
+#include <robot_calibration_msgs/msg/calibration_data.hpp>
 
 namespace robot_calibration
 {
@@ -28,7 +28,7 @@ namespace robot_calibration
  *  @brief Determine which observation index corresponds to a particular sensor name
  */
 int getSensorIndex(
-  const robot_calibration_msgs::CalibrationData& msg,
+  const robot_calibration_msgs::msg::CalibrationData& msg,
   const std::string& sensor)
 {
   for (size_t i = 0; i < msg.observations.size(); i++)
@@ -45,7 +45,7 @@ int getSensorIndex(
  *  @brief  Determine if a sample of data has an observation from the desired sensor
  */
 bool hasSensor(
-  const robot_calibration_msgs::CalibrationData& msg,
+  const robot_calibration_msgs::msg::CalibrationData& msg,
   const std::string& sensor)
 {
   return getSensorIndex(msg, sensor) >= 0;

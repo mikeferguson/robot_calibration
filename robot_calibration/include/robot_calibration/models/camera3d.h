@@ -46,8 +46,8 @@ public:
   /**
    *  @brief Compute the updated positions of the observed points
    */
-  virtual std::vector<geometry_msgs::PointStamped> project(
-    const robot_calibration_msgs::CalibrationData& data,
+  virtual std::vector<geometry_msgs::msg::PointStamped> project(
+    const robot_calibration_msgs::msg::CalibrationData& data,
     const CalibrationOffsetParser& offsets);
 
   /**

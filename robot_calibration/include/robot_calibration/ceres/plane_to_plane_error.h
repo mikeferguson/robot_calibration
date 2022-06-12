@@ -26,7 +26,7 @@
 #include <robot_calibration/calibration/offset_parser.h>
 #include <robot_calibration/eigen_geometry.h>
 #include <robot_calibration/models/chain.h>
-#include <robot_calibration_msgs/CalibrationData.h>
+#include <robot_calibration_msgs/msg/calibration_data.hpp>
 
 namespace robot_calibration
 {
@@ -52,7 +52,7 @@ struct PlaneToPlaneError
   PlaneToPlaneError(ChainModel *model_a,
                     ChainModel *model_b,
                     CalibrationOffsetParser *offsets,
-                    robot_calibration_msgs::CalibrationData &data,
+                    robot_calibration_msgs::msg::CalibrationData &data,
                     double scale_normal, double scale_offset)
   {
     model_a_ = model_a;
@@ -77,7 +77,7 @@ struct PlaneToPlaneError
     offsets_->update(free_params[0]);
 
     // Project the first camera observations
-    std::vector<geometry_msgs::PointStamped> a_pts =
+    std::vector<geometry_msgs::msg::PointStamped> a_pts =
         model_a_->project(data_, *offsets_);
 
     // Get plane parameters for first set of points
@@ -87,7 +87,7 @@ struct PlaneToPlaneError
     getPlane(matrix_a, normal_a, d_a);
 
     // Project the second camera estimation
-    std::vector<geometry_msgs::PointStamped> b_pts =
+    std::vector<geometry_msgs::msg::PointStamped> b_pts =
         model_b_->project(data_, *offsets_);
 
     // Get plane parameters for second set of points
@@ -117,7 +117,7 @@ struct PlaneToPlaneError
   static ceres::CostFunction *Create(ChainModel *model_a,
                                      ChainModel *model_b,
                                      CalibrationOffsetParser *offsets,
-                                     robot_calibration_msgs::CalibrationData &data,
+                                     robot_calibration_msgs::msg::CalibrationData &data,
                                      double scale_normal, double scale_offset)
   {
     ceres::DynamicNumericDiffCostFunction <PlaneToPlaneError> *func;
@@ -132,7 +132,7 @@ struct PlaneToPlaneError
   ChainModel *model_a_;
   ChainModel *model_b_;
   CalibrationOffsetParser *offsets_;
-  robot_calibration_msgs::CalibrationData data_;
+  robot_calibration_msgs::msg::CalibrationData data_;
   double scale_normal_, scale_offset_;
 };
 

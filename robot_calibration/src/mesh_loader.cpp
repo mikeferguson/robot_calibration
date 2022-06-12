@@ -18,14 +18,13 @@
 
 #include <Eigen/Geometry>
 
-#include <ros/ros.h>
-#include <geometry_msgs/Point.h>
+#include <geometry_msgs/msg/point.hpp>
 #include <robot_calibration/mesh_loader.h>
 
 namespace robot_calibration
 {
 
-MeshLoader::MeshLoader(urdf::Model& model) : model_(model)
+MeshLoader::MeshLoader(std::shared_ptr<urdf::Model> model) : model_(model)
 {
 }
 
@@ -41,22 +40,22 @@ MeshPtr MeshLoader::getCollisionMesh(const std::string& link_name)
   }
 
   // Find the mesh resource path
-  urdf::LinkConstSharedPtr link = model_.getLink(link_name);
+  urdf::LinkConstSharedPtr link = model_->getLink(link_name);
   if (!link)
   {
-    ROS_ERROR("Cannot find %s in URDF", link_name.c_str());
+    //ROS_ERROR("Cannot find %s in URDF", link_name.c_str());
     return MeshPtr();
   }
 
   if (!link->collision->geometry)
   {
-    ROS_ERROR("%s does not have collision geometry description.", link_name.c_str());
+    //ROS_ERROR("%s does not have collision geometry description.", link_name.c_str());
     return MeshPtr();
   }
 
   if (link->collision->geometry->type != urdf::Geometry::MESH)
   {
-    ROS_ERROR("%s does not have mesh geometry", link_name.c_str());
+    //ROS_ERROR("%s does not have mesh geometry", link_name.c_str());
     return MeshPtr();
   }
 
@@ -72,7 +71,7 @@ MeshPtr MeshLoader::getCollisionMesh(const std::string& link_name)
   link_names_.push_back(link_name);
   meshes_.push_back(mesh);
 
-  ROS_INFO("Loaded %s with %u vertices", mesh_path.c_str(), mesh->vertex_count);
+  //ROS_INFO("Loaded %s with %u vertices", mesh_path.c_str(), mesh->vertex_count);
 
   //Eigen::Quaterniond quat();
   Eigen::Matrix3d rotation = Eigen::Quaterniond(link->collision->origin.rotation.w,

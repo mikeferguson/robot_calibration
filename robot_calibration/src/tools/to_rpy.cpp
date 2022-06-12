@@ -16,6 +16,7 @@
 
 // Author: Michael Ferguson
 
+#include <iostream>
 #include <stdio.h>
 #include <robot_calibration/models/chain.h>
 

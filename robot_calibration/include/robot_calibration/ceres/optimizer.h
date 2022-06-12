@@ -21,17 +21,17 @@
 #ifndef ROBOT_CALIBRATION_CERES_OPTIMIZER_H
 #define ROBOT_CALIBRATION_CERES_OPTIMIZER_H
 
+#include <memory>
 #include <ceres/ceres.h>
 
 #include <urdf/model.h>
 #include <kdl_parser/kdl_parser.hpp>
-#include <robot_calibration_msgs/CalibrationData.h>
+#include <robot_calibration_msgs/msg/calibration_data.hpp>
 #include <robot_calibration/mesh_loader.h>
 #include <robot_calibration/calibration/offset_parser.h>
 #include <robot_calibration/ceres/optimization_params.h>
 #include <robot_calibration/models/camera3d.h>
 #include <robot_calibration/models/chain.h>
-#include <boost/shared_ptr.hpp>
 #include <string>
 #include <map>
 
@@ -54,18 +54,18 @@ public:
    *        stdout.
    */
   int optimize(OptimizationParams& params,
-               std::vector<robot_calibration_msgs::CalibrationData> data,
+               std::vector<robot_calibration_msgs::msg::CalibrationData> data,
                bool progress_to_stdout = false);
 
   /**
    * @brief Returns the summary of the optimization last run.
    */
-  boost::shared_ptr<ceres::Solver::Summary> summary()
+  std::shared_ptr<ceres::Solver::Summary> summary()
   {
     return summary_;
   }
 
-  boost::shared_ptr<CalibrationOffsetParser> getOffsets()
+  std::shared_ptr<CalibrationOffsetParser> getOffsets()
   {
     return offsets_;
   }
@@ -88,17 +88,17 @@ public:
   std::vector<std::string> getCameraNames();
 
 private:
-  urdf::Model model_;
+  std::shared_ptr<urdf::Model> model_;
   std::string root_frame_;
   std::string led_frame_;
   KDL::Tree tree_;
 
-  boost::shared_ptr<MeshLoader> mesh_loader_;
+  std::shared_ptr<MeshLoader> mesh_loader_;
 
   std::map<std::string, ChainModel*> models_;
 
-  boost::shared_ptr<CalibrationOffsetParser> offsets_;
-  boost::shared_ptr<ceres::Solver::Summary> summary_;
+  std::shared_ptr<CalibrationOffsetParser> offsets_;
+  std::shared_ptr<ceres::Solver::Summary> summary_;
 
   int num_params_, num_residuals_;
 };
