@@ -16,10 +16,12 @@
 
 // Author: Michael Ferguson
 
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 #include <urdf/model.h>
 #include <robot_calibration/mesh_loader.h>
-#include <visualization_msgs/MarkerArray.h>
+#include <visualization_msgs/msg/marker_array.hpp>
+
+static const rclcpp::Logger LOGGER = rclcpp::get_logger("robot_calibration");
 
 int main(int argc, char** argv)
 {
@@ -35,28 +37,26 @@ int main(int argc, char** argv)
   std::string link_name = argv[1];
 
   // Start up ROS
-  ros::init(argc, argv, "robot_calibration_mesh_viz");
-  ros::NodeHandle nh("~");
+  rclcpp::init(argc, argv);
+  rclcpp::Node node("robot_calibration_mesh_viz");
 
   // Setup publisher
-  ros::Publisher pub = nh.advertise<visualization_msgs::MarkerArray>("data", 10);
+  rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr pub;
+  pub = node.create_publisher<visualization_msgs::msg::MarkerArray>("data", 10);
 
   // Get robot description
-  std::string robot_description;
-  if (!nh.getParam("/robot_description", robot_description))
-  {
-    ROS_FATAL("robot_description not set!");
-    return -1;
-  }
+  std::string robot_description =
+    node.declare_parameter<std::string>("robot_description", "");
 
   // Load URDF and root link name
-  urdf::Model model;
-  if (!model.initString(robot_description))
+  std::shared_ptr<urdf::Model> model;
+  model = std::make_shared<urdf::Model>();
+  if (!model->initString(robot_description))
   {
-    ROS_FATAL("Failed to parse URDF.");
+    RCLCPP_FATAL(LOGGER, "Failed to parse URDF.");
     return -1;
   }
-  std::string root_name = model.getRoot()->name;
+  std::string root_name = model->getRoot()->name;
 
   // Create mesh loader
   robot_calibration::MeshLoader loader(model);
@@ -65,18 +65,18 @@ int main(int argc, char** argv)
   robot_calibration::MeshPtr mesh = loader.getCollisionMesh(link_name);
   if (!mesh)
   {
-    ROS_FATAL("Unable to load mesh");
+    RCLCPP_FATAL(LOGGER, "Unable to load mesh");
     return -1;
   }
 
   // Publish vertices as marker array
-  visualization_msgs::MarkerArray markers;
+  visualization_msgs::msg::MarkerArray markers;
   for (size_t t = 0; t < mesh->triangle_count; ++t)
   {
     // Create marker
-    visualization_msgs::Marker msg;
+    visualization_msgs::msg::Marker msg;
     msg.header.frame_id = link_name;
-    msg.header.stamp = ros::Time::now();
+    //msg.header.stamp = ros::Time::now();
     msg.ns = link_name;
     msg.id = t;
     msg.type = msg.LINE_STRIP;
@@ -92,15 +92,15 @@ int main(int argc, char** argv)
     int v1_idx = mesh->triangles[(3 * t) + 0];
     int v2_idx = mesh->triangles[(3 * t) + 1];
     int v3_idx = mesh->triangles[(3 * t) + 2];
-    geometry_msgs::Point v1;
+    geometry_msgs::msg::Point v1;
     v1.x = mesh->vertices[(3 * v1_idx) + 0];
     v1.y = mesh->vertices[(3 * v1_idx) + 1];
     v1.z = mesh->vertices[(3 * v1_idx) + 2];
-    geometry_msgs::Point v2;
+    geometry_msgs::msg::Point v2;
     v2.x = mesh->vertices[(3 * v2_idx) + 0];
     v2.y = mesh->vertices[(3 * v2_idx) + 1];
     v2.z = mesh->vertices[(3 * v2_idx) + 2];
-    geometry_msgs::Point v3;
+    geometry_msgs::msg::Point v3;
     v3.x = mesh->vertices[(3 * v3_idx) + 0];
     v3.y = mesh->vertices[(3 * v3_idx) + 1];
     v3.z = mesh->vertices[(3 * v3_idx) + 2];
@@ -113,10 +113,10 @@ int main(int argc, char** argv)
     markers.markers.push_back(msg);
   }
 
-  while (ros::ok())
+  while (rclcpp::ok())
   {
-    pub.publish(markers);
-    ros::Duration(1.0).sleep();
+    pub->publish(markers);
+    rclcpp::sleep_for(std::chrono::seconds(1));
   }
 
   return 0;

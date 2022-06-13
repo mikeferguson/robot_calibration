@@ -18,26 +18,24 @@
 
 // Author: Michael Ferguson
 
-#include <boost/thread/recursive_mutex.hpp>
-
-#include <ros/ros.h>
-#include <sensor_msgs/Imu.h>
-#include <sensor_msgs/LaserScan.h>
-#include <nav_msgs/Odometry.h>
+#include <rclcpp/rclcpp.hpp>
+#include <geometry_msgs/msg/twist.hpp>
+#include <sensor_msgs/msg/imu.hpp>
+#include <sensor_msgs/msg/laser_scan.hpp>
+#include <nav_msgs/msg/odometry.hpp>
 
 namespace robot_calibration
 {
 /**
  * @brief Class for moving the base around and calibrating imu and odometry.
  */
-class BaseCalibration
+class BaseCalibration : public rclcpp::Node
 {
 public:
   /**
    * @brief Create a base calibration instance.
-   * @param n NodeHandle at global scope - will subscribe to odom, imu, and base_scan in that namespace.
    */
-  BaseCalibration(ros::NodeHandle& n);
+  BaseCalibration();
 
   /** @brief Clear any received messages. */
   void clearMessages();
@@ -59,9 +57,9 @@ public:
   bool spin(double velocity, int rotations, bool verbose = false);
 
 private:
-  void odometryCallback(const nav_msgs::Odometry::Ptr& odom);
-  void imuCallback(const sensor_msgs::Imu::Ptr& imu);
-  void laserCallback(const sensor_msgs::LaserScan::Ptr& scan);
+  void odometryCallback(const nav_msgs::msg::Odometry::ConstSharedPtr& odom);
+  void imuCallback(const sensor_msgs::msg::Imu::ConstSharedPtr& imu);
+  void laserCallback(const sensor_msgs::msg::LaserScan::ConstSharedPtr& scan);
 
   /** @brief Send a rotational velocity command. **/
   void sendVelocityCommand(double vel);
@@ -69,19 +67,19 @@ private:
   /** @brief Reset the odom/imu counters. */
   void resetInternal();
 
-  ros::Publisher cmd_pub_;
+  rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr cmd_pub_;
 
-  ros::Subscriber odom_subscriber_;
-  ros::Subscriber imu_subscriber_;
-  ros::Subscriber scan_subscriber_;
+  rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_subscriber_;
+  rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr imu_subscriber_;
+  rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr scan_subscriber_;
 
-  ros::Time last_odom_stamp_;
+  rclcpp::Time last_odom_stamp_;
   double odom_angle_;
 
-  ros::Time last_imu_stamp_;
+  rclcpp::Time last_imu_stamp_;
   double imu_angle_;
 
-  ros::Time last_scan_stamp_;
+  rclcpp::Time last_scan_stamp_;
   double scan_angle_, scan_r2_, scan_dist_, r2_tolerance_;
 
   double min_angle_, max_angle_;
@@ -92,7 +90,7 @@ private:
   std::vector<double> imu_;
   std::vector<double> odom_;
 
-  boost::recursive_mutex data_mutex_;
+  std::recursive_mutex data_mutex_;
   bool ready_;
 };
 

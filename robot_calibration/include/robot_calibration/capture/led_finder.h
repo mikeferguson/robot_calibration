@@ -1,4 +1,5 @@
 /*
+ * Copyright (C) 2022 Michael Ferguson
  * Copyright (C) 2015 Fetch Robotics Inc.
  * Copyright (C) 2013-2014 Unbounded Robotics Inc.
  *
@@ -20,17 +21,17 @@
 #ifndef ROBOT_CALIBRATION_CAPTURE_LED_FINDER_H
 #define ROBOT_CALIBRATION_CAPTURE_LED_FINDER_H
 
-#include <ros/ros.h>
+#include <memory>
+#include <rclcpp/rclcpp.hpp>
+#include <rclcpp_action/rclcpp_action.hpp>
 #include <robot_calibration/capture/depth_camera.h>
 #include <robot_calibration/plugins/feature_finder.h>
 
-#include <tf/transform_listener.h>
-#include <sensor_msgs/Image.h>
-#include <sensor_msgs/PointCloud2.h>
-#include <geometry_msgs/PointStamped.h>
-#include <robot_calibration_msgs/CalibrationData.h>
-#include <robot_calibration_msgs/GripperLedCommandAction.h>
-#include <actionlib/client/simple_action_client.h>
+#include <sensor_msgs/msg/image.hpp>
+#include <sensor_msgs/msg/point_cloud2.hpp>
+#include <geometry_msgs/msg/point_stamped.hpp>
+#include <robot_calibration_msgs/msg/calibration_data.hpp>
+#include <robot_calibration_msgs/action/gripper_led_command.hpp>
 
 namespace robot_calibration
 {
@@ -41,7 +42,6 @@ class LedFinder : public FeatureFinder
   /** @brief Internally used within LED finder to track each of several LEDs. */
   struct CloudDifferenceTracker
   {
-
     CloudDifferenceTracker(std::string frame, double x, double y, double z);
 
     /**
@@ -54,25 +54,25 @@ class LedFinder : public FeatureFinder
      * @param weight Whether the change between frames should increase
      *        or decrease the LED point values. Should be +/- 1 typically.
      */
-    bool process(sensor_msgs::PointCloud2& cloud,
-                 sensor_msgs::PointCloud2& prev,
-                 geometry_msgs::Point& led_point,
+    bool process(sensor_msgs::msg::PointCloud2& cloud,
+                 sensor_msgs::msg::PointCloud2& prev,
+                 geometry_msgs::msg::Point& led_point,
                  double max_distance,
                  double weight);
 
     // Have we found the LED?
-    bool isFound(const sensor_msgs::PointCloud2& cloud,
+    bool isFound(const sensor_msgs::msg::PointCloud2& cloud,
                  double threshold);
 
     // Gives a refined centroid using multiple points
-    bool getRefinedCentroid(const sensor_msgs::PointCloud2& cloud,
-                            geometry_msgs::PointStamped& centroid);
+    bool getRefinedCentroid(const sensor_msgs::msg::PointCloud2& cloud,
+                            geometry_msgs::msg::PointStamped& centroid);
 
     // Reset the tracker
     void reset(size_t height, size_t width);
 
     // Get an image of tracker status
-    sensor_msgs::Image getImage();
+    sensor_msgs::msg::Image getImage();
 
     std::vector<double> diff_;
     double max_;
@@ -80,32 +80,35 @@ class LedFinder : public FeatureFinder
     int count_;
     size_t height_, width_;
     std::string frame_;  // frame of led coordinates
-    geometry_msgs::Point point_;  //coordinates of led this is tracking
+    geometry_msgs::msg::Point point_;  //coordinates of led this is tracking
   };
 
-  typedef actionlib::SimpleActionClient<robot_calibration_msgs::GripperLedCommandAction> LedClient;
+  using LedAction = robot_calibration_msgs::action::GripperLedCommand;
+  using LedGoal = rclcpp_action::ServerGoalHandle<LedAction>;
 
 public:
   LedFinder();
-  bool init(const std::string& name, ros::NodeHandle & n);
-  bool find(robot_calibration_msgs::CalibrationData * msg);
+  bool init(const std::string& name,
+            std::shared_ptr<tf2_ros::Buffer> buffer,
+            rclcpp::Node::WeakPtr node);
+  bool find(robot_calibration_msgs::msg::CalibrationData * msg);
 
 private:
-  void cameraCallback(const sensor_msgs::PointCloud2::ConstPtr& cloud);
+  void cameraCallback(sensor_msgs::msg::PointCloud2::ConstSharedPtr cloud);
   bool waitForCloud();
 
-  ros::Subscriber subscriber_;  /// Incoming sensor_msgs::PointCloud2
-  ros::Publisher publisher_;  /// Outgoing sensor_msgs::PointCloud2
-  boost::scoped_ptr<LedClient> client_;
+  rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr subscriber_;
+  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr publisher_;
+  rclcpp_action::Client<LedAction>::SharedPtr client_;
+  rclcpp::Clock::SharedPtr clock_;
 
   bool waiting_;
-  sensor_msgs::PointCloud2 cloud_;
+  sensor_msgs::msg::PointCloud2 cloud_;
 
-  std::vector<boost::shared_ptr<ros::Publisher> > tracker_publishers_;
+  std::vector<rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr> tracker_publishers_;
   std::vector<CloudDifferenceTracker> trackers_;
   std::vector<uint8_t> codes_;
 
-  tf::TransformListener listener_;
   DepthCameraInfoManager depth_camera_manager_;
 
   /*

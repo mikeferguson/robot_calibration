@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Michael Ferguson
+ * Copyright (C) 2018-2022 Michael Ferguson
  * Copyright (C) 2015 Fetch Robotics Inc.
  * Copyright (C) 2013-2014 Unbounded Robotics Inc.
  *
@@ -21,10 +21,10 @@
 #ifndef ROBOT_CALIBRATION_CAPTURE_CHECKERBOARD_FINDER_H
 #define ROBOT_CALIBRATION_CAPTURE_CHECKERBOARD_FINDER_H
 
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 #include <robot_calibration/capture/depth_camera.h>
 #include <robot_calibration/plugins/feature_finder.h>
-#include <robot_calibration_msgs/CalibrationData.h>
+#include <robot_calibration_msgs/msg/calibration_data.hpp>
 
 #include <opencv2/calib3d/calib3d.hpp>
 #include <cv_bridge/cv_bridge.h>
@@ -39,20 +39,23 @@ class CheckerboardFinder : public FeatureFinder
 {
 public:
   CheckerboardFinder();
-  bool init(const std::string& name, ros::NodeHandle & n);
-  bool find(robot_calibration_msgs::CalibrationData * msg);
+  bool init(const std::string& name,
+            std::shared_ptr<tf2_ros::Buffer> buffer,
+            rclcpp::Node::WeakPtr node);
+  bool find(robot_calibration_msgs::msg::CalibrationData * msg);
 
 private:
-  bool findInternal(robot_calibration_msgs::CalibrationData * msg);
+  bool findInternal(robot_calibration_msgs::msg::CalibrationData * msg);
 
-  void cameraCallback(const sensor_msgs::PointCloud2& cloud);
+  void cameraCallback(sensor_msgs::msg::PointCloud2::ConstSharedPtr cloud);
   bool waitForCloud();
 
-  ros::Subscriber subscriber_;  /// Incoming sensor_msgs::PointCloud2
-  ros::Publisher publisher_;   /// Outgoing sensor_msgs::PointCloud2
+  rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr subscriber_;
+  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr publisher_;
+  rclcpp::Clock::SharedPtr clock_;
 
   bool waiting_;
-  sensor_msgs::PointCloud2 cloud_;
+  sensor_msgs::msg::PointCloud2 cloud_;
   DepthCameraInfoManager depth_camera_manager_;
 
   /*

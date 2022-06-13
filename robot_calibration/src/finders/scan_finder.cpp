@@ -19,12 +19,11 @@
 // Author: Michael Ferguson
 
 #include <math.h>
-#include <pluginlib/class_list_macros.h>
 #include <robot_calibration/capture/scan_finder.h>
-#include <sensor_msgs/point_cloud2_iterator.h>
-#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <sensor_msgs/point_cloud2_iterator.hpp>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 
-PLUGINLIB_EXPORT_CLASS(robot_calibration::ScanFinder, robot_calibration::FeatureFinder)
+static const rclcpp::Logger LOGGER = rclcpp::get_logger("scan_finder");
 
 namespace robot_calibration
 {
@@ -34,63 +33,72 @@ const unsigned Y = 1;
 const unsigned Z = 2;
 
 ScanFinder::ScanFinder() :
-  tf_listener_(tf_buffer_), waiting_(false)
+  waiting_(false)
 {
 }
 
 bool ScanFinder::init(const std::string& name,
-                       ros::NodeHandle & nh)
+                      std::shared_ptr<tf2_ros::Buffer> buffer,
+                      rclcpp::Node::WeakPtr weak)
 {
-  if (!FeatureFinder::init(name, nh))
+  if (!FeatureFinder::init(name, buffer, weak))
+  {
     return false;
+  }
+
+  auto node = weak.lock();
+  if (!node)
+  {
+    return false;
+  }
+
+  clock_ = node->get_clock();
 
   // We subscribe to a LaserScan
   std::string topic_name;
-  nh.param<std::string>("topic", topic_name, "/scan");
-  subscriber_ = nh.subscribe(topic_name,
-                             1,
-                             &ScanFinder::scanCallback,
-                             this);
+  topic_name = node->declare_parameter<std::string>(name + ".topic", name + "/scan");
+  subscriber_ = node->create_subscription<sensor_msgs::msg::LaserScan>(
+    topic_name, 1, std::bind(&ScanFinder::scanCallback, this, std::placeholders::_1));
 
   // Name of the sensor model that will be used during optimization
-  nh.param<std::string>("sensor_name", laser_sensor_name_, "laser");
+  laser_sensor_name_ = node->declare_parameter<std::string>("sensor_name", "laser");
 
   // Frame to transform point cloud into before applying limits below
   //   if specified as "none", cloud will be processed in sensor frame
-  nh.param<std::string>("transform_frame", transform_frame_, "base_link");
+  transform_frame_ = node->declare_parameter<std::string>("transform_frame", "base_link");
 
   // It is assumed that the laser scanner operates in the X,Y plane
   // Valid points must lie within this box, in the laser frame
-  nh.param<double>("min_x", min_x_, -2.0);
-  nh.param<double>("max_x", max_x_, 2.0);
-  nh.param<double>("min_y", min_y_, -2.0);
-  nh.param<double>("max_y", max_y_, 2.0);
+  min_x_ = node->declare_parameter<double>("min_x", -2.0);
+  max_x_ = node->declare_parameter<double>("max_x", 2.0);
+  min_y_ = node->declare_parameter<double>("min_y", -2.0);
+  max_y_ = node->declare_parameter<double>("max_y", 2.0);
 
   // Repeat points in the Z plane a number of times at fixed distance
-  nh.param<int>("z_repeats", z_repeats_, 10);
-  nh.param<double>("z_offset", z_offset_, 0.1);
+  z_repeats_ = node->declare_parameter<int>("z_repeats", 10);
+  z_offset_ = node->declare_parameter<double>("z_offset", 0.1);
 
   // Should we include debug image/cloud in observations
-  nh.param<bool>("debug", output_debug_, false);
+  output_debug_ = node->declare_parameter<bool>("debug", false);
 
   // Publish the observation as a PointCloud2
-  publisher_ = nh.advertise<sensor_msgs::PointCloud2>(getName() + "_points", 10);
+  publisher_ = node->create_publisher<sensor_msgs::msg::PointCloud2>(getName() + "_points", 10);
 
   return true;
 }
 
-void ScanFinder::scanCallback(const sensor_msgs::LaserScan& scan)
+void ScanFinder::scanCallback(sensor_msgs::msg::LaserScan::ConstSharedPtr scan)
 {
   if (waiting_)
   {
-    scan_ = scan;
+    scan_ = *scan;
     waiting_ = false;
   }
 }
 
 bool ScanFinder::waitForScan()
 {
-  ros::Duration(1/10.0).sleep();
+  rclcpp::sleep_for(std::chrono::milliseconds(100));
 
   waiting_ = true;
   int count = 250;
@@ -101,23 +109,23 @@ bool ScanFinder::waitForScan()
       // success
       return true;
     }
-    ros::Duration(0.01).sleep();
-    ros::spinOnce();
+    rclcpp::sleep_for(std::chrono::milliseconds(10));
+    // TODO rclcpp::spin_some(this->shared_from_this());
   }
-  ROS_ERROR("Failed to get scan");
+  RCLCPP_ERROR(LOGGER, "Failed to get scan");
   return !waiting_;
 }
 
-bool ScanFinder::find(robot_calibration_msgs::CalibrationData * msg)
+bool ScanFinder::find(robot_calibration_msgs::msg::CalibrationData * msg)
 {
   if (!waitForScan())
   {
-    ROS_ERROR("No laser scan data");
+    RCLCPP_ERROR(LOGGER, "No laser scan data");
     return false;
   }
 
   // Extract the points corresponding to the line
-  sensor_msgs::PointCloud2 cloud;
+  sensor_msgs::msg::PointCloud2 cloud;
   extractPoints(cloud);
   extractObservation(cloud, msg);
 
@@ -125,14 +133,14 @@ bool ScanFinder::find(robot_calibration_msgs::CalibrationData * msg)
   return true;
 }
 
-void ScanFinder::extractPoints(sensor_msgs::PointCloud2& cloud)
+void ScanFinder::extractPoints(sensor_msgs::msg::PointCloud2& cloud)
 {
   bool do_transform = transform_frame_ != "none";
 
   // Reset cloud
   cloud.width = 0;
   cloud.height = 0;
-  cloud.header.stamp = ros::Time::now();
+  cloud.header.stamp = clock_->now();
   cloud.header.frame_id = do_transform ? transform_frame_ : scan_.header.frame_id;
 
   // Setup cloud to be XYZ
@@ -157,7 +165,7 @@ void ScanFinder::extractPoints(sensor_msgs::PointCloud2& cloud)
     double angle = scan_.angle_min + (i * scan_.angle_increment);
 
     // Create point (in sensor frame)
-    geometry_msgs::PointStamped p;
+    geometry_msgs::msg::PointStamped p;
     p.point.x = cos(angle) * scan_.ranges[i];
     p.point.y = sin(angle) * scan_.ranges[i];
     p.point.z = 0.0;
@@ -171,20 +179,20 @@ void ScanFinder::extractPoints(sensor_msgs::PointCloud2& cloud)
     // Get transform (if any)
     for (int z = 0; z < z_repeats_; ++z)
     {
-      geometry_msgs::PointStamped p_out;
+      geometry_msgs::msg::PointStamped p_out;
       if (do_transform)
       {
-        p.header.stamp = ros::Time(0);
+        //p.header.stamp = ros::Time(0);
         p.header.frame_id = scan_.header.frame_id;
         p.point.z = z * z_offset_;
         try
         {
-          tf_buffer_.transform(p, p_out, transform_frame_);
+          tf2_buffer_->transform(p, p_out, transform_frame_);
         }
         catch (tf2::TransformException& ex)
         {
-          ROS_ERROR("%s", ex.what());
-          ros::Duration(1.0).sleep();
+          RCLCPP_ERROR(LOGGER, "%s", ex.what());
+          rclcpp::sleep_for(std::chrono::seconds(1));
           continue;
         }
       }
@@ -206,22 +214,22 @@ void ScanFinder::extractPoints(sensor_msgs::PointCloud2& cloud)
   cloud.width  = line_point_count;
 }
 
-void ScanFinder::extractObservation(const sensor_msgs::PointCloud2& cloud,
-                                    robot_calibration_msgs::CalibrationData * msg)
+void ScanFinder::extractObservation(const sensor_msgs::msg::PointCloud2& cloud,
+                                    robot_calibration_msgs::msg::CalibrationData * msg)
 {
   if (static_cast<int>(cloud.width) == 0)
   {
-    ROS_WARN("No points in observation, skipping");
+    RCLCPP_WARN(LOGGER, "No points in observation, skipping");
     return;
   }
 
-  ROS_INFO_STREAM("Got " << cloud.width << " points for observation");
+  RCLCPP_INFO(LOGGER, "Got %d points for observation", cloud.width);
 
   // Create PointCloud2 to publish
-  sensor_msgs::PointCloud2 viz_cloud;
+  sensor_msgs::msg::PointCloud2 viz_cloud;
   viz_cloud.width = 0;
   viz_cloud.height = 0;
-  viz_cloud.header.stamp = ros::Time::now();
+  viz_cloud.header.stamp = clock_->now();
   viz_cloud.header.frame_id = cloud.header.frame_id;
   sensor_msgs::PointCloud2Modifier cloud_mod(viz_cloud);
   cloud_mod.setPointCloud2FieldsByString(1, "xyz");
@@ -238,7 +246,7 @@ void ScanFinder::extractObservation(const sensor_msgs::PointCloud2& cloud,
   for (size_t i = 0; i < cloud.width; ++i)
   {
     // Get 3d point
-    geometry_msgs::PointStamped rgbd;
+    geometry_msgs::msg::PointStamped rgbd;
     rgbd.point.x = (xyz + i)[X];
     rgbd.point.y = (xyz + i)[Y];
     rgbd.point.z = (xyz + i)[Z];
@@ -260,7 +268,10 @@ void ScanFinder::extractObservation(const sensor_msgs::PointCloud2& cloud,
   }
 
   // Publish debug info
-  publisher_.publish(viz_cloud);
+  publisher_->publish(viz_cloud);
 }
 
 }  // namespace robot_calibration
+
+#include <pluginlib/class_list_macros.hpp>
+PLUGINLIB_EXPORT_CLASS(robot_calibration::ScanFinder, robot_calibration::FeatureFinder)

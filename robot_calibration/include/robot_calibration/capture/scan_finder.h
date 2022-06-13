@@ -18,11 +18,10 @@
 #ifndef ROBOT_CALIBRATION_CAPTURE_SCAN_FINDER_H
 #define ROBOT_CALIBRATION_CAPTURE_SCAN_FINDER_H
 
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 #include <robot_calibration/plugins/feature_finder.h>
-#include <robot_calibration_msgs/CalibrationData.h>
-#include <sensor_msgs/LaserScan.h>
-#include <tf2_ros/transform_listener.h>
+#include <robot_calibration_msgs/msg/calibration_data.hpp>
+#include <sensor_msgs/msg/laser_scan.hpp>
 
 namespace robot_calibration
 {
@@ -37,14 +36,16 @@ class ScanFinder : public FeatureFinder
 public:
   ScanFinder();
   virtual ~ScanFinder() = default;
-  virtual bool init(const std::string& name, ros::NodeHandle & n);
-  virtual bool find(robot_calibration_msgs::CalibrationData * msg);
+  virtual bool init(const std::string& name,
+                    std::shared_ptr<tf2_ros::Buffer> buffer,
+                    rclcpp::Node::WeakPtr node);
+  virtual bool find(robot_calibration_msgs::msg::CalibrationData * msg);
 
 protected:
   /**
    * @brief ROS callback - updates scan_ and resets waiting_ to false
    */
-  virtual void scanCallback(const sensor_msgs::LaserScan& scan);
+  virtual void scanCallback(sensor_msgs::msg::LaserScan::ConstSharedPtr scan);
 
   /**
    * @brief Wait until a new scan has arrived
@@ -54,22 +55,21 @@ protected:
   /**
    * @brief Extract a point cloud from laser scan points that meet criteria
    */
-  void extractPoints(sensor_msgs::PointCloud2& cloud);
+  void extractPoints(sensor_msgs::msg::PointCloud2& cloud);
 
   /**
    * @brief Extract the point cloud into a calibration message.
    */
-  void extractObservation(const sensor_msgs::PointCloud2& cloud,
-                          robot_calibration_msgs::CalibrationData * msg);
+  void extractObservation(const sensor_msgs::msg::PointCloud2& cloud,
+                          robot_calibration_msgs::msg::CalibrationData * msg);
 
-  ros::Subscriber subscriber_;
-  ros::Publisher publisher_;
+  rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr subscriber_;
+  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr publisher_;
 
-  tf2_ros::Buffer tf_buffer_;
-  tf2_ros::TransformListener tf_listener_;
+  rclcpp::Clock::SharedPtr clock_;
 
   bool waiting_;
-  sensor_msgs::LaserScan scan_;
+  sensor_msgs::msg::LaserScan scan_;
 
   std::string laser_sensor_name_;
   double min_x_;

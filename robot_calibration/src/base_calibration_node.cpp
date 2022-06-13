@@ -20,29 +20,16 @@
 
 #include <cmath>
 #include <fstream>
-#include <boost/thread/recursive_mutex.hpp>
-
-#include <ros/ros.h>
-#include <geometry_msgs/Twist.h>
-#include <sensor_msgs/Imu.h>
-#include <sensor_msgs/LaserScan.h>
-#include <nav_msgs/Odometry.h>
 #include "robot_calibration/calibration/base_calibration.h"
 
 int main(int argc, char** argv)
 {
-  ros::init(argc, argv,"base_calibration_node");
-  ros::NodeHandle nh;
+  rclcpp::init(argc, argv);
 
-  // For callbacks
-  ros::AsyncSpinner spinner(1);
-  spinner.start();
-
-  robot_calibration::BaseCalibration b(nh);
+  robot_calibration::BaseCalibration b;
   b.clearMessages();
 
-  bool verbose = false;
-  nh.param<bool>("verbose", verbose, verbose);
+  bool verbose = b.declare_parameter<bool>("verbose", false);
 
   // Rotate at several different speeds
   b.spin(0.5, 1, verbose);
@@ -72,6 +59,5 @@ int main(int argc, char** argv)
     std::cout << cal;
   }
 
-  spinner.stop();
   return 0;
 }

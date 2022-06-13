@@ -1,4 +1,5 @@
 /*
+ * Copyright (C) 2022 Michael Ferguson
  * Copyright (C) 2015-2016 Fetch Robotics Inc.
  * Copyright (C) 2013-2014 Unbounded Robotics Inc.
  *
@@ -20,10 +21,10 @@
 #ifndef ROBOT_CALIBRATION_CAPTURE_DEPTH_CAMERA_H
 #define ROBOT_CALIBRATION_CAPTURE_DEPTH_CAMERA_H
 
-#include <ros/ros.h>
-#include <sensor_msgs/CameraInfo.h>
-#include <robot_calibration_msgs/CalibrationData.h>
-#include <robot_calibration_msgs/ExtendedCameraInfo.h>
+#include <rclcpp/rclcpp.hpp>
+#include <sensor_msgs/msg/camera_info.hpp>
+#include <robot_calibration_msgs/msg/calibration_data.hpp>
+#include <robot_calibration_msgs/msg/extended_camera_info.hpp>
 
 namespace robot_calibration
 {
@@ -35,26 +36,24 @@ public:
   DepthCameraInfoManager() : camera_info_valid_(false) {}
   virtual ~DepthCameraInfoManager() {}
 
-  bool init(ros::NodeHandle& n)
+  bool init(const std::string& name, rclcpp::Node::WeakPtr weak_node, const rclcpp::Logger& logger)
   {
-    std::string topic_name;
-    n.param<std::string>("camera_info_topic", topic_name, "/head_camera/depth/camera_info");
+    auto node = weak_node.lock();
+    if (!node)
+    {
+      return false;
+    }
 
-    camera_info_subscriber_ = n.subscribe(topic_name,
-                                          1,
-                                          &DepthCameraInfoManager::cameraInfoCallback,
-                                          this);
+    std::string topic_name =
+      node->declare_parameter<std::string>(name + ".camera_info_topic", "/head_camera/depth/camera_info");
+    camera_info_subscriber_ = node->create_subscription<sensor_msgs::msg::CameraInfo>(
+      topic_name, 1, std::bind(&DepthCameraInfoManager::cameraInfoCallback, this, std::placeholders::_1));
 
     // Get parameters of drivers
-    std::string driver_name;
-    n.param<std::string>("camera_driver", driver_name, "/head_camera/driver");
-    if (!n.getParam(driver_name+"/z_offset_mm", z_offset_mm_) ||
-        !n.getParam(driver_name+"/z_scaling", z_scaling_))
-    {
-      ROS_ERROR("%s is not set, are drivers running?",driver_name.c_str());
-      z_offset_mm_ = 0;
-      z_scaling_ = 1;
-    }
+    std::string driver_name =
+      node->declare_parameter<std::string>(name + ".camera_driver", "/head_camera/driver");
+    z_offset_mm_ = node->declare_parameter<int>(driver_name + "/z_offset_mm", 0);
+    z_scaling_ = node->declare_parameter<double>(driver_name + "/z_scaling", 1.0);
 
     // Wait for camera_info
     int count = 25;
@@ -64,17 +63,17 @@ public:
       {
         return true;
       }
-      ros::Duration(0.1).sleep();
-      ros::spinOnce();
+      rclcpp::sleep_for(std::chrono::milliseconds(100));
+      //ros::spinOnce();
     }
 
-    ROS_WARN("CameraInfo receive timed out.");
+    RCLCPP_WARN(logger, "CameraInfo receive timed out.");
     return false;
   }
 
-  robot_calibration_msgs::ExtendedCameraInfo getDepthCameraInfo()
+  robot_calibration_msgs::msg::ExtendedCameraInfo getDepthCameraInfo()
   {
-    robot_calibration_msgs::ExtendedCameraInfo info;
+    robot_calibration_msgs::msg::ExtendedCameraInfo info;
     info.camera_info = *camera_info_ptr_;
     info.parameters.resize(2);
     info.parameters[0].name = "z_offset_mm";
@@ -85,16 +84,16 @@ public:
   }
 
 private:
-  void cameraInfoCallback(const sensor_msgs::CameraInfo::Ptr camera_info)
+  void cameraInfoCallback(sensor_msgs::msg::CameraInfo::ConstSharedPtr camera_info)
   {
     camera_info_ptr_ = camera_info;
     camera_info_valid_ = true;
   }
 
-  ros::Subscriber camera_info_subscriber_;
+  rclcpp::Subscription<sensor_msgs::msg::CameraInfo>::SharedPtr camera_info_subscriber_;
   bool camera_info_valid_;
 
-  sensor_msgs::CameraInfo::Ptr camera_info_ptr_;
+  sensor_msgs::msg::CameraInfo::ConstSharedPtr camera_info_ptr_;
 
   double z_offset_mm_;
   double z_scaling_;

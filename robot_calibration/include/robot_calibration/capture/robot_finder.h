@@ -18,7 +18,7 @@
 #ifndef ROBOT_CALIBRATION_CAPTURE_ROBOT_FINDER_H
 #define ROBOT_CALIBRATION_CAPTURE_ROBOT_FINDER_H
 
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 #include <robot_calibration/capture/plane_finder.h>
 
 namespace robot_calibration
@@ -29,15 +29,17 @@ class RobotFinder : public PlaneFinder
 public:
   RobotFinder();
   virtual ~RobotFinder() = default;
-  virtual bool init(const std::string& name, ros::NodeHandle & n);
-  virtual bool find(robot_calibration_msgs::CalibrationData * msg);
+  virtual bool init(const std::string& name,
+                   std::shared_ptr<tf2_ros::Buffer> buffer,
+                   rclcpp::Node::WeakPtr weak_node);
+  virtual bool find(robot_calibration_msgs::msg::CalibrationData * msg);
 
 protected:
   // Observation name for robot points
   std::string robot_sensor_name_;
 
   // Publisher for robot points debugging
-  ros::Publisher robot_publisher_;
+  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr robot_publisher_;
 
   double min_robot_x_;
   double max_robot_x_;

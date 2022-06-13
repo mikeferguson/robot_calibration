@@ -21,13 +21,12 @@
 #include <math.h>
 #include <stdlib.h>
 
-#include <pluginlib/class_list_macros.h>
 #include <robot_calibration/capture/plane_finder.h>
 #include <robot_calibration/eigen_geometry.h>
-#include <sensor_msgs/point_cloud2_iterator.h>
-#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <sensor_msgs/point_cloud2_iterator.hpp>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 
-PLUGINLIB_EXPORT_CLASS(robot_calibration::PlaneFinder, robot_calibration::FeatureFinder)
+static const rclcpp::Logger LOGGER = rclcpp::get_logger("plane_finder");
 
 namespace robot_calibration
 {
@@ -37,9 +36,9 @@ const unsigned Y = 1;
 const unsigned Z = 2;
 
 // Helper function to sample points from a cloud
-int sampleCloud(const sensor_msgs::PointCloud2& points,
+int sampleCloud(const sensor_msgs::msg::PointCloud2& points,
                 double sample_distance, size_t max_points,
-                std::vector<geometry_msgs::PointStamped>& sampled_points)
+                std::vector<geometry_msgs::msg::PointStamped>& sampled_points)
 {
   // Square distance for efficiency
   double max_dist_sq = sample_distance * sample_distance;
@@ -49,7 +48,7 @@ int sampleCloud(const sensor_msgs::PointCloud2& points,
   for (size_t i = 0; i < points.width; ++i)
   {
     // Get (untransformed) 3d point
-    geometry_msgs::PointStamped rgbd;
+    geometry_msgs::msg::PointStamped rgbd;
     rgbd.point.x = (points_iter + i)[X];
     rgbd.point.y = (points_iter + i)[Y];
     rgbd.point.z = (points_iter + i)[Z];
@@ -83,77 +82,89 @@ int sampleCloud(const sensor_msgs::PointCloud2& points,
     }
   }
 
-  ROS_INFO("Extracted %lu points with sampling distance of %f", sampled_points.size(), sample_distance);
+  RCLCPP_INFO(LOGGER, "Extracted %lu points with sampling distance of %f", sampled_points.size(), sample_distance);
 
   return sampled_points.size();
 }
 
 PlaneFinder::PlaneFinder() :
-  tf_listener_(tf_buffer_), waiting_(false)
+  waiting_(false)
 {
 }
 
 bool PlaneFinder::init(const std::string& name,
-                       ros::NodeHandle & nh)
+                       std::shared_ptr<tf2_ros::Buffer> buffer,
+                       rclcpp::Node::WeakPtr weak_node)
 {
-  if (!FeatureFinder::init(name, nh))
+  if (!FeatureFinder::init(name, buffer, weak_node))
+  {
     return false;
+  }
+
+  // Get an instance of the node shared pointer
+  auto node = weak_node.lock();
+  if (!node)
+  {
+    return false;
+  }
+
+  clock_ = node->get_clock();
 
   // We subscribe to a PointCloud2
-  std::string topic_name;
-  nh.param<std::string>("topic", topic_name, "/points");
-  subscriber_ = nh.subscribe(topic_name,
-                             1,
-                             &PlaneFinder::cameraCallback,
-                             this);
+  std::string topic_name =
+    node->declare_parameter<std::string>(name + ".topic", name + "/points");
+  subscriber_ = node->create_subscription<sensor_msgs::msg::PointCloud2>(
+    topic_name, 1, std::bind(&PlaneFinder::cameraCallback, this, std::placeholders::_1));
 
   // Name of the sensor model that will be used during optimization
-  nh.param<std::string>("camera_sensor_name", plane_sensor_name_, "camera");
+  plane_sensor_name_ = node->declare_parameter<std::string>(name + ".camera_sensor_name", "camera");
 
   // Maximum number of valid points to include in the observation
-  nh.param<int>("points_max", points_max_, 60);
+  points_max_ = node->declare_parameter<int>(name + ".points_max", 60);
 
   // When downsampling cloud, start by selecting points at least this far apart
-  nh.param<double>("initial_sample_distance", initial_sampling_distance_, 0.2);
+  initial_sampling_distance_ = node->declare_parameter<double>(
+    name + ".initial_sample_distance", 0.2);
 
   // Maximum distance from plane that point can be located
-  nh.param<double>("tolerance", plane_tolerance_, 0.02);
+  plane_tolerance_ = node->declare_parameter<double>(name + ".tolerance", 0.02);
 
   // Frame to transform point cloud into before applying limits below
   //   if specified as "none", cloud will be processed in sensor frame
-  nh.param<std::string>("transform_frame", transform_frame_, "base_link");
+  transform_frame_  = node->declare_parameter<std::string>(
+    name + ".transform_frame", "base_link");
 
   // Valid points must lie within this box, in the transform_frame
-  nh.param<double>("min_x", min_x_, -2.0);
-  nh.param<double>("max_x", max_x_, 2.0);
-  nh.param<double>("min_y", min_y_, -2.0);
-  nh.param<double>("max_y", max_y_, 2.0);
-  nh.param<double>("min_z", min_z_, 0.0);
-  nh.param<double>("max_z", max_z_, 2.0);
+  min_x_ = node->declare_parameter<double>(name + ".min_x", -2.0);
+  max_x_ = node->declare_parameter<double>(name + ".max_x", 2.0);
+  min_y_ = node->declare_parameter<double>(name + ".min_y", -2.0);
+  max_y_ = node->declare_parameter<double>(name + ".max_y", 2.0);
+  min_z_ = node->declare_parameter<double>(name + ".min_z", -2.0);
+  max_z_ = node->declare_parameter<double>(name + ".max_z", 2.0);
 
   // Parameters for RANSAC
-  nh.param<int>("ransac_iterations", ransac_iterations_, 100);
-  nh.param<int>("ransac_points", ransac_points_, 35);
+  ransac_iterations_ = node->declare_parameter<int>(name + ".ransac_iterations", 100);
+  ransac_points_ = node->declare_parameter<int>(name + ".ransac_points", 35);
 
   // Optional normal vector that found plane should align with
   // Leave all parameters set to 0 to disable check and simply take best fitting plane
   double a, b, c;
-  nh.param<double>("normal_a", a, 0.0);
-  nh.param<double>("normal_b", b, 0.0);
-  nh.param<double>("normal_c", c, 0.0);
+  a = node->declare_parameter<double>(name + ".normal_a", 0.0);
+  b = node->declare_parameter<double>(name + ".normal_b", 0.0);
+  c = node->declare_parameter<double>(name + ".normal_c", 0.0);
   desired_normal_ = Eigen::Vector3d(a, b, c);
   // If normal vector is defined, the plane normal must be aligned within this angle (in radians)
-  nh.param<double>("normal_angle", cos_normal_angle_, 0.349065);  // Default is 20 degrees
+  cos_normal_angle_ = node->declare_parameter<double>(name + ".normal_angle", 0.349065);  // 20 degrees
   cos_normal_angle_ = cos(cos_normal_angle_);
 
   // Should we include debug image/cloud in observations
-  nh.param<bool>("debug", output_debug_, false);
+  output_debug_ = node->declare_parameter<bool>(name + ".debug", false);
 
   // Publish the observation as a PointCloud2
-  publisher_ = nh.advertise<sensor_msgs::PointCloud2>(getName() + "_points", 10);
+  publisher_ = node->create_publisher<sensor_msgs::msg::PointCloud2>(name + "_points", 10);
 
   // Make sure we have CameraInfo before starting
-  if (!depth_camera_manager_.init(nh))
+  if (!depth_camera_manager_.init(name, weak_node, LOGGER))
   {
     // Error will have been printed by manager
     return false;
@@ -162,18 +173,18 @@ bool PlaneFinder::init(const std::string& name,
   return true;
 }
 
-void PlaneFinder::cameraCallback(const sensor_msgs::PointCloud2& cloud)
+void PlaneFinder::cameraCallback(sensor_msgs::msg::PointCloud2::ConstSharedPtr cloud)
 {
   if (waiting_)
   {
-    cloud_ = cloud;
+    cloud_ = *cloud;
     waiting_ = false;
   }
 }
 
 bool PlaneFinder::waitForCloud()
 {
-  ros::Duration(1/10.0).sleep();
+  rclcpp::sleep_for(std::chrono::milliseconds(100));
 
   waiting_ = true;
   int count = 250;
@@ -184,30 +195,30 @@ bool PlaneFinder::waitForCloud()
       // success
       return true;
     }
-    ros::Duration(0.01).sleep();
-    ros::spinOnce();
+    rclcpp::sleep_for(std::chrono::milliseconds(10));
+    // TODO ros::spinOnce();
   }
-  ROS_ERROR("Failed to get cloud");
+  RCLCPP_ERROR(LOGGER, "Failed to get cloud");
   return !waiting_;
 }
 
-bool PlaneFinder::find(robot_calibration_msgs::CalibrationData * msg)
+bool PlaneFinder::find(robot_calibration_msgs::msg::CalibrationData * msg)
 {
   if (!waitForCloud())
   {
-    ROS_ERROR("No point cloud data");
+    RCLCPP_ERROR(LOGGER, "No point cloud data");
     return false;
   }
 
   removeInvalidPoints(cloud_, min_x_, max_x_, min_y_, max_y_, min_z_, max_z_);
-  sensor_msgs::PointCloud2 plane = extractPlane(cloud_);
-  extractObservation(plane_sensor_name_, plane, msg, &publisher_);
+  sensor_msgs::msg::PointCloud2 plane = extractPlane(cloud_);
+  extractObservation(plane_sensor_name_, plane, msg, publisher_);
 
   // Report success
   return true;
 }
 
-void PlaneFinder::removeInvalidPoints(sensor_msgs::PointCloud2& cloud,
+void PlaneFinder::removeInvalidPoints(sensor_msgs::msg::PointCloud2& cloud,
   double min_x, double max_x, double min_y, double max_y, double min_z, double max_z)
 {
   //  Remove any point that is invalid or not with our tolerance
@@ -219,7 +230,7 @@ void PlaneFinder::removeInvalidPoints(sensor_msgs::PointCloud2& cloud,
   size_t j = 0;
   for (size_t i = 0; i < num_points; i++)
   {
-    geometry_msgs::PointStamped p;
+    geometry_msgs::msg::PointStamped p;
     p.point.x = (xyz + i)[X];
     p.point.y = (xyz + i)[Y];
     p.point.z = (xyz + i)[Z];
@@ -238,19 +249,20 @@ void PlaneFinder::removeInvalidPoints(sensor_msgs::PointCloud2& cloud,
     }
 
     // Get transform (if any)
-    geometry_msgs::PointStamped p_out;
+    geometry_msgs::msg::PointStamped p_out;
     if (do_transform)
     {
-      p.header.stamp = ros::Time(0);
+      p.header.stamp.sec = 0;
+      p.header.stamp.nanosec = 0;
       p.header.frame_id = cloud_.header.frame_id;
       try
       {
-        tf_buffer_.transform(p, p_out, transform_frame_);
+        tf2_buffer_->transform(p, p_out, transform_frame_);
       }
       catch (tf2::TransformException& ex)
       {
-        ROS_ERROR("%s", ex.what());
-        ros::Duration(1.0).sleep();
+        RCLCPP_ERROR(LOGGER, "%s", ex.what());
+        rclcpp::sleep_for(std::chrono::seconds(1));
         continue;
       }
     }
@@ -277,7 +289,7 @@ void PlaneFinder::removeInvalidPoints(sensor_msgs::PointCloud2& cloud,
   cloud.data.resize(cloud.width * cloud.point_step);
 }
 
-sensor_msgs::PointCloud2 PlaneFinder::extractPlane(sensor_msgs::PointCloud2& cloud)
+sensor_msgs::msg::PointCloud2 PlaneFinder::extractPlane(sensor_msgs::msg::PointCloud2& cloud)
 {
   sensor_msgs::PointCloud2ConstIterator<float> xyz(cloud, "x");
 
@@ -315,7 +327,7 @@ sensor_msgs::PointCloud2 PlaneFinder::extractPlane(sensor_msgs::PointCloud2& clo
     if (desired_normal_.norm() > 0.1)
     {
       // We might have to transform the normal to a different frame
-      geometry_msgs::Vector3Stamped transformed_normal;
+      geometry_msgs::msg::Vector3Stamped transformed_normal;
       transformed_normal.header = cloud.header;
       transformed_normal.vector.x = normal(0);
       transformed_normal.vector.y = normal(1);
@@ -325,11 +337,11 @@ sensor_msgs::PointCloud2 PlaneFinder::extractPlane(sensor_msgs::PointCloud2& clo
       {
         try
         {
-          tf_buffer_.transform(transformed_normal, transformed_normal, transform_frame_);
+          tf2_buffer_->transform(transformed_normal, transformed_normal, transform_frame_);
         }
         catch (tf2::TransformException& ex)
         {
-          ROS_ERROR("%s", ex.what());
+          RCLCPP_ERROR(LOGGER, "%s", ex.what());
           continue;
         }
       }
@@ -367,13 +379,13 @@ sensor_msgs::PointCloud2 PlaneFinder::extractPlane(sensor_msgs::PointCloud2& clo
     }
   }
   // Note: parameters are in cloud.header.frame_id and not transform_frame
-  ROS_INFO("Found plane with parameters: %f %f %f %f", best_normal(0), best_normal(1), best_normal(2), best_d);
+  RCLCPP_INFO(LOGGER, "Found plane with parameters: %f %f %f %f", best_normal(0), best_normal(1), best_normal(2), best_d);
 
   // Create a point cloud for the plane
-  sensor_msgs::PointCloud2 plane_cloud;
+  sensor_msgs::msg::PointCloud2 plane_cloud;
   plane_cloud.width = 0;
   plane_cloud.height = 0;
-  plane_cloud.header.stamp = ros::Time::now();
+  plane_cloud.header.stamp = clock_->now();
   plane_cloud.header.frame_id = cloud.header.frame_id;
   sensor_msgs::PointCloud2Modifier plane_cloud_mod(plane_cloud);
   plane_cloud_mod.setPointCloud2FieldsByString(1, "xyz");
@@ -416,31 +428,31 @@ sensor_msgs::PointCloud2 PlaneFinder::extractPlane(sensor_msgs::PointCloud2& clo
   plane_cloud.width  = plane_points;
   plane_cloud.data.resize(plane_cloud.width * plane_cloud.point_step);
 
-  ROS_INFO("Extracted plane with %d points", plane_cloud.width);
+  RCLCPP_INFO(LOGGER, "Extracted plane with %d points", plane_cloud.width);
 
   return plane_cloud;
 }
 
 void PlaneFinder::extractObservation(const std::string& sensor_name,
-                                     const sensor_msgs::PointCloud2& cloud,
-                                     robot_calibration_msgs::CalibrationData * msg,
-                                     ros::Publisher* publisher)
+                                     const sensor_msgs::msg::PointCloud2& cloud,
+                                     robot_calibration_msgs::msg::CalibrationData * msg,
+                                     rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr publisher)
 {
   if (static_cast<int>(cloud.width) == 0)
   {
-    ROS_WARN("No points in observation, skipping");
+    RCLCPP_WARN(LOGGER, "No points in observation, skipping");
     return;
   }
 
   // Determine number of points to output
   size_t points_total = std::min(points_max_, static_cast<int>(cloud.width));
-  ROS_INFO_STREAM("Got " << cloud.width << " points for observation, using " << points_total);
+  RCLCPP_INFO_STREAM(LOGGER, "Got " << cloud.width << " points for observation, using " << points_total);
 
   // Create PointCloud2 to publish
-  sensor_msgs::PointCloud2 viz_cloud;
+  sensor_msgs::msg::PointCloud2 viz_cloud;
   viz_cloud.width = 0;
   viz_cloud.height = 0;
-  viz_cloud.header.stamp = ros::Time::now();
+  viz_cloud.header.stamp = clock_->now();
   viz_cloud.header.frame_id = cloud.header.frame_id;
   sensor_msgs::PointCloud2Modifier cloud_mod(viz_cloud);
   cloud_mod.setPointCloud2FieldsByString(1, "xyz");
@@ -453,7 +465,7 @@ void PlaneFinder::extractObservation(const std::string& sensor_name,
   msg->observations[idx_cam].ext_camera_info = depth_camera_manager_.getDepthCameraInfo();
 
   // Get observation points
-  std::vector<geometry_msgs::PointStamped> sampled_points;
+  std::vector<geometry_msgs::msg::PointStamped> sampled_points;
   double sample_distance = initial_sampling_distance_;
   while (sampled_points.size() < points_total)
   {
@@ -490,3 +502,6 @@ void PlaneFinder::extractObservation(const std::string& sensor_name,
 }
 
 }  // namespace robot_calibration
+
+#include <pluginlib/class_list_macros.hpp>
+PLUGINLIB_EXPORT_CLASS(robot_calibration::PlaneFinder, robot_calibration::FeatureFinder)

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Michael Ferguson
+ * Copyright (C) 2018-2022 Michael Ferguson
  * Copyright (C) 2015 Fetch Robotics Inc.
  * Copyright (C) 2013-2014 Unbounded Robotics Inc.
  *
@@ -21,8 +21,9 @@
 #ifndef ROBOT_CALIBRATION_PLUGINS_FEATURE_FINDER_H
 #define ROBOT_CALIBRATION_PLUGINS_FEATURE_FINDER_H
 
-#include <ros/ros.h>
-#include <robot_calibration_msgs/CalibrationData.h>
+#include <rclcpp/rclcpp.hpp>
+#include <robot_calibration_msgs/msg/calibration_data.hpp>
+#include <tf2_ros/buffer.h>
 
 namespace robot_calibration
 {
@@ -40,14 +41,16 @@ public:
   /**
    *  @brief Initialize the feature finder.
    *  @param name The name of this finder.
-   *  @param nh The nodehandle to use when loading feature
+   *  @param node The node to use when loading feature
    *         finder configuration data.
    *  @returns True/False if the feature finder was able to be initialized
    */
   virtual bool init(const std::string& name,
-                    ros::NodeHandle & nh)
+                    std::shared_ptr<tf2_ros::Buffer> buffer,
+                    rclcpp::Node::WeakPtr /* node */)
   {
     name_ = name;
+    tf2_buffer_ = buffer;
     return true;
   };
 
@@ -68,7 +71,10 @@ public:
    *           features and adding them to the observation list.
    *           False otherwise.
    */
-  virtual bool find(robot_calibration_msgs::CalibrationData * msg) = 0;
+  virtual bool find(robot_calibration_msgs::msg::CalibrationData * msg) = 0;
+
+protected:
+  std::shared_ptr<tf2_ros::Buffer> tf2_buffer_;
 
 private:
   std::string name_;

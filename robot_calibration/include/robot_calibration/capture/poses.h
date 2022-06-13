@@ -23,7 +23,7 @@
 
 #include <string>
 #include <vector>
-#include <robot_calibration_msgs/CaptureConfig.h>
+#include <robot_calibration_msgs/msg/capture_config.hpp>
 
 namespace robot_calibration
 {
@@ -32,7 +32,7 @@ namespace robot_calibration
  * @brief Load a vector of calibration poses from a bagfile
  */
 bool getPosesFromBag(const std::string& pose_bag_name,
-                     std::vector<robot_calibration_msgs::CaptureConfig>& poses);
+                     std::vector<robot_calibration_msgs::msg::CaptureConfig>& poses);
 
 /*
 bool getPosesFromYaml(const std::string& directory_name,

@@ -18,13 +18,12 @@
 #ifndef ROBOT_CALIBRATION_CAPTURE_PLANE_FINDER_H
 #define ROBOT_CALIBRATION_CAPTURE_PLANE_FINDER_H
 
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 #include <robot_calibration/capture/depth_camera.h>
 #include <robot_calibration/eigen_geometry.h>
 #include <robot_calibration/plugins/feature_finder.h>
-#include <robot_calibration_msgs/CalibrationData.h>
+#include <robot_calibration_msgs/msg/calibration_data.hpp>
 #include <cv_bridge/cv_bridge.h>
-#include <tf2_ros/transform_listener.h>
 
 namespace robot_calibration
 {
@@ -36,14 +35,16 @@ class PlaneFinder : public FeatureFinder
 public:
   PlaneFinder();
   virtual ~PlaneFinder() = default;
-  virtual bool init(const std::string& name, ros::NodeHandle & n);
-  virtual bool find(robot_calibration_msgs::CalibrationData * msg);
+  virtual bool init(const std::string& name,
+                    std::shared_ptr<tf2_ros::Buffer> buffer,
+                    rclcpp::Node::WeakPtr weak_node);
+  virtual bool find(robot_calibration_msgs::msg::CalibrationData * msg);
 
 protected:
   /**
    * @brief ROS callback - updates cloud_ and resets waiting_ to false
    */
-  virtual void cameraCallback(const sensor_msgs::PointCloud2& cloud);
+  virtual void cameraCallback(sensor_msgs::msg::PointCloud2::ConstSharedPtr cloud);
 
   /**
    * @brief Remove invalid points from a cloud
@@ -55,7 +56,7 @@ protected:
    *  * points with z-distance of 0
    *  * points outside our min/max x,y,z parameters
    */
-  virtual void removeInvalidPoints(sensor_msgs::PointCloud2& cloud,
+  virtual void removeInvalidPoints(sensor_msgs::msg::PointCloud2& cloud,
                                    double min_x, double max_x, double min_y, double max_y, double min_z, double max_z);
 
   /**
@@ -63,7 +64,7 @@ protected:
    * @brief cloud The cloud to extract plane from - non-plane points will remain
    * @return New point cloud comprising only the points in the plane
    */
-  virtual sensor_msgs::PointCloud2 extractPlane(sensor_msgs::PointCloud2& cloud);
+  virtual sensor_msgs::msg::PointCloud2 extractPlane(sensor_msgs::msg::PointCloud2& cloud);
 
   /**
    * @brief Extract points from a cloud into a calibration message
@@ -73,23 +74,21 @@ protected:
    * @param publisher Optional pointer to publish the observations as a cloud
    */
   virtual void extractObservation(const std::string& sensor_name,
-                                  const sensor_msgs::PointCloud2& cloud,
-                                  robot_calibration_msgs::CalibrationData * msg,
-                                  ros::Publisher* publisher);
+                                  const sensor_msgs::msg::PointCloud2& cloud,
+                                  robot_calibration_msgs::msg::CalibrationData * msg,
+                                  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr publisher);
 
   /**
    * @brief Wait until a new cloud has arrived
    */
   virtual bool waitForCloud();
 
-  ros::Subscriber subscriber_;
-  ros::Publisher publisher_;
-
-  tf2_ros::Buffer tf_buffer_;
-  tf2_ros::TransformListener tf_listener_;
+  rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr subscriber_;
+  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr publisher_;
+  rclcpp::Clock::SharedPtr clock_;
 
   bool waiting_;
-  sensor_msgs::PointCloud2 cloud_;
+  sensor_msgs::msg::PointCloud2 cloud_;
   DepthCameraInfoManager depth_camera_manager_;
 
   // See init() function for parameter definitions

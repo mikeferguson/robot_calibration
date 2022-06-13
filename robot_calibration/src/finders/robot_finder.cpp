@@ -19,12 +19,11 @@
 // Author: Niharika Arora, Michael Ferguson
 
 #include <math.h>
-#include <pluginlib/class_list_macros.h>
 #include <robot_calibration/capture/robot_finder.h>
-#include <sensor_msgs/point_cloud2_iterator.h>
-#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <sensor_msgs/point_cloud2_iterator.hpp>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 
-PLUGINLIB_EXPORT_CLASS(robot_calibration::RobotFinder, robot_calibration::FeatureFinder)
+static const rclcpp::Logger LOGGER = rclcpp::get_logger("robot_finder");
 
 namespace robot_calibration
 {
@@ -39,33 +38,43 @@ RobotFinder::RobotFinder() :
 }
 
 bool RobotFinder::init(const std::string& name,
-                       ros::NodeHandle & nh)
+                       std::shared_ptr<tf2_ros::Buffer> buffer,
+                       rclcpp::Node::WeakPtr weak_node)
 {
-  if (!PlaneFinder::init(name, nh))
+  if (!PlaneFinder::init(name, buffer, weak_node))
+  {
     return false;
+  }
+
+  // Get an instance of the node shared pointer
+  auto node = weak_node.lock();
+  if (!node)
+  {
+    return false;
+  }
 
   // Name of the sensor model that will be used during optimization
-  nh.param<std::string>("robot_sensor_name", robot_sensor_name_, "camera_robot");
+  robot_sensor_name_ = node->declare_parameter<std::string>(name + ".robot_sensor_name", "camera_robot");
 
   // Publish the observation as a PointCloud2
-  robot_publisher_ = nh.advertise<sensor_msgs::PointCloud2>(getName() + "_robot_points", 10);
+  robot_publisher_ = node->create_publisher<sensor_msgs::msg::PointCloud2>(name + "_robot_points", 10);
 
   // Valid points must lie within this box, in the transform_frame
-  nh.param<double>("min_robot_x", min_robot_x_, -2.0);
-  nh.param<double>("max_robot_x", max_robot_x_, 2.0);
-  nh.param<double>("min_robot_y", min_robot_y_, -2.0);
-  nh.param<double>("max_robot_y", max_robot_y_, 2.0);
-  nh.param<double>("min_robot_z", min_robot_z_, 0.0);
-  nh.param<double>("max_robot_z", max_robot_z_, 2.0);
+  min_robot_x_ = node->declare_parameter<double>(name + ".min_robot_x", -2.0);
+  max_robot_x_ = node->declare_parameter<double>(name + ".max_robot_x", 2.0);
+  min_robot_y_ = node->declare_parameter<double>(name + ".min_robot_y", -2.0);
+  max_robot_y_ = node->declare_parameter<double>(name + ".max_robot_y", 2.0);
+  min_robot_z_ = node->declare_parameter<double>(name + ".min_robot_z", 0.0);
+  max_robot_z_ = node->declare_parameter<double>(name + ".max_robot_z", 2.0);
 
   return true;
 }
 
-bool RobotFinder::find(robot_calibration_msgs::CalibrationData * msg)
+bool RobotFinder::find(robot_calibration_msgs::msg::CalibrationData * msg)
 {
   if (!waitForCloud())
   {
-    ROS_ERROR("No point cloud data");
+    RCLCPP_ERROR(LOGGER, "No point cloud data");
     return false;
   }
 
@@ -73,18 +82,21 @@ bool RobotFinder::find(robot_calibration_msgs::CalibrationData * msg)
   removeInvalidPoints(cloud_, min_x_, max_x_, min_y_, max_y_, min_z_, max_z_);
 
   // Find the ground plane and extract it
-  sensor_msgs::PointCloud2 plane = extractPlane(cloud_);
+  sensor_msgs::msg::PointCloud2 plane = extractPlane(cloud_);
 
   // Remove anything that isn't the robot from the cloud
   removeInvalidPoints(cloud_, min_robot_x_, max_robot_x_, min_robot_y_,
                       max_robot_y_, min_robot_z_, max_robot_z_);
 
   // Pull out both sets of observations
-  extractObservation(plane_sensor_name_, plane, msg, &publisher_);
-  extractObservation(robot_sensor_name_, cloud_, msg, &robot_publisher_);
+  extractObservation(plane_sensor_name_, plane, msg, publisher_);
+  extractObservation(robot_sensor_name_, cloud_, msg, robot_publisher_);
 
   // Report success
   return true;
 }
 
 }  // namespace robot_calibration
+
+#include <pluginlib/class_list_macros.hpp>
+PLUGINLIB_EXPORT_CLASS(robot_calibration::RobotFinder, robot_calibration::FeatureFinder)
