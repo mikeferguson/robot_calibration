@@ -27,7 +27,7 @@
 #include <kdl_parser/kdl_parser.hpp>
 #include <robot_calibration_msgs/msg/calibration_data.hpp>
 
-#include <robot_calibration/optimization/offset_parser.h>
+#include <robot_calibration/optimization/offsets.hpp>
 #include <robot_calibration/util/calibration_data.hpp>
 #include <robot_calibration/cost_functions/chain3d_to_chain3d_error.hpp>
 #include <robot_calibration/cost_functions/chain3d_to_mesh_error.hpp>
@@ -51,7 +51,7 @@ Optimizer::Optimizer(const std::string& robot_description) :
     std::cerr << "Failed to parse URDF." << std::endl;
 
   // Maintain consistent offset parser so we hold onto offsets
-  offsets_.reset(new CalibrationOffsetParser());
+  offsets_.reset(new OptimizationOffsets());
 
   // Create a mesh loader
   mesh_loader_.reset(new MeshLoader(model_));

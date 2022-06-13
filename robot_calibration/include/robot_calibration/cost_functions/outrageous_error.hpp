@@ -22,7 +22,7 @@
 #include <string>
 #include <ceres/ceres.h>
 #include <robot_calibration/models/chain3d.hpp>
-#include <robot_calibration/optimization/offset_parser.h>
+#include <robot_calibration/optimization/offsets.hpp>
 
 namespace robot_calibration
 {
@@ -43,7 +43,7 @@ struct OutrageousError
    *  \param rotation_scaling The error scalar to multiply each of the rotation
    *         offsets by (in their angle-axis form).
    */
-  OutrageousError(CalibrationOffsetParser* offsets,
+  OutrageousError(OptimizationOffsets* offsets,
                   std::string name,
                   double joint_scaling,
                   double position_scaling,
@@ -98,7 +98,7 @@ struct OutrageousError
   /**
    *  \brief Helper factory function to create a new error block.
    */
-  static ceres::CostFunction* Create(CalibrationOffsetParser* offsets,
+  static ceres::CostFunction* Create(OptimizationOffsets* offsets,
                                      std::string name,
                                      double joint_scaling,
                                      double position_scaling,
@@ -112,7 +112,7 @@ struct OutrageousError
     return static_cast<ceres::CostFunction*>(func);
   }
 
-  CalibrationOffsetParser * offsets_;
+  OptimizationOffsets * offsets_;
   std::string name_;
   double joint_;
   double position_;

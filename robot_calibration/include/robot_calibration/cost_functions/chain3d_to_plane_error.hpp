@@ -24,7 +24,7 @@
 #include <ceres/ceres.h>
 #include <robot_calibration/models/camera3d.hpp>
 #include <robot_calibration/models/chain3d.hpp>
-#include <robot_calibration/optimization/offset_parser.h>
+#include <robot_calibration/optimization/offsets.hpp>
 #include <robot_calibration/util/calibration_data.hpp>
 #include <robot_calibration_msgs/msg/calibration_data.hpp>
 
@@ -51,7 +51,7 @@ struct Chain3dToPlane
    *  \param scale The scaling factor to apply to residual of distance to plane.
    */
   Chain3dToPlane(Chain3dModel* chain_model,
-                 CalibrationOffsetParser* offsets,
+                 OptimizationOffsets* offsets,
                  robot_calibration_msgs::msg::CalibrationData& data,
                  double a, double b, double c, double d,
                  double scale)
@@ -101,7 +101,7 @@ struct Chain3dToPlane
    *         are described in the class constructor, which this function calls.
    */
   static ceres::CostFunction* Create(Chain3dModel* a_model,
-                                     CalibrationOffsetParser* offsets,
+                                     OptimizationOffsets* offsets,
                                      robot_calibration_msgs::msg::CalibrationData& data,
                                      double a, double b, double c, double d,
                                      double scale)
@@ -124,7 +124,7 @@ struct Chain3dToPlane
   }
 
   Chain3dModel * chain_model_;
-  CalibrationOffsetParser * offsets_;
+  OptimizationOffsets * offsets_;
   robot_calibration_msgs::msg::CalibrationData data_;
   double a_, b_, c_, d_;
   double scale_, denom_;

@@ -53,7 +53,7 @@ Chain3dModel::Chain3dModel(const std::string& name, KDL::Tree model, std::string
 
 std::vector<geometry_msgs::msg::PointStamped> Chain3dModel::project(
     const robot_calibration_msgs::msg::CalibrationData& data,
-    const CalibrationOffsetParser& offsets)
+    const OptimizationOffsets& offsets)
 {
   // Projected points, to be returned
   std::vector<geometry_msgs::msg::PointStamped> points;
@@ -115,7 +115,7 @@ std::vector<geometry_msgs::msg::PointStamped> Chain3dModel::project(
   return points;
 }
 
-KDL::Frame Chain3dModel::getChainFK(const CalibrationOffsetParser& offsets,
+KDL::Frame Chain3dModel::getChainFK(const OptimizationOffsets& offsets,
                                   const sensor_msgs::msg::JointState& state)
 {
   // FK from root to tip
@@ -169,7 +169,7 @@ Camera3dModel::Camera3dModel(const std::string& name, const std::string& param_n
 
 std::vector<geometry_msgs::msg::PointStamped> Camera3dModel::project(
     const robot_calibration_msgs::msg::CalibrationData& data,
-    const CalibrationOffsetParser& offsets)
+    const OptimizationOffsets& offsets)
 {
   std::vector<geometry_msgs::msg::PointStamped> points;
 

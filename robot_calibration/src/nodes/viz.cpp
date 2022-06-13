@@ -25,7 +25,7 @@
 #include <urdf/model.h>
 #include <kdl_parser/kdl_parser.hpp>
 
-#include <robot_calibration/optimization/offset_parser.h>
+#include <robot_calibration/optimization/offsets.hpp>
 #include <robot_calibration/optimization/params.hpp>
 #include <robot_calibration/models/camera3d.hpp>
 #include <robot_calibration/models/chain3d.hpp>
@@ -91,7 +91,7 @@ int main(int argc, char** argv)
 
   // Get parameters
   robot_calibration::OptimizationParams params;
-  robot_calibration::CalibrationOffsetParser offsets;
+  robot_calibration::OptimizationOffsets offsets;
   params.LoadFromROS(node, calibration_steps.front());
   RCLCPP_INFO_STREAM(node->get_logger(), "Publishing markers in " << params.base_link << " frame.");
 

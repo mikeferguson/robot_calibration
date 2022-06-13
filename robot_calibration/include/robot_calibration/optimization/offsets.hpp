@@ -17,8 +17,8 @@
 
 // Author: Michael Ferguson
 
-#ifndef ROBOT_CALIBRATION_CALIBRATION_OFFSET_PARSER_H
-#define ROBOT_CALIBRATION_CALIBRATION_OFFSET_PARSER_H
+#ifndef ROBOT_CALIBRATION_OPTIMIZATION_OFFSETS_HPP
+#define ROBOT_CALIBRATION_OPTIMIZATION_OFFSETS_HPP
 
 #include <kdl/chain.hpp>
 
@@ -30,11 +30,11 @@ namespace robot_calibration
  *         Holds the configuration of what is to be calibrated, and
  *         and parses the actual adjustments from the free parameters.
  */
-class CalibrationOffsetParser
+class OptimizationOffsets
 {
 public:
-  CalibrationOffsetParser();
-  virtual ~CalibrationOffsetParser() {}
+  OptimizationOffsets();
+  virtual ~OptimizationOffsets() {}
 
   /**
    *  \brief Tell the parser we wish to calibrate an active joint or other
@@ -112,10 +112,10 @@ private:
   size_t num_free_params_;
 
   // No copy
-  CalibrationOffsetParser(const CalibrationOffsetParser&);
-  CalibrationOffsetParser& operator=(const CalibrationOffsetParser&);
+  OptimizationOffsets(const OptimizationOffsets&);
+  OptimizationOffsets& operator=(const OptimizationOffsets&);
 };
 
 }  // namespace robot_calibration
 
-#endif  // ROBOT_CALIBRATION_CALIBRATION_OFFSET_PARSER_H
+#endif  // ROBOT_CALIBRATION_OPTIMIZATION_OFFSETS_HPP

@@ -79,11 +79,11 @@ set(dependencies
 
 add_library(robot_calibration SHARED
   src/base_calibration.cpp
-  src/calibration_offset_parser.cpp
   src/models.cpp
-  src/optimization/params.cpp
   src/optimization/ceres_optimizer.cpp
   src/optimization/export.cpp 
+  src/optimization/offsets.cpp
+  src/optimization/params.cpp
   src/util/capture_manager.cpp
   src/util/capture_poses.cpp
   src/util/chain_manager.cpp

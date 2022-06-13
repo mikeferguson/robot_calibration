@@ -48,7 +48,7 @@ public:
    */
   virtual std::vector<geometry_msgs::msg::PointStamped> project(
     const robot_calibration_msgs::msg::CalibrationData& data,
-    const CalibrationOffsetParser& offsets);
+    const OptimizationOffsets& offsets);
 
   /**
    * @brief Get the type for this model.

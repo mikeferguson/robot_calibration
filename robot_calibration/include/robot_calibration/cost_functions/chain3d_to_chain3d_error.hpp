@@ -23,7 +23,7 @@
 
 #include <string>
 #include <ceres/ceres.h>
-#include <robot_calibration/optimization/offset_parser.h>
+#include <robot_calibration/optimization/offsets.hpp>
 #include <robot_calibration/util/calibration_data.hpp>
 #include <robot_calibration/models/camera3d.hpp>
 #include <robot_calibration/models/chain3d.hpp>
@@ -48,7 +48,7 @@ struct Chain3dToChain3d
    */
   Chain3dToChain3d(Chain3dModel* a_model,
                    Chain3dModel* b_model,
-                   CalibrationOffsetParser* offsets,
+                   OptimizationOffsets* offsets,
                    robot_calibration_msgs::msg::CalibrationData& data)
   {
     a_model_ = a_model;
@@ -101,7 +101,7 @@ struct Chain3dToChain3d
    */
   static ceres::CostFunction* Create(Chain3dModel* a_model,
                                      Chain3dModel* b_model,
-                                     CalibrationOffsetParser* offsets,
+                                     OptimizationOffsets* offsets,
                                      robot_calibration_msgs::msg::CalibrationData& data)
   {
     int index = getSensorIndex(data, a_model->getName());
@@ -123,7 +123,7 @@ struct Chain3dToChain3d
 
   Chain3dModel * a_model_;
   Chain3dModel * b_model_;
-  CalibrationOffsetParser * offsets_;
+  OptimizationOffsets * offsets_;
   robot_calibration_msgs::msg::CalibrationData data_;
 };
 

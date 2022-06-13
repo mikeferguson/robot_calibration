@@ -23,18 +23,18 @@
 #include <tinyxml.h>
 #include <boost/algorithm/string.hpp>
 #include <boost/lexical_cast.hpp>
-#include <robot_calibration/optimization/offset_parser.h>
+#include <robot_calibration/optimization/offsets.hpp>
 #include <robot_calibration/models/chain3d.hpp>  // for rotation functions
 
 namespace robot_calibration
 {
 
-CalibrationOffsetParser::CalibrationOffsetParser()
+OptimizationOffsets::OptimizationOffsets()
 {
   num_free_params_ = 0;
 }
 
-bool CalibrationOffsetParser::add(const std::string name)
+bool OptimizationOffsets::add(const std::string name)
 {
   double value = 0.0;
 
@@ -63,7 +63,7 @@ bool CalibrationOffsetParser::add(const std::string name)
   return true;
 }
 
-bool CalibrationOffsetParser::addFrame(
+bool OptimizationOffsets::addFrame(
     const std::string name,
     bool calibrate_x, bool calibrate_y, bool calibrate_z,
     bool calibrate_roll, bool calibrate_pitch, bool calibrate_yaw)
@@ -88,7 +88,7 @@ bool CalibrationOffsetParser::addFrame(
   return true;
 }
 
-bool CalibrationOffsetParser::set(const std::string name, double value)
+bool OptimizationOffsets::set(const std::string name, double value)
 {
   for (size_t i = 0; i < num_free_params_; ++i)
   {
@@ -101,7 +101,7 @@ bool CalibrationOffsetParser::set(const std::string name, double value)
   return false;
 }
 
-bool CalibrationOffsetParser::setFrame(
+bool OptimizationOffsets::setFrame(
     const std::string name,
     double x, double y, double z,
     double roll, double pitch, double yaw)
@@ -122,21 +122,21 @@ bool CalibrationOffsetParser::setFrame(
   return true;
 }
 
-bool CalibrationOffsetParser::initialize(double* free_params)
+bool OptimizationOffsets::initialize(double* free_params)
 {
   for (size_t i = 0; i < num_free_params_; ++i)
     free_params[i] = parameter_offsets_[i];
   return true;
 }
 
-bool CalibrationOffsetParser::update(const double* const free_params)
+bool OptimizationOffsets::update(const double* const free_params)
 {
   for (size_t i = 0; i < num_free_params_; ++i)
     parameter_offsets_[i] = free_params[i];
   return true;
 }
 
-double CalibrationOffsetParser::get(const std::string name) const
+double OptimizationOffsets::get(const std::string name) const
 {
   for (size_t i = 0; i < parameter_names_.size(); ++i)
   {
@@ -147,7 +147,7 @@ double CalibrationOffsetParser::get(const std::string name) const
   return 0.0;
 }
 
-bool CalibrationOffsetParser::getFrame(const std::string name, KDL::Frame& offset) const
+bool OptimizationOffsets::getFrame(const std::string name, KDL::Frame& offset) const
 {
   // Don't bother with following computation if this isn't a calibrated frame.
   bool has_offset = false;
@@ -175,18 +175,18 @@ bool CalibrationOffsetParser::getFrame(const std::string name, KDL::Frame& offse
   return true;
 }
 
-size_t CalibrationOffsetParser::size()
+size_t OptimizationOffsets::size()
 {
   return num_free_params_;
 }
 
-bool CalibrationOffsetParser::reset()
+bool OptimizationOffsets::reset()
 {
   num_free_params_ = 0;
   return true;
 }
 
-bool CalibrationOffsetParser::loadOffsetYAML(const std::string& filename)
+bool OptimizationOffsets::loadOffsetYAML(const std::string& filename)
 {
   std::string line;
   std::ifstream f(filename.c_str());
@@ -207,7 +207,7 @@ bool CalibrationOffsetParser::loadOffsetYAML(const std::string& filename)
   return true;
 }
 
-std::string CalibrationOffsetParser::getOffsetYAML()
+std::string OptimizationOffsets::getOffsetYAML()
 {
   std::stringstream ss;
   for (size_t i = 0; i < parameter_names_.size(); ++i)
@@ -217,7 +217,7 @@ std::string CalibrationOffsetParser::getOffsetYAML()
   return ss.str();
 }
 
-std::string CalibrationOffsetParser::updateURDF(const std::string &urdf)
+std::string OptimizationOffsets::updateURDF(const std::string &urdf)
 {
   const double precision = 8;
 

@@ -27,7 +27,7 @@
 #include <urdf/model.h>
 #include <kdl_parser/kdl_parser.hpp>
 #include <robot_calibration_msgs/msg/calibration_data.hpp>
-#include <robot_calibration/optimization/offset_parser.h>
+#include <robot_calibration/optimization/offsets.hpp>
 #include <robot_calibration/optimization/params.hpp>
 #include <robot_calibration/models/camera3d.hpp>
 #include <robot_calibration/models/chain3d.hpp>
@@ -65,7 +65,7 @@ public:
     return summary_;
   }
 
-  std::shared_ptr<CalibrationOffsetParser> getOffsets()
+  std::shared_ptr<OptimizationOffsets> getOffsets()
   {
     return offsets_;
   }
@@ -97,7 +97,7 @@ private:
 
   std::map<std::string, Chain3dModel*> models_;
 
-  std::shared_ptr<CalibrationOffsetParser> offsets_;
+  std::shared_ptr<OptimizationOffsets> offsets_;
   std::shared_ptr<ceres::Solver::Summary> summary_;
 
   int num_params_, num_residuals_;

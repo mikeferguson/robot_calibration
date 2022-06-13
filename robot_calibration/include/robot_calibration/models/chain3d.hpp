@@ -24,7 +24,7 @@
 #include <string>
 #include <kdl/chain.hpp>
 #include <kdl/tree.hpp>
-#include <robot_calibration/optimization/offset_parser.h>
+#include <robot_calibration/optimization/offsets.hpp>
 
 #include <geometry_msgs/msg/point_stamped.hpp>
 #include <sensor_msgs/msg/joint_state.hpp>
@@ -125,13 +125,13 @@ public:
    */
   virtual std::vector<geometry_msgs::msg::PointStamped> project(
     const robot_calibration_msgs::msg::CalibrationData& data,
-    const CalibrationOffsetParser& offsets);
+    const OptimizationOffsets& offsets);
 
   /**
    *  @brief Compute the forward kinematics of the chain, based on the
    *         offsets and the joint positions of the state message.
    */
-  KDL::Frame getChainFK(const CalibrationOffsetParser& offsets,
+  KDL::Frame getChainFK(const OptimizationOffsets& offsets,
                         const sensor_msgs::msg::JointState& state);
 
   /**

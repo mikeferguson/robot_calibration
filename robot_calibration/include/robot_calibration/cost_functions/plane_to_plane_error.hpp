@@ -24,7 +24,7 @@
 #include <string>
 #include <ceres/ceres.h>
 #include <robot_calibration/models/chain3d.hpp>
-#include <robot_calibration/optimization/offset_parser.h>
+#include <robot_calibration/optimization/offsets.hpp>
 #include <robot_calibration/util/eigen_geometry.hpp>
 #include <robot_calibration_msgs/msg/calibration_data.hpp>
 
@@ -51,7 +51,7 @@ struct PlaneToPlaneError
    */
   PlaneToPlaneError(Chain3dModel *model_a,
                     Chain3dModel *model_b,
-                    CalibrationOffsetParser *offsets,
+                    OptimizationOffsets *offsets,
                     robot_calibration_msgs::msg::CalibrationData &data,
                     double scale_normal, double scale_offset)
   {
@@ -116,7 +116,7 @@ struct PlaneToPlaneError
    */
   static ceres::CostFunction *Create(Chain3dModel *model_a,
                                      Chain3dModel *model_b,
-                                     CalibrationOffsetParser *offsets,
+                                     OptimizationOffsets *offsets,
                                      robot_calibration_msgs::msg::CalibrationData &data,
                                      double scale_normal, double scale_offset)
   {
@@ -131,7 +131,7 @@ struct PlaneToPlaneError
 
   Chain3dModel *model_a_;
   Chain3dModel *model_b_;
-  CalibrationOffsetParser *offsets_;
+  OptimizationOffsets *offsets_;
   robot_calibration_msgs::msg::CalibrationData data_;
   double scale_normal_, scale_offset_;
 };
