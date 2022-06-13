@@ -78,10 +78,11 @@ bool OptimizationParams::LoadFromROS(rclcpp::Node::SharedPtr node,
     "models", std::vector<std::string>());
   for (auto name : model_names)
   {
-    Params params;
+    ModelParams params;
     params.name = name;
     params.type = node->declare_parameter<std::string>(parameter_ns + "." + name + ".type", std::string());
-    //params.params = model_params[i];
+    params.frame = node->declare_parameter<std::string>(parameter_ns + "." + name + ".frame", std::string());
+    params.param_name = node->declare_parameter<std::string>(parameter_ns + "." + name + ".param_name", std::string());
     models.push_back(params);
   }
 
@@ -90,11 +91,60 @@ bool OptimizationParams::LoadFromROS(rclcpp::Node::SharedPtr node,
     "error_blocks", std::vector<std::string>());
   for (auto name : error_block_names)
   {
-    Params params;
-    params.name = name;
-    params.type = node->declare_parameter<std::string>(parameter_ns + "." + name + ".type", std::string());
-    //params.params = error_params[i];
-    error_blocks.push_back(params);
+    std::string type = node->declare_parameter<std::string>(parameter_ns + "." + name + ".type", std::string());
+    if (type == "chain3d_to_chain3d")
+    {
+      std::shared_ptr<Chain3dToChain3dParams> params = std::make_shared<Chain3dToChain3dParams>();
+      params->name = name;
+      params->type = type;
+      params->model_a = node->declare_parameter<std::string>(parameter_ns + "." + name + ".model_a", std::string());
+      params->model_b = node->declare_parameter<std::string>(parameter_ns + "." + name + ".model_b", std::string());
+      error_blocks.push_back(params);
+    }
+    else if (type == "chain3d_to_plane")
+    {
+      std::shared_ptr<Chain3dToPlaneParams> params = std::make_shared<Chain3dToPlaneParams>();
+      params->name = name;
+      params->type = type;
+      params->model = node->declare_parameter<std::string>(parameter_ns + "." + name + ".model", std::string());
+      params->a = node->declare_parameter<double>(parameter_ns + "." + name + ".a", 0.0);
+      params->b = node->declare_parameter<double>(parameter_ns + "." + name + ".b", 0.0);
+      params->c = node->declare_parameter<double>(parameter_ns + "." + name + ".c", 1.0);
+      params->d = node->declare_parameter<double>(parameter_ns + "." + name + ".d", 0.0);
+      params->scale = node->declare_parameter<double>(parameter_ns + "." + name + ".scale", 1.0);
+      error_blocks.push_back(params);
+    }
+    else if (type == "chain3d_to_mesh")
+    {
+      std::shared_ptr<Chain3dToMeshParams> params = std::make_shared<Chain3dToMeshParams>();
+      params->name = name;
+      params->type = type;
+      params->model = node->declare_parameter<std::string>(parameter_ns + "." + name + ".model", std::string());
+      params->link_name = node->declare_parameter<std::string>(parameter_ns + "." + name + ".link_name", std::string());
+      error_blocks.push_back(params);
+    }
+    else if (type == "plane_to_plane")
+    {
+      std::shared_ptr<PlaneToPlaneParams> params = std::make_shared<PlaneToPlaneParams>();
+      params->name = name;
+      params->type = type;
+      params->model_a = node->declare_parameter<std::string>(parameter_ns + "." + name + ".model_a", std::string());
+      params->model_b = node->declare_parameter<std::string>(parameter_ns + "." + name + ".model_b", std::string());
+      params->normal_scale = node->declare_parameter<double>(parameter_ns + "." + name + ".normal_scale", 1.0);
+      params->offset_scale = node->declare_parameter<double>(parameter_ns + "." + name + ".offset_scale", 1.0);
+      error_blocks.push_back(params);
+    }
+    else if (type == "outrageous")
+    {
+      std::shared_ptr<OutrageousParams> params = std::make_shared<OutrageousParams>();
+      params->name = name;
+      params->type = type;
+      params->param = node->declare_parameter<std::string>(parameter_ns + "." + name + ".param", std::string());
+      params->joint_scale = node->declare_parameter<double>(parameter_ns + "." + name + ".joint_scale", 1.0);
+      params->position_scale = node->declare_parameter<double>(parameter_ns + "." + name + ".position_scale", 1.0);
+      params->rotation_scale = node->declare_parameter<double>(parameter_ns + "." + name + ".rotation_scale", 1.0);
+      error_blocks.push_back(params);
+    }
   }
 
   return true;

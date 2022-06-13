@@ -20,6 +20,7 @@
 #ifndef ROBOT_CALIBRATION_OPTIMIZATION_PARAMS_HPP
 #define ROBOT_CALIBRATION_OPTIMIZATION_PARAMS_HPP
 
+#include <memory>
 #include <rclcpp/logger.hpp>
 #include <rclcpp/node.hpp>
 
@@ -29,9 +30,18 @@ namespace robot_calibration
 /** @brief Class to hold parameters for optimization. */
 struct OptimizationParams
 {
-  struct FreeFrameParams
+  struct Params
   {
     std::string name;
+    std::string type;
+
+    virtual ~Params() { }
+  };
+
+  using ParamsPtr = std::shared_ptr<Params>;
+
+  struct FreeFrameParams : Params
+  {
     bool x;
     bool y;
     bool z;
@@ -40,9 +50,8 @@ struct OptimizationParams
     bool yaw;
   };
 
-  struct FreeFrameInitialValue
+  struct FreeFrameInitialValue : Params
   {
-    std::string name;
     double x;
     double y;
     double z;
@@ -51,18 +60,63 @@ struct OptimizationParams
     double yaw;
   };
 
-  struct Params
+  struct ModelParams : Params
   {
-    std::string name;
-    std::string type;
+    // All models need a sensor frame
+    std::string frame;
+    // Some models can "mirror" another model's optimization parameters
+    std::string param_name;
+  };
+
+  struct Chain3dToChain3dParams : Params
+  {
+    // Chain3d or Camera3d models to use
+    std::string model_a;
+    std::string model_b;
+  };
+
+  struct Chain3dToPlaneParams : Params
+  {
+    // Chain3d model to use
+    std::string model;
+    // Parameters for the plane: ax + by + cz + d = 0
+    double a, b, c, d;
+    // Scalar applied to residual
+    double scale;
+  };
+
+  struct Chain3dToMeshParams : Params
+  {
+    // Chain3d model to use
+    std::string model;
+    // Link in URDF to use for mesh
+    std::string link_name;
+  };
+
+  struct PlaneToPlaneParams : Params
+  {
+    // Chain3d or Camera3d models to use
+    std::string model_a;
+    std::string model_b;
+    // Scalars applied to residuals
+    double normal_scale;
+    double offset_scale;
+  };
+
+  struct OutrageousParams : Params
+  {
+    std::string param;
+    double joint_scale;
+    double position_scale;
+    double rotation_scale;
   };
 
   std::string base_link;
   std::vector<std::string> free_params;
   std::vector<FreeFrameParams> free_frames;
   std::vector<FreeFrameInitialValue> free_frames_initial_values;
-  std::vector<Params> models;
-  std::vector<Params> error_blocks;
+  std::vector<ModelParams> models;
+  std::vector<ParamsPtr> error_blocks;
 
   // Parameters for the optimizer itself
   int max_num_iterations;
@@ -75,19 +129,6 @@ struct OptimizationParams
    * @param parameter_ns Namespace for optimization parameters
    */
   bool LoadFromROS(rclcpp::Node::SharedPtr node, const std::string& parameter_ns);
-
-  template<typename T>
-  T getParam(Params& params, const std::string& name, T default_value)
-  {
-    return default_value;
-    //if (!params.params.hasMember(name))
-    //{
-      //RCLCPP_WARN(LOGGER, name << " was not set, using default of " << default_value);
-      //return default_value;
-    //}
-
-    //return static_cast<T>(params.params[name]);
-  }
 };
 
 }  // namespace robot_calibration

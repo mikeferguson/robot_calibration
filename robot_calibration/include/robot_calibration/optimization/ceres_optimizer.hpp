@@ -26,6 +26,7 @@
 
 #include <urdf/model.h>
 #include <kdl_parser/kdl_parser.hpp>
+#include <rclcpp/logger.hpp>
 #include <robot_calibration_msgs/msg/calibration_data.hpp>
 #include <robot_calibration/optimization/offsets.hpp>
 #include <robot_calibration/optimization/params.hpp>
@@ -55,6 +56,7 @@ public:
    */
   int optimize(OptimizationParams& params,
                std::vector<robot_calibration_msgs::msg::CalibrationData> data,
+               rclcpp::Logger& logger,
                bool progress_to_stdout = false);
 
   /**

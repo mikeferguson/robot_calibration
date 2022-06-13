@@ -64,6 +64,7 @@ int main(int argc, char** argv)
 {
   rclcpp::init(argc, argv);
   rclcpp::Node::SharedPtr node = std::make_shared<rclcpp::Node>("robot_calibration");
+  rclcpp::Logger logger = node->get_logger();
 
   // Should we be stupidly verbose?
   bool verbose = node->declare_parameter<bool>("verbose", false);
@@ -98,7 +99,7 @@ int main(int argc, char** argv)
     }
     else
     {
-      RCLCPP_INFO(node->get_logger(), "Using manual calibration mode...");
+      RCLCPP_INFO(logger, "Using manual calibration mode...");
     }
 
     // For each pose in the capture sequence.
@@ -110,7 +111,7 @@ int main(int argc, char** argv)
       if (poses.empty())
       {
         // Manual calibration, wait for keypress
-        RCLCPP_INFO(node->get_logger(), "Press [Enter] to capture a sample... (or type 'done' and [Enter] to finish capture)");
+        RCLCPP_INFO(logger, "Press [Enter] to capture a sample... (or type 'done' and [Enter] to finish capture)");
         std::string throwaway;
         std::getline(std::cin, throwaway);
         if (throwaway.compare("done") == 0)
@@ -124,7 +125,7 @@ int main(int argc, char** argv)
         std::vector<std::string> features;
         if (!capture_manager.captureFeatures(features, msg))
         {
-          RCLCPP_WARN(node->get_logger(), "Failed to capture sample %u.", pose_idx);
+          RCLCPP_WARN(logger, "Failed to capture sample %u.", pose_idx);
           continue;
         }
       }
@@ -133,7 +134,7 @@ int main(int argc, char** argv)
         // Move head/arm to pose
         if (!capture_manager.moveToState(poses[pose_idx].joint_states))
         {
-          RCLCPP_WARN(node->get_logger(), "Unable to move to desired state for sample %u.", pose_idx);
+          RCLCPP_WARN(logger, "Unable to move to desired state for sample %u.", pose_idx);
           continue;
         }
 
@@ -143,18 +144,18 @@ int main(int argc, char** argv)
         // Get pose of the features
         if (!capture_manager.captureFeatures(poses[pose_idx].features, msg))
         {
-          RCLCPP_WARN(node->get_logger(), "Failed to capture sample %u.", pose_idx);
+          RCLCPP_WARN(logger, "Failed to capture sample %u.", pose_idx);
           continue;
         }
       }
 
-      RCLCPP_INFO(node->get_logger(), "Captured pose %u", pose_idx);
+      RCLCPP_INFO(logger, "Captured pose %u", pose_idx);
 
       // Add to samples
       data.push_back(msg);
     }
 
-    RCLCPP_INFO(node->get_logger(), "Done capturing samples");
+    RCLCPP_INFO(logger, "Done capturing samples");
   }
   else
   {
@@ -162,7 +163,7 @@ int main(int argc, char** argv)
     std::string data_bag_name("/tmp/calibration_data.bag");
     if (argc > 2)
       data_bag_name = argv[2];
-    RCLCPP_INFO(node->get_logger(), "Loading calibration data from %s", data_bag_name.c_str());
+    RCLCPP_INFO(logger, "Loading calibration data from %s", data_bag_name.c_str());
 
     if (!robot_calibration::load_bag(data_bag_name, description_msg, data))
     {
@@ -180,7 +181,7 @@ int main(int argc, char** argv)
     node->declare_parameter<std::vector<std::string>>("calibration_steps", std::vector<std::string>());
   if (calibration_steps.empty())
   {
-    RCLCPP_FATAL(node->get_logger(), "Parameter calibration_steps is not defined");
+    RCLCPP_FATAL(logger, "Parameter calibration_steps is not defined");
     return -1;
   }
 
@@ -188,7 +189,7 @@ int main(int argc, char** argv)
   for (auto step : calibration_steps)
   {
     params.LoadFromROS(node, step);
-    opt.optimize(params, data, verbose);
+    opt.optimize(params, data, logger, verbose);
     if (verbose)
     {
       std::cout << "Parameter Offsets:" << std::endl;
@@ -199,7 +200,7 @@ int main(int argc, char** argv)
   // Write outputs
   robot_calibration::exportResults(opt, description_msg.data, data);
 
-  RCLCPP_INFO(node->get_logger(), "Done calibrating");
+  RCLCPP_INFO(logger, "Done calibrating");
   rclcpp::shutdown();
 
   return 0;
