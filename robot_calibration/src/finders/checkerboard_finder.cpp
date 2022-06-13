@@ -18,7 +18,7 @@
 
 // Author: Michael Ferguson
 
-#include <robot_calibration/capture/checkerboard_finder.h>
+#include <robot_calibration/finders/checkerboard_finder.hpp>
 #include <sensor_msgs/point_cloud2_iterator.hpp>
 
 static const rclcpp::Logger LOGGER = rclcpp::get_logger("checkerboard_finder");

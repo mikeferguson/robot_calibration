@@ -19,7 +19,7 @@
 // Author: Niharika Arora, Michael Ferguson
 
 #include <math.h>
-#include <robot_calibration/capture/robot_finder.h>
+#include <robot_calibration/finders/robot_finder.hpp>
 #include <sensor_msgs/point_cloud2_iterator.hpp>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 

@@ -20,7 +20,7 @@
 
 #include <cmath>
 #include <fstream>
-#include "robot_calibration/calibration/base_calibration.h"
+#include <robot_calibration/optimization/base_calibration.hpp>
 
 #define PI          3.14159265359
 

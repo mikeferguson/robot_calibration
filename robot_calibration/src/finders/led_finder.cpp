@@ -19,7 +19,7 @@
 // Author: Michael Ferguson
 
 #include <math.h>
-#include <robot_calibration/capture/led_finder.h>
+#include <robot_calibration/finders/led_finder.hpp>
 #include <sensor_msgs/point_cloud2_iterator.hpp>
 #include <sensor_msgs/image_encodings.hpp>
 

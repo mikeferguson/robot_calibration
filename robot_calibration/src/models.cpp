@@ -19,8 +19,8 @@
 // Author: Michael Ferguson
 
 #include <iostream>
-#include <robot_calibration/models/chain.h>
-#include <robot_calibration/models/camera3d.h>
+#include <robot_calibration/models/chain3d.hpp>
+#include <robot_calibration/models/camera3d.hpp>
 
 namespace robot_calibration
 {
@@ -39,7 +39,7 @@ double positionFromMsg(const std::string& name,
   return 0.0;
 }
 
-ChainModel::ChainModel(const std::string& name, KDL::Tree model, std::string root, std::string tip) :
+Chain3dModel::Chain3dModel(const std::string& name, KDL::Tree model, std::string root, std::string tip) :
     root_(root), tip_(tip), name_(name)
 {
   // Create a KDL::Chain
@@ -51,7 +51,7 @@ ChainModel::ChainModel(const std::string& name, KDL::Tree model, std::string roo
   }
 }
 
-std::vector<geometry_msgs::msg::PointStamped> ChainModel::project(
+std::vector<geometry_msgs::msg::PointStamped> Chain3dModel::project(
     const robot_calibration_msgs::msg::CalibrationData& data,
     const CalibrationOffsetParser& offsets)
 {
@@ -115,7 +115,7 @@ std::vector<geometry_msgs::msg::PointStamped> ChainModel::project(
   return points;
 }
 
-KDL::Frame ChainModel::getChainFK(const CalibrationOffsetParser& offsets,
+KDL::Frame Chain3dModel::getChainFK(const CalibrationOffsetParser& offsets,
                                   const sensor_msgs::msg::JointState& state)
 {
   // FK from root to tip
@@ -150,18 +150,18 @@ KDL::Frame ChainModel::getChainFK(const CalibrationOffsetParser& offsets,
   return p_out;
 }
 
-std::string ChainModel::getName() const
+std::string Chain3dModel::getName() const
 {
   return name_;
 }
 
-std::string ChainModel::getType() const
+std::string Chain3dModel::getType() const
 {
-  return "ChainModel";
+  return "Chain3dModel";
 }
 
 Camera3dModel::Camera3dModel(const std::string& name, const std::string& param_name, KDL::Tree model, std::string root, std::string tip) :
-    ChainModel(name, model, root, tip),
+    Chain3dModel(name, model, root, tip),
     param_name_(param_name)
 {
   // TODO add additional parameters for unprojecting observations using initial parameters

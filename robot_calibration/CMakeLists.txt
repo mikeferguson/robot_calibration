@@ -79,15 +79,15 @@ set(dependencies
 
 add_library(robot_calibration SHARED
   src/base_calibration.cpp
-  src/calibration_export.cpp
   src/calibration_offset_parser.cpp
-  src/capture_manager.cpp
-  src/capture_poses.cpp
-  src/chain_manager.cpp
-  src/mesh_loader.cpp
   src/models.cpp
-  src/optimization_params.cpp
-  src/optimizer.cpp
+  src/optimization/params.cpp
+  src/optimization/ceres_optimizer.cpp
+  src/optimization/export.cpp 
+  src/util/capture_manager.cpp
+  src/util/capture_poses.cpp
+  src/util/chain_manager.cpp
+  src/util/mesh_loader.cpp
 )
 target_link_libraries(robot_calibration
   ${Boost_LIBRARIES}
@@ -117,7 +117,7 @@ ament_target_dependencies(robot_calibration_feature_finders
   ${dependencies}
 )
 
-add_executable(calibrate src/calibrate.cpp)
+add_executable(calibrate src/nodes/calibrate.cpp)
 target_link_libraries(calibrate
   robot_calibration
   ${Boost_LIBRARIES}
@@ -130,13 +130,13 @@ ament_target_dependencies(calibrate
   ${dependencies}
 )
 
-add_executable(base_calibration_node src/base_calibration_node.cpp)
+add_executable(base_calibration_node src/nodes/base_calibration.cpp)
 target_link_libraries(base_calibration_node
   robot_calibration
   ${Boost_LIBRARIES}
 )
 
-add_executable(magnetometer_calibration src/magnetometer_calibration.cpp)
+add_executable(magnetometer_calibration src/nodes/magnetometer_calibration.cpp)
 target_link_libraries(magnetometer_calibration
   ${CERES_LIBRARIES}
 )
@@ -144,21 +144,21 @@ ament_target_dependencies(magnetometer_calibration
   ${dependencies}
 )
 
-add_executable(to_rpy src/tools/to_rpy.cpp)
+add_executable(to_rpy src/nodes/to_rpy.cpp)
 target_link_libraries(to_rpy
   robot_calibration
   ${Boost_LIBRARIES}
   ${orocos_kdl_LIBRARIES}
 )
 
-add_executable(viz src/tools/viz.cpp)
+add_executable(viz src/nodes/viz.cpp)
 target_link_libraries(viz
   robot_calibration
   ${Boost_LIBRARIES}
   ${orocos_kdl_LIBRARIES}
 )
 
-add_executable(viz_mesh src/tools/viz_mesh.cpp)
+add_executable(viz_mesh src/nodes/viz_mesh.cpp)
 target_link_libraries(viz_mesh
   robot_calibration
   ${Boost_LIBRARIES}
