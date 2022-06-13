@@ -94,16 +94,9 @@ PlaneFinder::PlaneFinder() :
 
 bool PlaneFinder::init(const std::string& name,
                        std::shared_ptr<tf2_ros::Buffer> buffer,
-                       rclcpp::Node::WeakPtr weak_node)
+                       rclcpp::Node::SharedPtr node)
 {
-  if (!FeatureFinder::init(name, buffer, weak_node))
-  {
-    return false;
-  }
-
-  // Get an instance of the node shared pointer
-  auto node = weak_node.lock();
-  if (!node)
+  if (!FeatureFinder::init(name, buffer, node))
   {
     return false;
   }
@@ -164,7 +157,7 @@ bool PlaneFinder::init(const std::string& name,
   publisher_ = node->create_publisher<sensor_msgs::msg::PointCloud2>(name + "_points", 10);
 
   // Make sure we have CameraInfo before starting
-  if (!depth_camera_manager_.init(name, weak_node, LOGGER))
+  if (!depth_camera_manager_.init(name, node, LOGGER))
   {
     // Error will have been printed by manager
     return false;

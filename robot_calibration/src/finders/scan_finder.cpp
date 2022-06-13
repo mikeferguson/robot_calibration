@@ -39,15 +39,9 @@ ScanFinder::ScanFinder() :
 
 bool ScanFinder::init(const std::string& name,
                       std::shared_ptr<tf2_ros::Buffer> buffer,
-                      rclcpp::Node::WeakPtr weak)
+                      rclcpp::Node::SharedPtr node)
 {
-  if (!FeatureFinder::init(name, buffer, weak))
-  {
-    return false;
-  }
-
-  auto node = weak.lock();
-  if (!node)
+  if (!FeatureFinder::init(name, buffer, node))
   {
     return false;
   }

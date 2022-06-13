@@ -38,7 +38,7 @@ public:
   virtual ~ScanFinder() = default;
   virtual bool init(const std::string& name,
                     std::shared_ptr<tf2_ros::Buffer> buffer,
-                    rclcpp::Node::WeakPtr node);
+                    rclcpp::Node::SharedPtr node);
   virtual bool find(robot_calibration_msgs::msg::CalibrationData * msg);
 
 protected:

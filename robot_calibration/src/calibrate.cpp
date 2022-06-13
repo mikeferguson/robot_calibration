@@ -19,10 +19,10 @@
 // Author: Michael Ferguson
 
 #include <ctime>
-#include <ros/ros.h>
-#include <std_msgs/String.h>
-#include <robot_calibration_msgs/CalibrationData.h>
-#include <robot_calibration_msgs/CaptureConfig.h>
+#include <rclcpp/rclcpp.hpp>
+#include <std_msgs/msg/string.hpp>
+#include <robot_calibration_msgs/msg/calibration_data.hpp>
+#include <robot_calibration_msgs/msg/capture_config.hpp>
 
 #include "robot_calibration/ceres/optimizer.h"
 #include "robot_calibration/capture/capture_manager.h"
@@ -62,16 +62,15 @@
  */
 int main(int argc, char** argv)
 {
-  ros::init(argc, argv,"robot_calibration");
-  ros::NodeHandle nh("~");
+  rclcpp::init(argc, argv);
+  rclcpp::Node::SharedPtr node = std::make_shared<rclcpp::Node>("robot_calibration");
 
   // Should we be stupidly verbose?
-  bool verbose;
-  nh.param<bool>("verbose", verbose, false);
+  bool verbose = node->declare_parameter<bool>("verbose", false);
 
   // The calibration data
-  std_msgs::String description_msg;
-  std::vector<robot_calibration_msgs::CalibrationData> data;
+  std_msgs::msg::String description_msg;
+  std::vector<robot_calibration_msgs::msg::CalibrationData> data;
 
   // What bag to use to load calibration poses out of (for capture)
   std::string pose_bag_name("calibration_poses.bag");
@@ -82,13 +81,13 @@ int main(int argc, char** argv)
   {
     // No name provided for a calibration bag file, must do capture
     robot_calibration::CaptureManager capture_manager;
-    capture_manager.init(nh);
+    capture_manager.init(node);
 
     // Save URDF for calibration/export step
     description_msg.data = capture_manager.getUrdf();
 
     // Load a set of calibration poses
-    std::vector<robot_calibration_msgs::CaptureConfig> poses;
+    std::vector<robot_calibration_msgs::msg::CaptureConfig> poses;
     if (pose_bag_name.compare("--manual") != 0)
     {
       if (!robot_calibration::getPosesFromBag(pose_bag_name, poses))
@@ -99,33 +98,33 @@ int main(int argc, char** argv)
     }
     else
     {
-      ROS_INFO("Using manual calibration mode...");
+      RCLCPP_INFO(node->get_logger(), "Using manual calibration mode...");
     }
 
     // For each pose in the capture sequence.
     for (unsigned pose_idx = 0;
-         (pose_idx < poses.size() || poses.empty()) && ros::ok();
+         (pose_idx < poses.size() || poses.empty()) && rclcpp::ok();
          ++pose_idx)
     {
-      robot_calibration_msgs::CalibrationData msg;
+      robot_calibration_msgs::msg::CalibrationData msg;
       if (poses.empty())
       {
         // Manual calibration, wait for keypress
-        ROS_INFO("Press [Enter] to capture a sample... (or type 'done' and [Enter] to finish capture)");
+        RCLCPP_INFO(node->get_logger(), "Press [Enter] to capture a sample... (or type 'done' and [Enter] to finish capture)");
         std::string throwaway;
         std::getline(std::cin, throwaway);
         if (throwaway.compare("done") == 0)
           break;
         if (throwaway.compare("exit") == 0)
           return 0;
-        if (!ros::ok())
+        if (!rclcpp::ok())
           break;
 
         // Empty vector causes us to capture all features
         std::vector<std::string> features;
         if (!capture_manager.captureFeatures(features, msg))
         {
-          ROS_WARN("Failed to capture sample %u.", pose_idx);
+          RCLCPP_WARN(node->get_logger(), "Failed to capture sample %u.", pose_idx);
           continue;
         }
       }
@@ -134,28 +133,28 @@ int main(int argc, char** argv)
         // Move head/arm to pose
         if (!capture_manager.moveToState(poses[pose_idx].joint_states))
         {
-          ROS_WARN("Unable to move to desired state for sample %u.", pose_idx);
+          RCLCPP_WARN(node->get_logger(), "Unable to move to desired state for sample %u.", pose_idx);
           continue;
         }
 
         // Make sure sensor data is up to date after settling
-        ros::Duration(0.1).sleep();
+        rclcpp::sleep_for(std::chrono::milliseconds(100));
 
         // Get pose of the features
         if (!capture_manager.captureFeatures(poses[pose_idx].features, msg))
         {
-          ROS_WARN("Failed to capture sample %u.", pose_idx);
+          RCLCPP_WARN(node->get_logger(), "Failed to capture sample %u.", pose_idx);
           continue;
         }
       }
 
-      ROS_INFO("Captured pose %u", pose_idx);
+      RCLCPP_INFO(node->get_logger(), "Captured pose %u", pose_idx);
 
       // Add to samples
       data.push_back(msg);
     }
 
-    ROS_INFO("Done capturing samples");
+    RCLCPP_INFO(node->get_logger(), "Done capturing samples");
   }
   else
   {
@@ -163,7 +162,7 @@ int main(int argc, char** argv)
     std::string data_bag_name("/tmp/calibration_data.bag");
     if (argc > 2)
       data_bag_name = argv[2];
-    ROS_INFO_STREAM("Loading calibration data from " << data_bag_name);
+    RCLCPP_INFO(node->get_logger(), "Loading calibration data from %s", data_bag_name.c_str());
 
     if (!robot_calibration::load_bag(data_bag_name, description_msg, data))
     {
@@ -176,39 +175,19 @@ int main(int argc, char** argv)
   robot_calibration::OptimizationParams params;
   robot_calibration::Optimizer opt(description_msg.data);
 
-  // Load calibration steps (if any)
-  XmlRpc::XmlRpcValue cal_steps;
-  if (nh.getParam("cal_steps", cal_steps))
+  // Load calibration steps
+  std::vector<std::string> calibration_steps =
+    node->declare_parameter<std::vector<std::string>>("calibration_steps", std::vector<std::string>());
+  if (calibration_steps.empty())
   {
-    // Should be a struct (mapping name -> config)
-    if (cal_steps.getType() != XmlRpc::XmlRpcValue::TypeStruct)
-    {
-      ROS_FATAL("Parameter 'cal_steps' should be a struct.");
-      return false;
-    }
-
-    XmlRpc::XmlRpcValue::iterator it;
-    size_t step;
-    size_t max_step = (cal_steps.size()>0)?cal_steps.size():1;
-    std::vector<std::string> prev_frame_names;
-    std::string prev_params_yaml;
-    for (step = 0, it = cal_steps.begin(); step < max_step; step++, it++)
-    {
-      std::string name = static_cast<std::string>(it->first);
-      ros::NodeHandle cal_steps_handle(nh, "cal_steps/"+name);
-      params.LoadFromROS(cal_steps_handle);
-      opt.optimize(params, data, verbose);
-      if (verbose)
-      {
-        std::cout << "Parameter Offsets:" << std::endl;
-        std::cout << opt.getOffsets()->getOffsetYAML() << std::endl;
-      }
-    }
+    RCLCPP_FATAL(node->get_logger(), "Parameter calibration_steps is not defined");
+    return -1;
   }
-  else
+
+  // Run calibration steps
+  for (auto step : calibration_steps)
   {
-    // Single step calibration
-    params.LoadFromROS(nh);
+    params.LoadFromROS(node, step);
     opt.optimize(params, data, verbose);
     if (verbose)
     {
@@ -220,7 +199,8 @@ int main(int argc, char** argv)
   // Write outputs
   robot_calibration::exportResults(opt, description_msg.data, data);
 
-  ROS_INFO("Done calibrating");
+  RCLCPP_INFO(node->get_logger(), "Done calibrating");
+  rclcpp::shutdown();
 
   return 0;
 }

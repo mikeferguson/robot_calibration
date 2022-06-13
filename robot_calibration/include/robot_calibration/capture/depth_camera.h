@@ -36,14 +36,8 @@ public:
   DepthCameraInfoManager() : camera_info_valid_(false) {}
   virtual ~DepthCameraInfoManager() {}
 
-  bool init(const std::string& name, rclcpp::Node::WeakPtr weak_node, const rclcpp::Logger& logger)
+  bool init(const std::string& name, rclcpp::Node::SharedPtr node, const rclcpp::Logger& logger)
   {
-    auto node = weak_node.lock();
-    if (!node)
-    {
-      return false;
-    }
-
     std::string topic_name =
       node->declare_parameter<std::string>(name + ".camera_info_topic", "/head_camera/depth/camera_info");
     camera_info_subscriber_ = node->create_subscription<sensor_msgs::msg::CameraInfo>(

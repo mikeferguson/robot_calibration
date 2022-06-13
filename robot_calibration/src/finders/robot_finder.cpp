@@ -39,16 +39,9 @@ RobotFinder::RobotFinder() :
 
 bool RobotFinder::init(const std::string& name,
                        std::shared_ptr<tf2_ros::Buffer> buffer,
-                       rclcpp::Node::WeakPtr weak_node)
+                       rclcpp::Node::SharedPtr node)
 {
-  if (!PlaneFinder::init(name, buffer, weak_node))
-  {
-    return false;
-  }
-
-  // Get an instance of the node shared pointer
-  auto node = weak_node.lock();
-  if (!node)
+  if (!PlaneFinder::init(name, buffer, node))
   {
     return false;
   }

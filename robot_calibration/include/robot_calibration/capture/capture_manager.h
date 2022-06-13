@@ -23,6 +23,7 @@
 
 #include <string>
 #include <vector>
+#include <rclcpp/rclcpp.hpp>
 #include "robot_calibration/capture/chain_manager.h"
 #include "robot_calibration/capture/feature_finder_loader.h"
 
@@ -32,16 +33,19 @@ class CaptureManager
 {
 public:
   CaptureManager();
-  bool init(ros::NodeHandle& nh);
-  bool moveToState(const sensor_msgs::JointState& state);
+  bool init(rclcpp::Node::SharedPtr node);
+  bool moveToState(const sensor_msgs::msg::JointState& state);
   bool captureFeatures(const std::vector<std::string>& feature_names,
-                       robot_calibration_msgs::CalibrationData& msg);
+                       robot_calibration_msgs::msg::CalibrationData& msg);
   std::string getUrdf();
 
 private:
-  ros::Publisher data_pub_;
-  ros::Publisher urdf_pub_;
-  std_msgs::String description_msg_;
+  void callback(std_msgs::msg::String::ConstSharedPtr msg);
+
+  rclcpp::Publisher<robot_calibration_msgs::msg::CalibrationData>::SharedPtr data_pub_;
+  rclcpp::Subscription<std_msgs::msg::String>::SharedPtr urdf_sub_;
+  std::string description_;
+  bool description_valid_;
 
   robot_calibration::ChainManager* chain_manager_;
   robot_calibration::FeatureFinderLoader feature_finder_loader_;

@@ -21,8 +21,6 @@
 #include <robot_calibration/mesh_loader.h>
 #include <visualization_msgs/msg/marker_array.hpp>
 
-static const rclcpp::Logger LOGGER = rclcpp::get_logger("robot_calibration");
-
 int main(int argc, char** argv)
 {
   // What mesh to visualize
@@ -38,22 +36,22 @@ int main(int argc, char** argv)
 
   // Start up ROS
   rclcpp::init(argc, argv);
-  rclcpp::Node node("robot_calibration_mesh_viz");
+  rclcpp::Node::SharedPtr node = std::make_shared<rclcpp::Node>("robot_calibration_mesh_viz");
 
   // Setup publisher
   rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr pub;
-  pub = node.create_publisher<visualization_msgs::msg::MarkerArray>("data", 10);
+  pub = node->create_publisher<visualization_msgs::msg::MarkerArray>("data", 10);
 
   // Get robot description
   std::string robot_description =
-    node.declare_parameter<std::string>("robot_description", "");
+    node->declare_parameter<std::string>("robot_description", "");
 
   // Load URDF and root link name
   std::shared_ptr<urdf::Model> model;
   model = std::make_shared<urdf::Model>();
   if (!model->initString(robot_description))
   {
-    RCLCPP_FATAL(LOGGER, "Failed to parse URDF.");
+    RCLCPP_FATAL(node->get_logger(), "Failed to parse URDF.");
     return -1;
   }
   std::string root_name = model->getRoot()->name;
@@ -65,7 +63,7 @@ int main(int argc, char** argv)
   robot_calibration::MeshPtr mesh = loader.getCollisionMesh(link_name);
   if (!mesh)
   {
-    RCLCPP_FATAL(LOGGER, "Unable to load mesh");
+    RCLCPP_FATAL(node->get_logger(), "Unable to load mesh");
     return -1;
   }
 

@@ -186,7 +186,7 @@ bool BaseCalibration::spin(double velocity, int rotations, bool verbose)
   std::cout << "...done" << std::endl;
 
   // Wait to stop
-  //ros::Duration(0.5 + fabs(velocity) / accel_limit_).sleep();
+  rclcpp::sleep_for(std::chrono::seconds(1));
 
   // Save measurements
   imu_.push_back(imu_angle_);

@@ -47,7 +47,7 @@ public:
    */
   virtual bool init(const std::string& name,
                     std::shared_ptr<tf2_ros::Buffer> buffer,
-                    rclcpp::Node::WeakPtr /* node */)
+                    rclcpp::Node::SharedPtr /* node */)
   {
     name_ = name;
     tf2_buffer_ = buffer;

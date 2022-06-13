@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Michael Ferguson
+ * Copyright (C) 2018-2022 Michael Ferguson
  * Copyright (C) 2015 Fetch Robotics Inc.
  * Copyright (C) 2013-2014 Unbounded Robotics Inc.
  *
@@ -21,14 +21,11 @@
 #ifndef ROBOT_CALIBRATION_LOAD_BAG_H
 #define ROBOT_CALIBRATION_LOAD_BAG_H
 
-#include <ros/ros.h>
-#include <rosbag/bag.h>
-#include <rosbag/view.h>
-#include <rosbag/query.h>
-#include <boost/foreach.hpp>  // for rosbag iterator
+#include <rclcpp/rclcpp.hpp>
+#include <rosbag2_cpp/reader.hpp>
 
-#include <std_msgs/String.h>
-#include <robot_calibration_msgs/CalibrationData.h>
+#include <std_msgs/msg/string.hpp>
+#include <robot_calibration_msgs/msg/calibration_data.hpp>
 
 namespace robot_calibration
 {
@@ -40,37 +37,33 @@ namespace robot_calibration
  *  \param data This will be loaded with the calibration data.
  */
 bool load_bag(const std::string& file_name,
-              std_msgs::String& description_msg,
-              std::vector<robot_calibration_msgs::CalibrationData>& data)
+              std_msgs::msg::String& description_msg,
+              std::vector<robot_calibration_msgs::msg::CalibrationData>& data)
 {
+  rosbag2_cpp::Reader reader;
+  
   // Open the bag file
-  rosbag::Bag bag_;
-  try
-  {
-    bag_.open(file_name, rosbag::bagmode::Read);
-  }
-  catch (rosbag::BagException&)
-  {
-    ROS_FATAL_STREAM("Cannot open " << file_name);
-    return false;
-  }
+  reader.open(file_name);
 
-  // Get robot_description from bag file
-  rosbag::View model_view_(bag_, rosbag::TopicQuery("robot_description"));
-  if (model_view_.size() < 1)
+  // Load messages
+  while (reader.has_next())
   {
-    ROS_FATAL_STREAM("robot_description topic not found in bag file.");
-    return false;
-  }
-  std_msgs::String::ConstPtr description_ = model_view_.begin()->instantiate<std_msgs::String>();
-  description_msg = *description_;
+    auto bag_message = reader.read_next();
 
-  // Parse calibration_data topic
-  rosbag::View data_view_(bag_, rosbag::TopicQuery("calibration_data"));
-  BOOST_FOREACH (rosbag::MessageInstance const m, data_view_)
-  {
-    robot_calibration_msgs::CalibrationData::ConstPtr msg = m.instantiate<robot_calibration_msgs::CalibrationData>();
-    data.push_back(*msg);
+    if (bag_message->topic_name == "robot_description")
+    {
+      rclcpp::SerializedMessage extracted_serialized_msg(*bag_message->serialized_data);
+      rclcpp::Serialization<std_msgs::msg::String> serialization;
+      serialization.deserialize_message(&extracted_serialized_msg, &description_msg);
+    }
+    else if (bag_message->topic_name == "calibration_data")
+    {
+      robot_calibration_msgs::msg::CalibrationData msg;
+      rclcpp::SerializedMessage extracted_serialized_msg(*bag_message->serialized_data);
+      rclcpp::Serialization<robot_calibration_msgs::msg::CalibrationData> serialization;
+      serialization.deserialize_message(&extracted_serialized_msg, &msg);
+      data.push_back(msg);
+    }
   }
 
   return true;

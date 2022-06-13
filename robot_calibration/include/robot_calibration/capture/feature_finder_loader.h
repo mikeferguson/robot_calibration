@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Michael Ferguson
+ * Copyright (C) 2018-2022 Michael Ferguson
  * Copyright (C) 2015 Fetch Robotics Inc.
  * Copyright (C) 2013-2014 Unbounded Robotics Inc.
  *
@@ -22,16 +22,18 @@
 #define ROBOT_CALIBRATION_FEATURE_FINDER_LOADER_H
 
 #include <map>
-#include <boost/shared_ptr.hpp>
+#include <memory>
 
-#include <ros/ros.h>
-#include <pluginlib/class_loader.h>
+#include <rclcpp/rclcpp.hpp>
+#include <pluginlib/class_loader.hpp>
 #include <robot_calibration/plugins/feature_finder.h>
+#include <tf2_ros/buffer.h>
+#include <tf2_ros/transform_listener.h>
 
 namespace robot_calibration
 {
 
-typedef boost::shared_ptr<FeatureFinder> FeatureFinderPtr;
+typedef std::shared_ptr<FeatureFinder> FeatureFinderPtr;
 typedef std::map<std::string, FeatureFinderPtr > FeatureFinderMap;
 
 /**
@@ -45,57 +47,60 @@ public:
   {
   }
 
-  bool load(ros::NodeHandle& nh,
+  bool load(rclcpp::Node::SharedPtr node,
             FeatureFinderMap& features)
   {
+    // Setup tf2 interface
+    tf2_buffer_ = std::make_shared<tf2_ros::Buffer>(node->get_clock());
+    tf2_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf2_buffer_);
+
     // Empty the mapping
     features.clear();
 
-    // Construct finders to detect relevant features
-    XmlRpc::XmlRpcValue finder_params;
-    if (!nh.getParam("features", finder_params))
-    {
-      ROS_FATAL("Parameter 'features' is not set!");
-      return false;
-    }
+    auto logger = node->get_logger();
 
-    // Should be a struct (mapping name -> config)
-    if (finder_params.getType() != XmlRpc::XmlRpcValue::TypeStruct)
+    // Construct finders to detect relevant features
+    std::vector<std::string> feature_names =
+      node->declare_parameter<std::vector<std::string>>("features", std::vector<std::string>());
+    if (feature_names.empty())
     {
-      ROS_FATAL("Parameter 'features' should be a struct.");
+      RCLCPP_FATAL(logger, "Parameter 'features' is not set!");
       return false;
     }
 
     // Load each finder
-    ROS_INFO("Loading %d feature finders.", (int)finder_params.size());
-    for (XmlRpc::XmlRpcValue::iterator it = finder_params.begin();
-         it != finder_params.end();
-         it++)
+    RCLCPP_INFO(logger, "Loading %d feature finders.", static_cast<int>(feature_names.size()));
+    for (auto name : feature_names)
     {
-      // Get name(space) of this finder
-      std::string name = static_cast<std::string>(it->first);
-      ros::NodeHandle finder_handle(nh, "features/"+name);
-
       // Get finder type
-      std::string type;
-      if (!finder_handle.getParam("type", type))
+      std::string type =
+        node->declare_parameter<std::string>(name + ".type", std::string());
+      
+      if (type == "")
       {
-        ROS_FATAL("Feature finder %s has no type defined", name.c_str());
+        RCLCPP_FATAL(logger, "Feature finder %s has no type defined", name.c_str());
         return false;
       }
 
       // Load correct finder
       FeatureFinderPtr finder;
-      ROS_INFO("  New %s: %s", type.c_str(), name.c_str());
-      finder = plugin_loader_.createInstance(type);
-      if (finder && finder->init(name, finder_handle))
+      RCLCPP_INFO(logger, "  New %s: %s", type.c_str(), name.c_str());
+      finder = plugin_loader_.createSharedInstance(type);
+      if (finder && finder->init(name, tf2_buffer_, node))
+      {
         features[name] = finder;
+      }
     }
 
     return true;
   }
+
 private:
   pluginlib::ClassLoader<robot_calibration::FeatureFinder> plugin_loader_;
+
+  // Shared TF2 buffer (since listener creates an extra rclcpp::Node)
+  std::shared_ptr<tf2_ros::Buffer> tf2_buffer_;
+  std::shared_ptr<tf2_ros::TransformListener> tf2_listener_;
 };
 
 }  // namespace robot_calibration

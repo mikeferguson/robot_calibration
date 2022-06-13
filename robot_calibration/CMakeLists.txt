@@ -29,6 +29,7 @@ find_package(orocos_kdl REQUIRED)
 find_package(ament_cmake REQUIRED)
 find_package(camera_calibration_parsers REQUIRED)
 find_package(Ceres REQUIRED)
+find_package(control_msgs REQUIRED)
 find_package(cv_bridge REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(geometric_shapes REQUIRED)
@@ -40,6 +41,7 @@ find_package(pluginlib REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_action REQUIRED)
 find_package(robot_calibration_msgs REQUIRED)
+find_package(rosbag2_cpp REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
@@ -56,6 +58,7 @@ link_directories(${orocos_kdl_LIBRARY_DIRS}) # this is a hack, will eventually b
 
 set(dependencies
   camera_calibration_parsers
+  control_msgs
   cv_bridge
   geometry_msgs
   geometric_shapes
@@ -66,6 +69,7 @@ set(dependencies
   rclcpp
   rclcpp_action
   robot_calibration_msgs
+  rosbag2_cpp
   sensor_msgs
   tf2_geometry_msgs
   tf2_ros
@@ -77,9 +81,9 @@ add_library(robot_calibration SHARED
   src/base_calibration.cpp
   src/calibration_export.cpp
   src/calibration_offset_parser.cpp
-#  src/capture_manager.cpp
-#  src/capture_poses.cpp
-#  src/chain_manager.cpp
+  src/capture_manager.cpp
+  src/capture_poses.cpp
+  src/chain_manager.cpp
   src/mesh_loader.cpp
   src/models.cpp
   src/optimization_params.cpp
@@ -113,15 +117,18 @@ ament_target_dependencies(robot_calibration_feature_finders
   ${dependencies}
 )
 
-#add_executable(calibrate src/calibrate.cpp)
-#target_link_libraries(calibrate
-#  robot_calibration
-#  ${Boost_LIBRARIES}
-#  ${CERES_LIBRARIES}
-#  ${tinyxml_LIBRARIES}
-#  ${orocos_kdl_LIBRARIES}
-#  ${OpenCV_LIBS}
-#)
+add_executable(calibrate src/calibrate.cpp)
+target_link_libraries(calibrate
+  robot_calibration
+  ${Boost_LIBRARIES}
+  ${CERES_LIBRARIES}
+  ${tinyxml_LIBRARIES}
+  ${orocos_kdl_LIBRARIES}
+  ${OpenCV_LIBS}
+)
+ament_target_dependencies(calibrate
+  ${dependencies}
+)
 
 add_executable(base_calibration_node src/base_calibration_node.cpp)
 target_link_libraries(base_calibration_node
@@ -129,11 +136,13 @@ target_link_libraries(base_calibration_node
   ${Boost_LIBRARIES}
 )
 
-#add_executable(magnetometer_calibration src/magnetometer_calibration.cpp)
-#target_link_libraries(magnetometer_calibration
-#  ${Boost_LIBRARIES}
-#  ${CERES_LIBRARIES}
-#)
+add_executable(magnetometer_calibration src/magnetometer_calibration.cpp)
+target_link_libraries(magnetometer_calibration
+  ${CERES_LIBRARIES}
+)
+ament_target_dependencies(magnetometer_calibration
+  ${dependencies}
+)
 
 add_executable(to_rpy src/tools/to_rpy.cpp)
 target_link_libraries(to_rpy
@@ -142,12 +151,12 @@ target_link_libraries(to_rpy
   ${orocos_kdl_LIBRARIES}
 )
 
-#add_executable(viz src/tools/viz.cpp)
-#target_link_libraries(viz
-#  robot_calibration
-#  ${Boost_LIBRARIES}
-#  ${orocos_kdl_LIBRARIES}
-#)
+add_executable(viz src/tools/viz.cpp)
+target_link_libraries(viz
+  robot_calibration
+  ${Boost_LIBRARIES}
+  ${orocos_kdl_LIBRARIES}
+)
 
 add_executable(viz_mesh src/tools/viz_mesh.cpp)
 target_link_libraries(viz_mesh
@@ -162,12 +171,12 @@ install(DIRECTORY include/ DESTINATION include)
 
 install(TARGETS
   base_calibration_node
-#  calibrate
-#  magnetometer_calibration
+  calibrate
+  magnetometer_calibration
   robot_calibration
   robot_calibration_feature_finders
   to_rpy
-#  viz
+  viz
   viz_mesh
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib

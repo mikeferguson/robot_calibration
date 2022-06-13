@@ -18,51 +18,38 @@
 
 // Author: Michael Ferguson
 
-#include <ros/ros.h>
-#include <rosbag/bag.h>
-#include <rosbag/view.h>
-#include <rosbag/query.h>
+#include <rclcpp/rclcpp.hpp>
+#include <rosbag2_cpp/reader.hpp>
 #include "robot_calibration/capture/poses.h"
+
+static const rclcpp::Logger LOGGER = rclcpp::get_logger("robot_calibration");
 
 namespace robot_calibration
 {
 
 // Load a set of calibration poses
 bool getPosesFromBag(const std::string& pose_bag_name,
-                     std::vector<robot_calibration_msgs::CaptureConfig>& poses)
+                     std::vector<robot_calibration_msgs::msg::CaptureConfig>& poses)
 {
   poses.clear();
 
-  ROS_INFO_STREAM("Opening " << pose_bag_name);
-  rosbag::Bag bag;
-  try
+  RCLCPP_INFO(LOGGER, "Opening %s", pose_bag_name.c_str());
+  rosbag2_cpp::Reader reader;
+  reader.open(pose_bag_name);
+  while (reader.has_next())
   {
-    bag.open(pose_bag_name, rosbag::bagmode::Read);
-  }
-  catch (rosbag::BagException&)
-  {
-    ROS_FATAL_STREAM("Cannot open " << pose_bag_name);
-    return false;
-  }
-  rosbag::View data_view(bag, rosbag::TopicQuery("calibration_joint_states"));
-
-  BOOST_FOREACH (rosbag::MessageInstance const m, data_view)
-  {
-    robot_calibration_msgs::CaptureConfig::ConstPtr msg = m.instantiate<robot_calibration_msgs::CaptureConfig>();
-    if (msg == NULL)
+    try
     {
-      // Try to load older style bags
-      sensor_msgs::JointState::ConstPtr js_msg = m.instantiate<sensor_msgs::JointState>();
-      if (js_msg != NULL)
-      {
-        robot_calibration_msgs::CaptureConfig config;
-        config.joint_states = *js_msg;
-        poses.push_back(config);
-      }
+      auto bag_message = reader.read_next();
+      robot_calibration_msgs::msg::CaptureConfig msg;
+      rclcpp::SerializedMessage extracted_serialized_msg(*bag_message->serialized_data);
+      rclcpp::Serialization<robot_calibration_msgs::msg::CaptureConfig> serialization;
+      serialization.deserialize_message(&extracted_serialized_msg, &msg);
+      poses.push_back(msg);
     }
-    else
+    catch (std::runtime_error&)
     {
-      poses.push_back(*msg);
+      RCLCPP_WARN(LOGGER, "Unable to deserialize message");
     }
   }
   return true;

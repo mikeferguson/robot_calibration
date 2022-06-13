@@ -16,11 +16,11 @@
 
 // Author: Michael Ferguson
 
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 #include <robot_calibration/load_bag.h>
-#include <sensor_msgs/JointState.h>
-#include <sensor_msgs/PointCloud2.h>
-#include <visualization_msgs/MarkerArray.h>
+#include <sensor_msgs/msg/joint_state.hpp>
+#include <sensor_msgs/msg/point_cloud2.hpp>
+#include <visualization_msgs/msg/marker_array.hpp>
 
 #include <urdf/model.h>
 #include <kdl_parser/kdl_parser.hpp>
@@ -44,18 +44,22 @@ int main(int argc, char** argv)
   std::string bag_name = argv[1];
 
   // Start up ROS
-  ros::init(argc, argv, "robot_calibration_viz");
-  ros::NodeHandle nh("~");
+  rclcpp::init(argc, argv);
+  rclcpp::Node::SharedPtr node = std::make_shared<rclcpp::Node>("robot_calibration_viz");
 
   // Publisher of fake joint states (latched)
-  ros::Publisher state = nh.advertise<sensor_msgs::JointState>("/fake_controller_joint_states", 1, true);
+  rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr state =
+    node->create_publisher<sensor_msgs::msg::JointState>("/fake_controller_joint_states",
+      rclcpp::QoS(1).transient_local());
 
   // Publisher of visualization (latched)
-  ros::Publisher pub = nh.advertise<visualization_msgs::MarkerArray>("data", 10, true);
+  rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr pub =
+    node->create_publisher<visualization_msgs::msg::MarkerArray>("data",
+      rclcpp::QoS(1).transient_local());
 
   // The calibration data
-  std_msgs::String description_msg;
-  std::vector<robot_calibration_msgs::CalibrationData> data;
+  std_msgs::msg::String description_msg;
+  std::vector<robot_calibration_msgs::msg::CalibrationData> data;
   if (!robot_calibration::load_bag(bag_name, description_msg, data))
   {
     // Error will be printed in function
@@ -67,50 +71,61 @@ int main(int argc, char** argv)
   KDL::Tree tree;
   if (!model.initString(description_msg.data))
   {
-    ROS_FATAL("Failed to parse URDF.");
+    RCLCPP_FATAL(node->get_logger(), "Failed to parse URDF.");
     return -1;
   }
   if (!kdl_parser::treeFromUrdfModel(model, tree))
   {
-    ROS_FATAL("Failed to construct KDL tree");
+    RCLCPP_FATAL(node->get_logger(), "Failed to construct KDL tree");
+    return -1;
+  }
+
+  // Load calibration steps
+  std::vector<std::string> calibration_steps =
+    node->declare_parameter<std::vector<std::string>>("calibration_steps", std::vector<std::string>());
+  if (calibration_steps.empty())
+  {
+    RCLCPP_FATAL(node->get_logger(), "Parameter calibration_steps is not defined");
     return -1;
   }
 
   // Get parameters
   robot_calibration::OptimizationParams params;
   robot_calibration::CalibrationOffsetParser offsets;
-  params.LoadFromROS(nh);
-  ROS_INFO_STREAM("Publishing markers in " << params.base_link << " frame.");
+  params.LoadFromROS(node, calibration_steps.front());
+  RCLCPP_INFO_STREAM(node->get_logger(), "Publishing markers in " << params.base_link << " frame.");
 
   // Create models for reprojection
   std::map<std::string, robot_calibration::ChainModel*> models;
-  std::map<std::string, ros::Publisher> camera_pubs;
+  std::map<std::string, rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr> camera_pubs;
   std::vector<std::string> model_names;
   for (size_t i = 0; i < params.models.size(); ++i)
   {
     if (params.models[i].type == "chain")
     {
-      ROS_INFO_STREAM("Creating chain '" << params.models[i].name << "' from " <<
-                                            params.base_link << " to " <<
-                                            params.models[i].params["frame"]);
-      robot_calibration::ChainModel* model = new robot_calibration::ChainModel(params.models[i].name, tree, params.base_link, params.models[i].params["frame"]);
+      RCLCPP_INFO_STREAM(node->get_logger(),
+                         "Creating chain '" << params.models[i].name << "' from " <<
+                                               params.base_link << " to " <<
+                                               ""); // TODO params.models[i].params["frame"]);
+      robot_calibration::ChainModel* model = new robot_calibration::ChainModel(params.models[i].name, tree, params.base_link, ""); // TODO params.models[i].params["frame"]);
       models[params.models[i].name] = model;
       model_names.push_back(params.models[i].name);
     }
     else if (params.models[i].type == "camera3d")
     {
-      ROS_INFO_STREAM("Creating camera3d '" << params.models[i].name << "' in frame " <<
-                                               params.models[i].params["frame"]);
-      std::string param_name = params.models[i].params["param_name"];
+      RCLCPP_INFO_STREAM(node->get_logger(),
+                         "Creating camera3d '" << params.models[i].name << "' in frame " <<
+                                                  ""); // TODO params.models[i].params["frame"]);
+      std::string param_name = ""; // TODO params.models[i].params["param_name"];
       if (param_name == "")
       {
         // Default to same name as sensor
         param_name = params.models[i].name;
       }
-      robot_calibration::Camera3dModel* model = new robot_calibration::Camera3dModel(params.models[i].name, param_name, tree, params.base_link, params.models[i].params["frame"]);
+      robot_calibration::Camera3dModel* model = new robot_calibration::Camera3dModel(params.models[i].name, param_name, tree, params.base_link, ""); // TODO params.models[i].params["frame"]);
       models[params.models[i].name] = model;
       model_names.push_back(params.models[i].name);
-      camera_pubs[params.models[i].name] = nh.advertise<sensor_msgs::PointCloud2>(params.models[i].name, 1);
+      camera_pubs[params.models[i].name] = node->create_publisher<sensor_msgs::msg::PointCloud2>(params.models[i].name, 1);
     }
     else
     {
@@ -119,10 +134,10 @@ int main(int argc, char** argv)
   }
 
   // Setup our colors
-  std::vector<std_msgs::ColorRGBA> model_colors;
+  std::vector<std_msgs::msg::ColorRGBA> model_colors;
   {
     // Index 0 is white -- used for first points
-    std_msgs::ColorRGBA color;
+    std_msgs::msg::ColorRGBA color;
     color.r = 1.0;
     color.b = 1.0;
     color.g = 1.0;
@@ -131,7 +146,7 @@ int main(int argc, char** argv)
     while (model_colors.size() < model_names.size() + 1)
     {
       // Red
-      std_msgs::ColorRGBA color;
+      std_msgs::msg::ColorRGBA color;
       color.r = 1;
       color.g = 0;
       color.b = 0;
@@ -177,8 +192,8 @@ int main(int argc, char** argv)
                           params.free_frames_initial_values[i].pitch,
                           params.free_frames_initial_values[i].yaw))
     {
-      ROS_ERROR_STREAM("Error setting initial value for " <<
-                       params.free_frames_initial_values[i].name);
+      RCLCPP_ERROR_STREAM(node->get_logger(), "Error setting initial value for " <<
+                          params.free_frames_initial_values[i].name);
     }
   }
 
@@ -188,7 +203,7 @@ int main(int argc, char** argv)
     std::string offsets_yaml = argv[2];
     if (!offsets.loadOffsetYAML(offsets_yaml))
     {
-      ROS_FATAL("Unable to load offsets from YAML");
+      RCLCPP_FATAL(node->get_logger(), "Unable to load offsets from YAML");
       return -1;
     }
   }
@@ -197,15 +212,15 @@ int main(int argc, char** argv)
   for (size_t i = 0; i < data.size(); ++i)
   {
     // Break out if ROS is dead
-    if (!ros::ok())
+    if (!rclcpp::ok())
       break;
 
     // Publish a marker array
-    visualization_msgs::MarkerArray markers;
+    visualization_msgs::msg::MarkerArray markers;
     for (size_t m = 0; m < model_names.size(); ++m)
     {
       // Project through model
-      std::vector<geometry_msgs::PointStamped> points;
+      std::vector<geometry_msgs::msg::PointStamped> points;
       points = models[model_names[m]]->project(data[i], offsets);
 
       if (points.empty())
@@ -214,9 +229,9 @@ int main(int argc, char** argv)
       }
 
       // Convert into marker
-      visualization_msgs::Marker msg;
+      visualization_msgs::msg::Marker msg;
       msg.header.frame_id = params.base_link;
-      msg.header.stamp = ros::Time::now();
+      msg.header.stamp = node->now();
       msg.ns = model_names[m];
       msg.id = m;
       msg.type = msg.SPHERE_LIST;
@@ -233,16 +248,16 @@ int main(int argc, char** argv)
       }
       markers.markers.push_back(msg);
     }
-    pub.publish(markers);
+    pub->publish(markers);
 
     // Publish the joint states
-    sensor_msgs::JointState state_msg = data[i].joint_states;
+    sensor_msgs::msg::JointState state_msg = data[i].joint_states;
     for (size_t j = 0; j < state_msg.name.size(); ++j)
     {
       double offset = offsets.get(state_msg.name[j]);
       state_msg.position[j] += offset;
     }
-    state.publish(state_msg);
+    state->publish(state_msg);
 
     // Publish sensor data (if present)
     for (size_t obs = 0; obs < data[i].observations.size(); ++obs)
@@ -252,7 +267,7 @@ int main(int argc, char** argv)
         auto pub = camera_pubs.find(data[i].observations[obs].sensor_name);
         if (pub != camera_pubs.end())
         {
-          pub->second.publish(data[i].observations[obs].cloud);
+          pub->second->publish(data[i].observations[obs].cloud);
         }
       }
     }

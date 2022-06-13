@@ -84,13 +84,12 @@ class LedFinder : public FeatureFinder
   };
 
   using LedAction = robot_calibration_msgs::action::GripperLedCommand;
-  using LedGoal = rclcpp_action::ServerGoalHandle<LedAction>;
 
 public:
   LedFinder();
   bool init(const std::string& name,
             std::shared_ptr<tf2_ros::Buffer> buffer,
-            rclcpp::Node::WeakPtr node);
+            rclcpp::Node::SharedPtr node);
   bool find(robot_calibration_msgs::msg::CalibrationData * msg);
 
 private:

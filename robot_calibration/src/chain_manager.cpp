@@ -20,54 +20,48 @@
 
 #include <robot_calibration/capture/chain_manager.h>
 
+static const rclcpp::Logger LOGGER = rclcpp::get_logger("robot_calibration");
+
 namespace robot_calibration
 {
 
-ChainManager::ChainManager(ros::NodeHandle& nh, double wait_time) :
+ChainManager::ChainManager(rclcpp::Node::SharedPtr node, long int wait_time) :
   state_is_valid_(false)
 {
   // We cannot do much without some kinematic chains
-  if (!nh.hasParam("chains"))
+  std::vector<std::string> chain_names =
+    node->declare_parameter<std::vector<std::string>>("chains", std::vector<std::string>());
+  if (chain_names.empty())
   {
-    ROS_WARN("No chains defined.");
+    RCLCPP_WARN(LOGGER, "No chains defined.");
     return;
   }
 
-  // Get chains
-  XmlRpc::XmlRpcValue chains;
-  nh.getParam("chains", chains);
-  ROS_ASSERT(chains.getType() == XmlRpc::XmlRpcValue::TypeArray);
-
   // Construct each chain to manage
-  for (int i = 0; i < chains.size(); ++i)
+  for (auto name : chain_names)
   {
-    std::string name, topic, group;
-    name = static_cast<std::string>(chains[i]["name"]);
-    group = static_cast<std::string>(chains[i]["planning_group"]);
+    std::string topic, group;
+    topic = node->declare_parameter<std::string>(name + ".topic", std::string());
+    group = node->declare_parameter<std::string>(name + ".planning_group", std::string());
     
-    if (chains[i].hasMember("topic"))
+    if (topic != "")
     {
-      topic = static_cast<std::string>(chains[i]["topic"]);
- 
-      boost::shared_ptr<ChainController> controller(new ChainController(name, topic, group));
+      std::shared_ptr<ChainController> controller(new ChainController(node, name, topic, group));
+      controller->joint_names =
+        node->declare_parameter<std::vector<std::string>>(name + ".joints", std::vector<std::string>());
 
-      for (int j = 0; j < chains[i]["joints"].size(); ++j)
+      RCLCPP_INFO(LOGGER, "Waiting for %s...", topic.c_str());
+      if (!controller->client->wait_for_action_server(std::chrono::seconds(wait_time)))
       {
-        controller->joint_names.push_back(static_cast<std::string>(chains[i]["joints"][j]));
-      }
-
-      ROS_INFO("Waiting for %s...", topic.c_str());
-      if (!controller->client.waitForServer(ros::Duration(wait_time)))
-      {
-        ROS_WARN("Failed to connect to %s", topic.c_str());
+        RCLCPP_WARN(LOGGER, "Failed to connect to %s", topic.c_str());
       }
 
       if (controller->shouldPlan() && (!move_group_))
       {
-        move_group_.reset(new MoveGroupClient("move_group", true));
-        if (!move_group_->waitForServer(ros::Duration(wait_time)))
+        move_group_ = rclcpp_action::create_client<MoveGroupAction>(node, "move_group");
+        if (!move_group_->wait_for_action_server(std::chrono::seconds(wait_time)))
         {
-          ROS_WARN("Failed to connect to move_group");
+          RCLCPP_WARN(LOGGER, "Failed to connect to move_group");
         }
       }
 
@@ -76,29 +70,30 @@ ChainManager::ChainManager(ros::NodeHandle& nh, double wait_time) :
   }
 
   // Parameter to set movement time
-  nh.param<double>("duration", duration_, 5.0);
+  duration_ = node->declare_parameter<double>("duration", 5.0);
 
   // Parameter to set velocity scaling factor for move_group
-  nh.param<double>("velocity_factor", velocity_factor_, 1.0);
+  velocity_factor_ = node->declare_parameter<double>("velocity_factor", 1.0);
 
-  subscriber_ = nh.subscribe("/joint_states", 10, &ChainManager::stateCallback, this);
+  subscriber_ = node->create_subscription<sensor_msgs::msg::JointState>(
+    "/joint_states", 10, std::bind(&ChainManager::stateCallback, this, std::placeholders::_1));
 }
 
-void ChainManager::stateCallback(const sensor_msgs::JointStateConstPtr& msg)
+void ChainManager::stateCallback(sensor_msgs::msg::JointState::ConstSharedPtr msg)
 {
   if (msg->name.size() != msg->position.size())
   {
-    ROS_ERROR("JointState Error: name array is not same size as position array.");
+    RCLCPP_ERROR(LOGGER, "JointState Error: name array is not same size as position array.");
     return;
   }
 
   if (msg->position.size() != msg->velocity.size())
   {
-    ROS_ERROR("JointState Error: position array is not same size as velocity array.");
+    RCLCPP_ERROR(LOGGER, "JointState Error: position array is not same size as velocity array.");
     return;
   }
 
-  boost::mutex::scoped_lock lock(state_mutex_);
+  std::lock_guard<std::mutex> lock(state_mutex_);
   // Update each joint based on message
   for (size_t msg_j = 0; msg_j < msg->name.size(); msg_j++)
   {
@@ -123,17 +118,17 @@ void ChainManager::stateCallback(const sensor_msgs::JointStateConstPtr& msg)
   state_is_valid_ = true;
 }
 
-bool ChainManager::getState(sensor_msgs::JointState* state)
+bool ChainManager::getState(sensor_msgs::msg::JointState* state)
 {
-  boost::mutex::scoped_lock lock(state_mutex_);
+  std::lock_guard<std::mutex> lock(state_mutex_);
   *state = state_;
   return state_is_valid_;
 }
 
-trajectory_msgs::JointTrajectoryPoint
-ChainManager::makePoint(const sensor_msgs::JointState& state, const std::vector<std::string>& joints)
+trajectory_msgs::msg::JointTrajectoryPoint
+ChainManager::makePoint(const sensor_msgs::msg::JointState& state, const std::vector<std::string>& joints)
 {
-  trajectory_msgs::JointTrajectoryPoint p;
+  trajectory_msgs::msg::JointTrajectoryPoint p;
   for (size_t i = 0; i < joints.size(); ++i)
   {
     for (size_t j = 0; j < state.name.size(); ++j)
@@ -148,33 +143,33 @@ ChainManager::makePoint(const sensor_msgs::JointState& state, const std::vector<
     p.accelerations.push_back(0.0);
     if (p.velocities.size() != p.positions.size())
     {
-      ROS_ERROR_STREAM("Bad move to state, missing " << joints[i]);
+      RCLCPP_ERROR(LOGGER, "Bad move to state, missing %s", joints[i].c_str());
       exit(-1);
     }
   }
   return p;
 }
 
-bool ChainManager::moveToState(const sensor_msgs::JointState& state)
+bool ChainManager::moveToState(const sensor_msgs::msg::JointState& state)
 {
   double max_duration = duration_;
 
   // Split into different controllers
   for (size_t i = 0; i < controllers_.size(); ++i)
   {
-    control_msgs::FollowJointTrajectoryGoal goal;
+    auto goal = TrajectoryAction::Goal();
     goal.trajectory.joint_names = controllers_[i]->joint_names;
 
-    trajectory_msgs::JointTrajectoryPoint p = makePoint(state, controllers_[i]->joint_names);
+    trajectory_msgs::msg::JointTrajectoryPoint p = makePoint(state, controllers_[i]->joint_names);
     if (controllers_[i]->shouldPlan())
     {
       // Call MoveIt
-      moveit_msgs::MoveGroupGoal moveit_goal;
+      auto moveit_goal = MoveGroupAction::Goal();
       moveit_goal.request.group_name = controllers_[i]->chain_planning_group;
       moveit_goal.request.num_planning_attempts = 1;
       moveit_goal.request.allowed_planning_time = 5.0;
 
-      moveit_msgs::Constraints c1;
+      moveit_msgs::msg::Constraints c1;
       c1.joint_constraints.resize(controllers_[i]->joint_names.size());
       for (size_t c = 0; c < controllers_[i]->joint_names.size(); c++)
       {
@@ -197,35 +192,36 @@ bool ChainManager::moveToState(const sensor_msgs::JointState& state)
       // Just make the plan, we will execute it
       moveit_goal.planning_options.plan_only = true;
 
-      move_group_->sendGoal(moveit_goal);
-      move_group_->waitForResult();
-      MoveGroupResultPtr result = move_group_->getResult();
-      if (result->error_code.val != moveit_msgs::MoveItErrorCodes::SUCCESS)
+      move_group_->async_send_goal(moveit_goal);
+      // TODO move_group_->waitForResult();
+      //MoveGroupResultPtr result = move_group_->getResult();
+      //if (result->error_code.val != moveit_msgs::MoveItErrorCodes::SUCCESS)
       {
         // Unable to plan, return error
         return false;
       }
 
-      goal.trajectory = result->planned_trajectory.joint_trajectory;
-      max_duration = std::max(max_duration, goal.trajectory.points[goal.trajectory.points.size()-1].time_from_start.toSec());
+      //goal.trajectory = result->planned_trajectory.joint_trajectory;
+      rclcpp::Duration d(goal.trajectory.points[goal.trajectory.points.size()-1].time_from_start);
+      max_duration = std::max(max_duration, d.seconds());
     }
     else
     {
       // Go directly to point
-      p.time_from_start = ros::Duration(duration_);
+      p.time_from_start = rclcpp::Duration::from_seconds(duration_);
       goal.trajectory.points.push_back(p);
     }
 
-    goal.goal_time_tolerance = ros::Duration(1.0);
+    goal.goal_time_tolerance = rclcpp::Duration::from_seconds(1.0);
 
     // Call actions
-    controllers_[i]->client.sendGoal(goal);
+    controllers_[i]->client->async_send_goal(goal);
   }
 
   // Wait for results
   for (size_t i = 0; i < controllers_.size(); ++i)
   {
-    controllers_[i]->client.waitForResult(ros::Duration(max_duration*1.5));
+    // TODO controllers_[i]->client.waitForResult(ros::Duration(max_duration*1.5));
     // TODO: catch errors with clients
   }
 
@@ -234,7 +230,7 @@ bool ChainManager::moveToState(const sensor_msgs::JointState& state)
 
 bool ChainManager::waitToSettle()
 {
-  sensor_msgs::JointState state;
+  sensor_msgs::msg::JointState state;
 
   if (controllers_.empty())
   {
@@ -244,7 +240,7 @@ bool ChainManager::waitToSettle()
 
   // Reset to invalid so we know state is not stale
   {
-    boost::mutex::scoped_lock lock(state_mutex_);
+    std::lock_guard<std::mutex> lock(state_mutex_);
     state_is_valid_ = false;
   }
 
@@ -288,9 +284,11 @@ bool ChainManager::waitToSettle()
 
     // If all joints are settled, break out of while loop
     if (settled)
+    {
       break;
+    }
 
-    ros::spinOnce();
+    // TODO ros::spinOnce();
   }
 
   return true;

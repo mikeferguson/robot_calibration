@@ -68,7 +68,13 @@ struct OptimizationParams
   int max_num_iterations;
 
   OptimizationParams();
-  bool LoadFromROS(rclcpp::Node::SharedPtr node);
+
+  /**
+   * @brief Load from ROS parameters
+   * @param node Node pointer to use for declaring/loading parameters
+   * @param parameter_ns Namespace for optimization parameters
+   */
+  bool LoadFromROS(rclcpp::Node::SharedPtr node, const std::string& parameter_ns);
 
   template<typename T>
   T getParam(Params& params, const std::string& name, T default_value)

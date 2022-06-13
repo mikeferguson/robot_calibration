@@ -52,16 +52,9 @@ LedFinder::LedFinder() :
 
 bool LedFinder::init(const std::string& name,
                      std::shared_ptr<tf2_ros::Buffer> buffer,
-                     rclcpp::Node::WeakPtr weak_node)
+                     rclcpp::Node::SharedPtr node)
 {
-  if (!FeatureFinder::init(name, buffer, weak_node))
-  {
-    return false;
-  }
-
-  // Get an instance of the node shared pointer
-  auto node = weak_node.lock();
-  if (!node)
+  if (!FeatureFinder::init(name, buffer, node))
   {
     return false;
   }
@@ -124,7 +117,7 @@ bool LedFinder::init(const std::string& name,
   }
 
   // Setup to get camera depth info
-  if (!depth_camera_manager_.init(name, weak_node, LOGGER))
+  if (!depth_camera_manager_.init(name, node, LOGGER))
   {
     // Error will have been printed by manager
     return false;

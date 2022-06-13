@@ -18,44 +18,44 @@
 
 // Author: Michael Ferguson
 
-#include <ros/ros.h>
-#include <std_msgs/String.h>
+#include <rclcpp/rclcpp.hpp>
+#include <std_msgs/msg/string.hpp>
 #include "robot_calibration/capture/capture_manager.h"
+
+static const rclcpp::Logger LOGGER = rclcpp::get_logger("capture_manager");
 
 namespace robot_calibration
 {
 
 CaptureManager::CaptureManager()
 {
+  description_valid_ = false;
 }
 
-bool CaptureManager::init(ros::NodeHandle& nh)
+bool CaptureManager::init(rclcpp::Node::SharedPtr node)
 {
-  data_pub_ = nh.advertise<robot_calibration_msgs::CalibrationData>("/calibration_data", 10);
-  urdf_pub_ = nh.advertise<std_msgs::String>("/robot_description", 1, true /* latched */);
+  // Publish calibration data (to be recorded by rosbag)
+  data_pub_ = node->create_publisher<robot_calibration_msgs::msg::CalibrationData>("/calibration_data", 10);
+
+  // Subscribe to robot_description
+  urdf_sub_ = node->create_subscription<std_msgs::msg::String>("/robot_description",
+    rclcpp::QoS(1).transient_local(),
+    std::bind(&CaptureManager::callback, this, std::placeholders::_1));
 
   // Create chain manager
-  chain_manager_ = new ChainManager(nh);
+  chain_manager_ = new ChainManager(node);
 
   // Load feature finders
-  if (!feature_finder_loader_.load(nh, finders_))
+  if (!feature_finder_loader_.load(node, finders_))
   {
-    ROS_FATAL("Unable to load feature finders!");
+    RCLCPP_FATAL(LOGGER, "Unable to load feature finders!");
     return false;
   }
-
-  // Get the robot_description and republish it
-  if (!nh.getParam("/robot_description", description_msg_.data))
-  {
-    ROS_FATAL("robot_description not set!");
-    return false;
-  }
-  urdf_pub_.publish(description_msg_);
 
   return true;
 }
 
-bool CaptureManager::moveToState(const sensor_msgs::JointState& state)
+bool CaptureManager::moveToState(const sensor_msgs::msg::JointState& state)
 {
   if (!chain_manager_->moveToState(state))
   {
@@ -68,7 +68,7 @@ bool CaptureManager::moveToState(const sensor_msgs::JointState& state)
 }
 
 bool CaptureManager::captureFeatures(const std::vector<std::string>& feature_names,
-                                     robot_calibration_msgs::CalibrationData& msg)
+                                     robot_calibration_msgs::msg::CalibrationData& msg)
 {
   for (auto it = finders_.begin(); it != finders_.end(); ++it)
   {
@@ -77,20 +77,31 @@ bool CaptureManager::captureFeatures(const std::vector<std::string>& feature_nam
     {
       if (!it->second->find(&msg))
       {
-        ROS_WARN("%s failed to capture features.", it->first.c_str());
+        RCLCPP_WARN(LOGGER, "%s failed to capture features.", it->first.c_str());
         return false;
       }
     }
   }
   chain_manager_->getState(&msg.joint_states);
   // Publish calibration data message.
-  data_pub_.publish(msg);
+  data_pub_->publish(msg);
   return true;
+}
+
+void CaptureManager::callback(std_msgs::msg::String::ConstSharedPtr msg)
+{
+  description_ = msg->data;
+  description_valid_ = true;
 }
 
 std::string CaptureManager::getUrdf()
 {
-  return description_msg_.data;
+  while (!description_valid_ && rclcpp::ok())
+  {
+    RCLCPP_WARN(LOGGER, "Waiting for robot_description");
+    rclcpp::sleep_for(std::chrono::seconds(5));
+  }
+  return description_;
 }
 
 }  // namespace robot_calibration
