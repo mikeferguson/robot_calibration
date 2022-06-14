@@ -39,6 +39,9 @@
   <depend>suitesparse</depend>
   <depend>protobuf-dev</depend>
 
+  <!-- Temporary hack for issue with geometric_shapes -->
+  <build_depend>libboost-filesystem-dev</build_depend>
+
   <export>
     <build_type>ament_cmake</build_type>
   </export>
