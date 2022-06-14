@@ -64,9 +64,8 @@ bool LedFinder::init(const std::string& name,
   // Setup the action client
   std::string topic_name =
     node->declare_parameter<std::string>(name + ".action", "/gripper_led_action");
-  client_ = rclcpp_action::create_client<LedAction>(node, topic_name);
-  RCLCPP_INFO(LOGGER, "Waiting for %s...", topic_name.c_str());
-  client_->wait_for_action_server();
+  client_.init(node, topic_name);
+  client_.waitForServer(10.0);
 
   // Setup subscriber
   topic_name = node->declare_parameter<std::string>(name + ".topic", name + "/points");
@@ -168,8 +167,8 @@ bool LedFinder::find(robot_calibration_msgs::msg::CalibrationData * msg)
 
   auto command = LedAction::Goal();
   command.led_code = 0;
-  client_->async_send_goal(command);
-  // TODO client_->waitForResult(ros::Duration(10.0));
+  client_.sendGoal(command);
+  client_.waitForResult(rclcpp::Duration::from_seconds(10.0));
 
   // Get initial cloud
   if (!waitForCloud())
@@ -190,8 +189,8 @@ bool LedFinder::find(robot_calibration_msgs::msg::CalibrationData * msg)
     // Toggle LED to next state
     code_idx = (code_idx + 1) % codes_.size();
     command.led_code = codes_[code_idx];
-    client_->async_send_goal(command);
-    // TODO client_->waitForResult(ros::Duration(10.0));
+    client_.sendGoal(command);
+    client_.waitForResult(rclcpp::Duration::from_seconds(10.0));
 
     // Get a point cloud
     if (!waitForCloud())

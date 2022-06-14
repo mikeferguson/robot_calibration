@@ -22,10 +22,10 @@
 #define ROBOT_CALIBRATION_CAPTURE_CHAIN_MANAGER_HPP
 
 #include <rclcpp/rclcpp.hpp>
-#include <rclcpp_action/rclcpp_action.hpp>
 #include <sensor_msgs/msg/joint_state.hpp>
 #include <control_msgs/action/follow_joint_trajectory.hpp>
 #include <moveit_msgs/action/move_group.hpp>
+#include <robot_calibration/util/action_client.hpp>
 
 namespace robot_calibration
 {
@@ -49,7 +49,7 @@ class ChainManager
       chain_name(name),
       chain_planning_group(planning_group)
     {
-      client = rclcpp_action::create_client<TrajectoryAction>(node, topic);
+      client.init(node, topic);
     }
 
     bool shouldPlan()
@@ -57,7 +57,7 @@ class ChainManager
       return (chain_planning_group != "");
     }
 
-    rclcpp_action::Client<TrajectoryAction>::SharedPtr client;
+    robot_calibration::ActionClient<TrajectoryAction> client;
     std::string chain_name;
     std::string chain_planning_group;
     std::vector<std::string> joint_names;
@@ -116,7 +116,7 @@ private:
   // Mechanisms for passing commands to controllers
   double duration_;
   std::vector<std::shared_ptr<ChainController> > controllers_;
-  rclcpp_action::Client<MoveGroupAction>::SharedPtr move_group_;
+  std::shared_ptr<robot_calibration::ActionClient<MoveGroupAction>> move_group_;
   double velocity_factor_;  // scaling factor to slow down move_group plans
 };
 

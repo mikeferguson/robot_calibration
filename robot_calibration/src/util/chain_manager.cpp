@@ -51,15 +51,16 @@ ChainManager::ChainManager(rclcpp::Node::SharedPtr node, long int wait_time) :
         node->declare_parameter<std::vector<std::string>>(name + ".joints", std::vector<std::string>());
 
       RCLCPP_INFO(LOGGER, "Waiting for %s...", topic.c_str());
-      if (!controller->client->wait_for_action_server(std::chrono::seconds(wait_time)))
+      if (!controller->client.waitForServer(wait_time))
       {
         RCLCPP_WARN(LOGGER, "Failed to connect to %s", topic.c_str());
       }
 
       if (controller->shouldPlan() && (!move_group_))
       {
-        move_group_ = rclcpp_action::create_client<MoveGroupAction>(node, "move_group");
-        if (!move_group_->wait_for_action_server(std::chrono::seconds(wait_time)))
+        move_group_ = std::make_shared<ActionClient<MoveGroupAction>>();
+        move_group_->init(node, "move_group");
+        if (!move_group_->waitForServer(wait_time))
         {
           RCLCPP_WARN(LOGGER, "Failed to connect to move_group");
         }
@@ -192,16 +193,16 @@ bool ChainManager::moveToState(const sensor_msgs::msg::JointState& state)
       // Just make the plan, we will execute it
       moveit_goal.planning_options.plan_only = true;
 
-      move_group_->async_send_goal(moveit_goal);
-      // TODO move_group_->waitForResult();
-      //MoveGroupResultPtr result = move_group_->getResult();
-      //if (result->error_code.val != moveit_msgs::MoveItErrorCodes::SUCCESS)
+      move_group_->sendGoal(moveit_goal);
+      move_group_->waitForResult(rclcpp::Duration::from_seconds(60.0));
+      auto result = move_group_->getResult();
+      if (result->error_code.val != moveit_msgs::msg::MoveItErrorCodes::SUCCESS)
       {
         // Unable to plan, return error
         return false;
       }
 
-      //goal.trajectory = result->planned_trajectory.joint_trajectory;
+      goal.trajectory = result->planned_trajectory.joint_trajectory;
       rclcpp::Duration d(goal.trajectory.points[goal.trajectory.points.size()-1].time_from_start);
       max_duration = std::max(max_duration, d.seconds());
     }
@@ -215,13 +216,13 @@ bool ChainManager::moveToState(const sensor_msgs::msg::JointState& state)
     goal.goal_time_tolerance = rclcpp::Duration::from_seconds(1.0);
 
     // Call actions
-    controllers_[i]->client->async_send_goal(goal);
+    controllers_[i]->client.sendGoal(goal);
   }
 
   // Wait for results
   for (size_t i = 0; i < controllers_.size(); ++i)
   {
-    // TODO controllers_[i]->client.waitForResult(ros::Duration(max_duration*1.5));
+    controllers_[i]->client.waitForResult(rclcpp::Duration::from_seconds(max_duration * 1.5));
     // TODO: catch errors with clients
   }
 

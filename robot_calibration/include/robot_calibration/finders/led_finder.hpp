@@ -23,8 +23,8 @@
 
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
-#include <rclcpp_action/rclcpp_action.hpp>
 #include <robot_calibration/finders/feature_finder.hpp>
+#include <robot_calibration/util/action_client.hpp>
 #include <robot_calibration/util/depth_camera_info.hpp>
 
 #include <sensor_msgs/msg/image.hpp>
@@ -98,7 +98,7 @@ private:
 
   rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr subscriber_;
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr publisher_;
-  rclcpp_action::Client<LedAction>::SharedPtr client_;
+  robot_calibration::ActionClient<LedAction> client_;
   rclcpp::Clock::SharedPtr clock_;
 
   bool waiting_;
