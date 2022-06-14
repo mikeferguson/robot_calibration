@@ -1,7 +1,7 @@
 # Robot Calibration
 
-This package offers ROS nodes. The primary one is called _calibrate_, and
-can be used to calibrate a number of parameters of a robot, such as:
+This package offers several ROS2 nodes. The primary one is called _calibrate_,
+and can be used to calibrate a number of parameters of a robot, such as:
 
  * 3D Camera intrinsics and extrinsics
  * Joint angle offsets
@@ -64,7 +64,7 @@ This specifies several items:
    kinematic chain. Additional models can reproject through a kinematic
    chain and then a sensor, such as a 3d camera. For IK chains, `frame` parameter
    is the tip of the IK chain.
-   * chain - Represents a kinematic chain from the `base_link` to the `frame`
+   * chain3d - Represents a kinematic chain from the `base_link` to the `frame`
      parameter (which in MoveIt/KDL terms is usually referred to as the `tip`).
    * camera3d - Represents a kinematic chain from the `base_link` to the `frame`
      parameter, and includes the pinhole camera model parameters (cx, cy, fx, fy)
@@ -94,6 +94,9 @@ This specifies several items:
      reprojection between two 3D "sensors" which tell us the position of
      certain features of interest. Sensors might be a 3D camera or an arm
      which is holding a checkerboard. Was previously called "camera3d_to_arm".
+   * chain3d_to_mesh - This error block can compute the closeness between
+     projected 3d points and a mesh. The mesh must be part of the robot body.
+     This is commonly used to align the robot sensor with the base of the robot.
    * chain3d_to_plane - This error block can compute the difference between
      projected 3d points and a desired plane. The most common use case is making
      sure that the ground plane a robot sees is really on the ground.
@@ -119,19 +122,20 @@ A, B, C are NOT roll, pitch, yaw -- they are the axis-magnitude representation.
 To get roll, pitch and yaw, run the ``to_rpy`` tool with your values of A, B,
 and C:
 ```
-rosrun robot_calibration to_rpy A B C
+ros2 run robot_calibration to_rpy A B C
 ```
 This will print the ROLL, PITCH, YAW values to put in for initial values. Then
 insert the values in the calibration.yaml:
 ```
 free_frames_initial_values:
- - name: checkerboard
-   x: 0.0
-   y: 0.225
-   z: 0
-   roll: 0.0
-   pitch: 1.571
-   yaw: 0.0
+- checkerboard
+checkerboard_initial_valus:
+  x: 0.0
+  y: 0.225
+  z: 0
+  roll: 0.0
+  pitch: 1.571
+  yaw: 0.0
 ```
 
 ### Exported Results
