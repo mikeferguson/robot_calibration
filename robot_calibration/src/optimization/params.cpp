@@ -65,7 +65,7 @@ bool OptimizationParams::LoadFromROS(rclcpp::Node::SharedPtr node,
   for (auto name : free_frame_names)
   {
     RCLCPP_INFO(logger, "Adding initial values for: %s", name.c_str());
-    std::string prefix = parameter_ns + "." + name;
+    std::string prefix = parameter_ns + "." + name + "_initial_values";
     FreeFrameInitialValue params;
     params.name = name;
     params.x = node->declare_parameter<double>(prefix + ".x", 0.0);

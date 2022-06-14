@@ -99,7 +99,7 @@ ament_target_dependencies(robot_calibration
   ${dependencies}
 )
 
-add_library(robot_calibration_feature_finders
+add_library(robot_calibration_feature_finders SHARED
   src/finders/checkerboard_finder.cpp
   src/finders/led_finder.cpp
   src/finders/plane_finder.cpp

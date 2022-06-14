@@ -35,34 +35,20 @@ target_link_libraries(error_block_tests robot_calibration
                                         ${orocos_kdl_LIBRARIES})
 ament_target_dependencies(error_block_tests ${dependencies})
 
-if (0)
-add_executable(error_block_tests2 error_block_tests2.cpp)
-add_dependencies(tests error_block_tests2)
+ament_add_gtest_executable(error_block_tests2 error_block_tests2.cpp)
 target_link_libraries(error_block_tests2 robot_calibration
-                                         ${Boost_LIBRARIES}
-                                         ${catkin_LIBRARIES}
                                          ${CERES_LIBRARIES}
                                          ${GTEST_LIBRARIES}
                                          ${orocos_kdl_LIBRARIES})
+ament_target_dependencies(error_block_tests2 ${dependencies})
 
-add_executable(feature_finder_loader_tests feature_finder_loader_tests.cpp)
-add_dependencies(tests feature_finder_loader_tests)
-target_link_libraries(feature_finder_loader_tests robot_calibration
-                                                  ${Boost_LIBRARIES}
-                                                  ${catkin_LIBRARIES}
-                                                  ${GTEST_LIBRARIES})
+ament_add_gtest_executable(feature_finder_loader_tests feature_finder_loader_tests.cpp)
+target_link_libraries(feature_finder_loader_tests robot_calibration ${GTEST_LIBRARIES})
+ament_target_dependencies(feature_finder_loader_tests ${dependencies})
 
-add_executable(optimization_param_tests optimization_param_tests.cpp)
-add_dependencies(tests optimization_param_tests)
-target_link_libraries(optimization_param_tests robot_calibration
-                                               ${Boost_LIBRARIES}
-                                               ${catkin_LIBRARIES}
-                                               ${GTEST_LIBRARIES})
-
-add_rostest(feature_finder_loader_tests.test)
-add_rostest(optimization_param_tests.test)
-add_rostest(error_block_tests2.test)
-endif()
+ament_add_gtest_executable(optimization_param_tests optimization_param_tests.cpp)
+target_link_libraries(optimization_param_tests robot_calibration ${GTEST_LIBRARIES})
+ament_target_dependencies(optimization_param_tests ${dependencies})
 
 ament_add_test(camera_info_tests_launch
   GENERATE_RESULT_FOR_RETURN_CODE_ZERO
@@ -88,5 +74,33 @@ ament_add_test(error_block_tests_launch
   WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
   ENV
     TEST_EXECUTABLE=$<TARGET_FILE:error_block_tests>
+    CONFIG_DIR=${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+ament_add_test(error_block_tests2_launch
+  GENERATE_RESULT_FOR_RETURN_CODE_ZERO
+  COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/error_block_tests2_launch.py"
+  WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
+  ENV
+    TEST_EXECUTABLE=$<TARGET_FILE:error_block_tests2>
+    CONFIG_DIR=${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+ament_add_test(feature_finder_loader_test_launch
+  GENERATE_RESULT_FOR_RETURN_CODE_ZERO
+  COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/feature_finder_loader_tests_launch.py"
+  WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
+  ENV
+    TEST_EXECUTABLE=$<TARGET_FILE:feature_finder_loader_tests>
+    INFO_PUBLISHER=${CMAKE_CURRENT_SOURCE_DIR}/camera_info_publisher.py
+    CONFIG_DIR=${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+ament_add_test(optimization_param_tests_launch
+  GENERATE_RESULT_FOR_RETURN_CODE_ZERO
+  COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/optimization_param_tests_launch.py"
+  WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
+  ENV
+    TEST_EXECUTABLE=$<TARGET_FILE:optimization_param_tests>
     CONFIG_DIR=${CMAKE_CURRENT_SOURCE_DIR}
 )

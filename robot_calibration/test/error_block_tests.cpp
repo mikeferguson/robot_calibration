@@ -298,13 +298,15 @@ TEST(ErrorBlockTests, error_blocks_maxwell)
   // 3 CalibrationData, each with chain3d with a single observed point (3 residuals)
   EXPECT_EQ(30, opt.getNumResiduals());
 
-  // While things are setup, test our param helpers
-  // This param does not exist, we should get the default
-  //double test = params.getParam(params.error_blocks[1], "test", 10.0);
-  //EXPECT_EQ(10, test);
-  // This does exist, we should get what is in our YAML file
-  //double scale = params.getParam(params.error_blocks[1], "joint_scale", 10.0);
-  //EXPECT_EQ(0.0, scale);
+  // While things are setup, test our parameter parsing
+  EXPECT_EQ(2, static_cast<int>(params.error_blocks.size()));
+  auto block0 = std::dynamic_pointer_cast<robot_calibration::OptimizationParams::Chain3dToChain3dParams>(params.error_blocks[0]);
+  EXPECT_EQ("camera", block0->model_a);
+  EXPECT_EQ("arm", block0->model_b);
+  auto block1 = std::dynamic_pointer_cast<robot_calibration::OptimizationParams::OutrageousParams>(params.error_blocks[1]);
+  EXPECT_EQ(0.0, block1->joint_scale);
+  EXPECT_EQ(0.1, block1->position_scale);
+  EXPECT_EQ(0.1, block1->rotation_scale);
 
   // Validate getCameraNames()
   std::vector<std::string> camera_names = opt.getCameraNames();
