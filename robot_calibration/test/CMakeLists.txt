@@ -1,51 +1,41 @@
-if(CATKIN_ENABLE_TESTING)
+find_package(ament_cmake_gtest REQUIRED)
 
-find_package(rostest REQUIRED)
+ament_add_gtest(optimization_offsets_tests optimization_offsets_tests.cpp)
+target_link_libraries(optimization_offsets_tests robot_calibration
+                                                 ${orocos_kdl_LIBRARIES}
+                                                 ${tinyxml_LIBRARIES})
+ament_target_dependencies(optimization_offsets_tests ${dependencies})
 
-catkin_add_gtest(calibration_offset_parser_tests calibration_offset_parser_tests.cpp)
-target_link_libraries(calibration_offset_parser_tests robot_calibration
-                                                      ${Boost_LIBRARIES}
-                                                      ${catkin_LIBRARIES}
-                                                      ${orocos_kdl_LIBRARIES}
-                                                      ${tinyxml_LIBRARIES})
-
-catkin_add_gtest(chain_model_tests chain_model_tests.cpp)
+ament_add_gtest(chain_model_tests chain_model_tests.cpp)
 target_link_libraries(chain_model_tests robot_calibration
-                                     ${Boost_LIBRARIES}
-                                     ${catkin_LIBRARIES}
-                                     ${CERES_LIBRARIES}
-                                     ${orocos_kdl_LIBRARIES})
+                                        ${CERES_LIBRARIES}
+                                        ${orocos_kdl_LIBRARIES})
+ament_target_dependencies(chain_model_tests ${dependencies})
 
-catkin_add_gtest(rotation_tests rotation_tests.cpp)
+ament_add_gtest(rotation_tests rotation_tests.cpp)
 target_link_libraries(rotation_tests robot_calibration
-                                     ${Boost_LIBRARIES}
-                                     ${catkin_LIBRARIES}
                                      ${CERES_LIBRARIES}
                                      ${orocos_kdl_LIBRARIES})
+ament_target_dependencies(rotation_tests ${dependencies})
 
-add_executable(camera_info_tests camera_info_tests.cpp)
-add_dependencies(tests camera_info_tests)
+ament_add_gtest_executable(camera_info_tests camera_info_tests.cpp)
 target_link_libraries(camera_info_tests robot_calibration
-                                  ${Boost_LIBRARIES}
-                                  ${catkin_LIBRARIES}
-                                  ${GTEST_LIBRARIES})
+                                        ${GTEST_LIBRARIES})
+ament_target_dependencies(camera_info_tests ${dependencies})
 
-add_executable(chain_manager_tests chain_manager_tests.cpp)
-add_dependencies(tests chain_manager_tests)
+ament_add_gtest_executable(chain_manager_tests chain_manager_tests.cpp)
 target_link_libraries(chain_manager_tests robot_calibration
-                                          ${Boost_LIBRARIES}
-                                          ${catkin_LIBRARIES}
                                           ${GTEST_LIBRARIES})
+ament_target_dependencies(chain_manager_tests ${dependencies})
 
-add_executable(error_block_tests error_block_tests.cpp)
-add_dependencies(tests error_block_tests)
+ament_add_gtest_executable(error_block_tests error_block_tests.cpp)
 target_link_libraries(error_block_tests robot_calibration
-                                        ${Boost_LIBRARIES}
-                                        ${catkin_LIBRARIES}
                                         ${CERES_LIBRARIES}
                                         ${GTEST_LIBRARIES}
                                         ${orocos_kdl_LIBRARIES})
+ament_target_dependencies(error_block_tests ${dependencies})
 
+if (0)
 add_executable(error_block_tests2 error_block_tests2.cpp)
 add_dependencies(tests error_block_tests2)
 target_link_libraries(error_block_tests2 robot_calibration
@@ -69,19 +59,34 @@ target_link_libraries(optimization_param_tests robot_calibration
                                                ${catkin_LIBRARIES}
                                                ${GTEST_LIBRARIES})
 
-add_rostest(camera_info_tests.test)
-add_rostest(chain_manager_tests.test)
 add_rostest(feature_finder_loader_tests.test)
 add_rostest(optimization_param_tests.test)
-add_rostest(error_block_tests.test)
 add_rostest(error_block_tests2.test)
-
-if(ENABLE_COVERAGE_TESTING)
-  set(COVERAGE_EXCLUDES "*/${PROJECT_NAME}/test*")
-  add_code_coverage(
-    NAME ${PROJECT_NAME}_coverage_report
-    DEPENDS tests
-  )
 endif()
 
-endif()  # if CATKIN_ENABLE_TESTING
+ament_add_test(camera_info_tests_launch
+  GENERATE_RESULT_FOR_RETURN_CODE_ZERO
+  COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/camera_info_tests_launch.py"
+  WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
+  ENV
+    TEST_EXECUTABLE=$<TARGET_FILE:camera_info_tests>
+    INFO_PUBLISHER=${CMAKE_CURRENT_SOURCE_DIR}/camera_info_publisher.py
+)
+
+ament_add_test(chain_manager_tests_launch
+  GENERATE_RESULT_FOR_RETURN_CODE_ZERO
+  COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/chain_manager_tests_launch.py"
+  WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
+  ENV
+    TEST_EXECUTABLE=$<TARGET_FILE:chain_manager_tests>
+    CONFIG_DIR=${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+ament_add_test(error_block_tests_launch
+  GENERATE_RESULT_FOR_RETURN_CODE_ZERO
+  COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/error_block_tests_launch.py"
+  WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
+  ENV
+    TEST_EXECUTABLE=$<TARGET_FILE:error_block_tests>
+    CONFIG_DIR=${CMAKE_CURRENT_SOURCE_DIR}
+)

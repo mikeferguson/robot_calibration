@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Michael Ferguson
+ * Copyright (C) 2018-2022 Michael Ferguson
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,44 +16,45 @@
 
 // Author: Michael Ferguson
 
-#include <robot_calibration/camera_info.h>
-#include <robot_calibration/capture/depth_camera.h>
+#include <robot_calibration/util/camera_info.hpp>
+#include <robot_calibration/util/depth_camera_info.hpp>
 #include <gtest/gtest.h>
 
 TEST(CameraInfoTests, test_update_camera_info)
 {
-  sensor_msgs::CameraInfo start;
-  start.P[0] = 1.0;  // FX
-  start.P[2] = 2.0;  // CX
-  start.P[5] = 3.0;  // FY
-  start.P[6] = 4.0;  // CY
+  sensor_msgs::msg::CameraInfo start;
+  start.p[0] = 1.0;  // FX
+  start.p[2] = 2.0;  // CX
+  start.p[5] = 3.0;  // FY
+  start.p[6] = 4.0;  // CY
 
-  start.K[0] = 5.0;  // FX
-  start.K[2] = 6.0;  // CX
-  start.K[4] = 7.0;  // FY
-  start.K[5] = 8.0;  // CY
+  start.k[0] = 5.0;  // FX
+  start.k[2] = 6.0;  // CX
+  start.k[4] = 7.0;  // FY
+  start.k[5] = 8.0;  // CY
 
-  sensor_msgs::CameraInfo end =
+  sensor_msgs::msg::CameraInfo end =
   	robot_calibration::updateCameraInfo(0.0, 0.0, 0.0, 0.0, start);
 
-  EXPECT_EQ(start.P[0], end.P[0]);
-  EXPECT_EQ(start.P[2], end.P[2]);
-  EXPECT_EQ(start.P[5], end.P[5]);
-  EXPECT_EQ(start.P[6], end.P[6]);
-  EXPECT_EQ(start.K[0], end.K[0]);
-  EXPECT_EQ(start.K[2], end.K[2]);
-  EXPECT_EQ(start.K[4], end.K[4]);
-  EXPECT_EQ(start.K[5], end.K[5]);
+  EXPECT_EQ(start.p[0], end.p[0]);
+  EXPECT_EQ(start.p[2], end.p[2]);
+  EXPECT_EQ(start.p[5], end.p[5]);
+  EXPECT_EQ(start.p[6], end.p[6]);
+  EXPECT_EQ(start.k[0], end.k[0]);
+  EXPECT_EQ(start.k[2], end.k[2]);
+  EXPECT_EQ(start.k[4], end.k[4]);
+  EXPECT_EQ(start.k[5], end.k[5]);
 }
 
 TEST(CameraInfoTests, test_extended_camera_info)
 {
-  ros::NodeHandle nh("~");
+  rclcpp::Node::SharedPtr node = std::make_shared<rclcpp::Node>("camera_info_tests");
   robot_calibration::DepthCameraInfoManager manager;
 
-  manager.init(nh);
+  rclcpp::Logger logger = node->get_logger();
+  manager.init("test_manager", node, logger);
 
-  robot_calibration_msgs::ExtendedCameraInfo eci =
+  robot_calibration_msgs::msg::ExtendedCameraInfo eci =
     manager.getDepthCameraInfo();
 
   ASSERT_EQ(static_cast<size_t>(2), eci.parameters.size());
@@ -65,7 +66,7 @@ TEST(CameraInfoTests, test_extended_camera_info)
 
 int main(int argc, char** argv)
 {
-  ros::init(argc, argv, "camera_info_tests");
+  rclcpp::init(argc, argv);
   testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }

@@ -44,10 +44,8 @@ public:
       topic_name, 1, std::bind(&DepthCameraInfoManager::cameraInfoCallback, this, std::placeholders::_1));
 
     // Get parameters of drivers
-    std::string driver_name =
-      node->declare_parameter<std::string>(name + ".camera_driver", "/head_camera/driver");
-    z_offset_mm_ = node->declare_parameter<int>(driver_name + "/z_offset_mm", 0);
-    z_scaling_ = node->declare_parameter<double>(driver_name + "/z_scaling", 1.0);
+    z_offset_mm_ = node->declare_parameter<int>(name + ".z_offset_mm", 0);
+    z_scaling_ = node->declare_parameter<double>(name + ".z_scaling", 1.0);
 
     // Wait for camera_info
     int count = 25;
@@ -58,7 +56,7 @@ public:
         return true;
       }
       rclcpp::sleep_for(std::chrono::milliseconds(100));
-      //ros::spinOnce();
+      rclcpp::spin_some(node);
     }
 
     RCLCPP_WARN(logger, "CameraInfo receive timed out.");

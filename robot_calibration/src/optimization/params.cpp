@@ -30,6 +30,8 @@ OptimizationParams::OptimizationParams() :
 bool OptimizationParams::LoadFromROS(rclcpp::Node::SharedPtr node,
                                      const std::string& parameter_ns)
 {
+  rclcpp::Logger logger = node->get_logger();
+
   // Base link should be consistent across all calibration steps
   base_link = node->declare_parameter<std::string>("base_link", "base_link");
 
@@ -44,6 +46,7 @@ bool OptimizationParams::LoadFromROS(rclcpp::Node::SharedPtr node,
     parameter_ns + ".free_frames", std::vector<std::string>());
   for (auto name : free_frame_names)
   {
+    RCLCPP_INFO(logger, "Adding free frame: %s", name.c_str());
     std::string prefix = parameter_ns + "." + name;
     FreeFrameParams params;
     params.name = name;
@@ -58,9 +61,10 @@ bool OptimizationParams::LoadFromROS(rclcpp::Node::SharedPtr node,
 
   free_frames_initial_values.clear();
   free_frame_names = node->declare_parameter<std::vector<std::string>>(
-    "free_frames_initial_values", std::vector<std::string>());
+    parameter_ns + ".free_frames_initial_values", std::vector<std::string>());
   for (auto name : free_frame_names)
   {
+    RCLCPP_INFO(logger, "Adding initial values for: %s", name.c_str());
     std::string prefix = parameter_ns + "." + name;
     FreeFrameInitialValue params;
     params.name = name;
@@ -75,9 +79,10 @@ bool OptimizationParams::LoadFromROS(rclcpp::Node::SharedPtr node,
 
   models.clear();
   auto model_names = node->declare_parameter<std::vector<std::string>>(
-    "models", std::vector<std::string>());
+    parameter_ns + ".models", std::vector<std::string>());
   for (auto name : model_names)
   {
+    RCLCPP_INFO(logger, "Adding model: %s", name.c_str());
     ModelParams params;
     params.name = name;
     params.type = node->declare_parameter<std::string>(parameter_ns + "." + name + ".type", std::string());
@@ -88,17 +93,20 @@ bool OptimizationParams::LoadFromROS(rclcpp::Node::SharedPtr node,
 
   error_blocks.clear();
   auto error_block_names = node->declare_parameter<std::vector<std::string>>(
-    "error_blocks", std::vector<std::string>());
+    parameter_ns + ".error_blocks", std::vector<std::string>());
   for (auto name : error_block_names)
   {
-    std::string type = node->declare_parameter<std::string>(parameter_ns + "." + name + ".type", std::string());
+    std::string prefix = parameter_ns + "." + name;
+    std::string type = node->declare_parameter<std::string>(prefix + ".type", std::string());
+    RCLCPP_INFO(logger, "Adding %s: %s", type.c_str(), name.c_str());
+
     if (type == "chain3d_to_chain3d")
     {
       std::shared_ptr<Chain3dToChain3dParams> params = std::make_shared<Chain3dToChain3dParams>();
       params->name = name;
       params->type = type;
-      params->model_a = node->declare_parameter<std::string>(parameter_ns + "." + name + ".model_a", std::string());
-      params->model_b = node->declare_parameter<std::string>(parameter_ns + "." + name + ".model_b", std::string());
+      params->model_a = node->declare_parameter<std::string>(prefix + ".model_a", std::string());
+      params->model_b = node->declare_parameter<std::string>(prefix + ".model_b", std::string());
       error_blocks.push_back(params);
     }
     else if (type == "chain3d_to_plane")
@@ -106,12 +114,12 @@ bool OptimizationParams::LoadFromROS(rclcpp::Node::SharedPtr node,
       std::shared_ptr<Chain3dToPlaneParams> params = std::make_shared<Chain3dToPlaneParams>();
       params->name = name;
       params->type = type;
-      params->model = node->declare_parameter<std::string>(parameter_ns + "." + name + ".model", std::string());
-      params->a = node->declare_parameter<double>(parameter_ns + "." + name + ".a", 0.0);
-      params->b = node->declare_parameter<double>(parameter_ns + "." + name + ".b", 0.0);
-      params->c = node->declare_parameter<double>(parameter_ns + "." + name + ".c", 1.0);
-      params->d = node->declare_parameter<double>(parameter_ns + "." + name + ".d", 0.0);
-      params->scale = node->declare_parameter<double>(parameter_ns + "." + name + ".scale", 1.0);
+      params->model = node->declare_parameter<std::string>(prefix + ".model", std::string());
+      params->a = node->declare_parameter<double>(prefix + ".a", 0.0);
+      params->b = node->declare_parameter<double>(prefix + ".b", 0.0);
+      params->c = node->declare_parameter<double>(prefix + ".c", 1.0);
+      params->d = node->declare_parameter<double>(prefix + ".d", 0.0);
+      params->scale = node->declare_parameter<double>(prefix + ".scale", 1.0);
       error_blocks.push_back(params);
     }
     else if (type == "chain3d_to_mesh")
@@ -119,8 +127,8 @@ bool OptimizationParams::LoadFromROS(rclcpp::Node::SharedPtr node,
       std::shared_ptr<Chain3dToMeshParams> params = std::make_shared<Chain3dToMeshParams>();
       params->name = name;
       params->type = type;
-      params->model = node->declare_parameter<std::string>(parameter_ns + "." + name + ".model", std::string());
-      params->link_name = node->declare_parameter<std::string>(parameter_ns + "." + name + ".link_name", std::string());
+      params->model = node->declare_parameter<std::string>(prefix + ".model", std::string());
+      params->link_name = node->declare_parameter<std::string>(prefix + ".link_name", std::string());
       error_blocks.push_back(params);
     }
     else if (type == "plane_to_plane")
@@ -128,10 +136,10 @@ bool OptimizationParams::LoadFromROS(rclcpp::Node::SharedPtr node,
       std::shared_ptr<PlaneToPlaneParams> params = std::make_shared<PlaneToPlaneParams>();
       params->name = name;
       params->type = type;
-      params->model_a = node->declare_parameter<std::string>(parameter_ns + "." + name + ".model_a", std::string());
-      params->model_b = node->declare_parameter<std::string>(parameter_ns + "." + name + ".model_b", std::string());
-      params->normal_scale = node->declare_parameter<double>(parameter_ns + "." + name + ".normal_scale", 1.0);
-      params->offset_scale = node->declare_parameter<double>(parameter_ns + "." + name + ".offset_scale", 1.0);
+      params->model_a = node->declare_parameter<std::string>(prefix + ".model_a", std::string());
+      params->model_b = node->declare_parameter<std::string>(prefix + ".model_b", std::string());
+      params->normal_scale = node->declare_parameter<double>(prefix + ".normal_scale", 1.0);
+      params->offset_scale = node->declare_parameter<double>(prefix + ".offset_scale", 1.0);
       error_blocks.push_back(params);
     }
     else if (type == "outrageous")
@@ -139,10 +147,10 @@ bool OptimizationParams::LoadFromROS(rclcpp::Node::SharedPtr node,
       std::shared_ptr<OutrageousParams> params = std::make_shared<OutrageousParams>();
       params->name = name;
       params->type = type;
-      params->param = node->declare_parameter<std::string>(parameter_ns + "." + name + ".param", std::string());
-      params->joint_scale = node->declare_parameter<double>(parameter_ns + "." + name + ".joint_scale", 1.0);
-      params->position_scale = node->declare_parameter<double>(parameter_ns + "." + name + ".position_scale", 1.0);
-      params->rotation_scale = node->declare_parameter<double>(parameter_ns + "." + name + ".rotation_scale", 1.0);
+      params->param = node->declare_parameter<std::string>(prefix + ".param", std::string());
+      params->joint_scale = node->declare_parameter<double>(prefix + ".joint_scale", 1.0);
+      params->position_scale = node->declare_parameter<double>(prefix + ".position_scale", 1.0);
+      params->rotation_scale = node->declare_parameter<double>(prefix + ".rotation_scale", 1.0);
       error_blocks.push_back(params);
     }
   }

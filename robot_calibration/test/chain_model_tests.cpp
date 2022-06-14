@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Michael Ferguson
+ * Copyright (C) 2018-2022 Michael Ferguson
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,8 @@
 // Author: Gerardo Puga
 
 #include <gtest/gtest.h>
-#include <robot_calibration/models/camera3d.h>
-#include <robot_calibration/models/chain.h>
+#include <robot_calibration/models/camera3d.hpp>
+#include <robot_calibration/models/chain3d.hpp>
 
 #include <kdl_parser/kdl_parser.hpp>
 
@@ -27,7 +27,7 @@ namespace {
 namespace test {
 
 using robot_calibration::Camera3dModel;
-using robot_calibration::ChainModel;
+using robot_calibration::Chain3dModel;
 
 std::string robot_description =
     "<?xml version='1.0' ?>"
@@ -55,18 +55,18 @@ std::string robot_description =
     "  <link name='link_3'/>"
     "</robot>";
 
-TEST(ChainModelTests, BadChainThrows)
+TEST(Chain3dModelTests, BadChainThrows)
 {
   KDL::Tree tree;
 
   ASSERT_TRUE(kdl_parser::treeFromString(robot_description, tree));
 
-  ASSERT_NO_THROW({ auto uut = ChainModel("uut", tree, "link_0", "link_3"); });
+  ASSERT_NO_THROW({ auto uut = Chain3dModel("uut", tree, "link_0", "link_3"); });
 
-  ASSERT_THROW({ auto uut = ChainModel("uut", tree, "link_99", "link_3"); },
+  ASSERT_THROW({ auto uut = Chain3dModel("uut", tree, "link_99", "link_3"); },
                std::runtime_error);
 
-  ASSERT_THROW({ auto uut = ChainModel("uut", tree, "link_0", "link_99"); },
+  ASSERT_THROW({ auto uut = Chain3dModel("uut", tree, "link_0", "link_99"); },
                std::runtime_error);
 }
 

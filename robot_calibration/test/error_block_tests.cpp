@@ -1,4 +1,5 @@
 /*
+ * Copyright (C) 2022 Michael Ferguson
  * Copyright (C) 2015 Fetch Robotics Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,9 +16,9 @@
  */
 
 #include <urdf/model.h>
-#include <robot_calibration/ceres/calibration_data_helpers.h>
-#include <robot_calibration/ceres/optimizer.h>
-#include <robot_calibration/ceres/chain3d_to_mesh_error.h>
+#include <robot_calibration/cost_functions/chain3d_to_mesh_error.hpp>
+#include <robot_calibration/optimization/ceres_optimizer.hpp>
+#include <robot_calibration/util/calibration_data.hpp>
 #include <gtest/gtest.h>
 
 std::string robot_description =
@@ -203,12 +204,12 @@ std::string robot_description =
 
 TEST(ErrorBlockTests, error_blocks_maxwell)
 {
-  ros::NodeHandle nh("~");
+  rclcpp::Node::SharedPtr node = std::make_shared<rclcpp::Node>("error_block_tests");
 
   robot_calibration::Optimizer opt(robot_description);
 
-  std::vector<robot_calibration_msgs::CalibrationData> data;
-  robot_calibration_msgs::CalibrationData msg;
+  std::vector<robot_calibration_msgs::msg::CalibrationData> data;
+  robot_calibration_msgs::msg::CalibrationData msg;
 
   // Match expected output from chain manager
   msg.joint_states.name.resize(10);
@@ -245,10 +246,10 @@ TEST(ErrorBlockTests, error_blocks_maxwell)
   msg.observations[0].features[0].point.y = 0.111304592065;
   msg.observations[0].features[0].point.z = 0.522079317365;
 
-  msg.observations[0].ext_camera_info.camera_info.P[0] = 100.0;  // fx
-  msg.observations[0].ext_camera_info.camera_info.P[5] = 100.0;  // fy
-  msg.observations[0].ext_camera_info.camera_info.P[2] = 320.0;  // cx
-  msg.observations[0].ext_camera_info.camera_info.P[6] = 240.0;  // cy
+  msg.observations[0].ext_camera_info.camera_info.p[0] = 100.0;  // fx
+  msg.observations[0].ext_camera_info.camera_info.p[5] = 100.0;  // fy
+  msg.observations[0].ext_camera_info.camera_info.p[2] = 320.0;  // cx
+  msg.observations[0].ext_camera_info.camera_info.p[6] = 240.0;  // cy
   msg.observations[0].ext_camera_info.parameters.resize(2);
   msg.observations[0].ext_camera_info.parameters[0].name = "z_offset";
   msg.observations[0].ext_camera_info.parameters[0].value = 0.0;
@@ -286,11 +287,12 @@ TEST(ErrorBlockTests, error_blocks_maxwell)
 
   // Setup params
   robot_calibration::OptimizationParams params;
-  params.LoadFromROS(nh);
+  params.LoadFromROS(node, "test_step");
 
   // Optimize
-  opt.optimize(params, data, true);
-  EXPECT_DOUBLE_EQ(1.6771013673719808e-25, opt.summary()->initial_cost);
+  rclcpp::Logger logger = node->get_logger();
+  opt.optimize(params, data, logger, true);
+  EXPECT_NEAR(1.6771013673719808e-25, opt.summary()->initial_cost, 0.00001);
   // 14 joints + 6 from a free frame
   EXPECT_EQ(20, opt.getNumParameters());
   // 3 CalibrationData, each with chain3d with a single observed point (3 residuals)
@@ -298,11 +300,11 @@ TEST(ErrorBlockTests, error_blocks_maxwell)
 
   // While things are setup, test our param helpers
   // This param does not exist, we should get the default
-  double test = params.getParam(params.error_blocks[1], "test", 10.0);
-  EXPECT_EQ(10, test);
+  //double test = params.getParam(params.error_blocks[1], "test", 10.0);
+  //EXPECT_EQ(10, test);
   // This does exist, we should get what is in our YAML file
-  double scale = params.getParam(params.error_blocks[1], "joint_scale", 10.0);
-  EXPECT_EQ(0.0, scale);
+  //double scale = params.getParam(params.error_blocks[1], "joint_scale", 10.0);
+  //EXPECT_EQ(0.0, scale);
 
   // Validate getCameraNames()
   std::vector<std::string> camera_names = opt.getCameraNames();
@@ -328,7 +330,7 @@ TEST(ErrorBlockTests, error_blocks_maxwell)
 
 int main(int argc, char** argv)
 {
-  ros::init(argc, argv, "error_block_tests");
+  rclcpp::init(argc, argv);
   testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }

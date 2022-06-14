@@ -1,4 +1,5 @@
 /*
+ * Copyright (C) 2022 Michael Ferguson
  * Copyright (C) 2014-2015 Fetch Robotics Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,13 +15,13 @@
  * limitations under the License.
  */
 
-#include <robot_calibration/capture/chain_manager.h>
+#include <robot_calibration/util/chain_manager.hpp>
 #include <gtest/gtest.h>
 
 TEST(ChainManagerTests, test_rosparam_loading)
 {
-  ros::NodeHandle nh("~");
-  robot_calibration::ChainManager manager(nh, 0.001);
+  rclcpp::Node::SharedPtr node = std::make_shared<rclcpp::Node>("chain_manager_tests");
+  robot_calibration::ChainManager manager(node, 1);
 
   std::vector<std::string> chain_names = manager.getChains();
   EXPECT_EQ(static_cast<size_t>(2), chain_names.size());
@@ -52,7 +53,7 @@ TEST(ChainManagerTests, test_rosparam_loading)
 
 int main(int argc, char** argv)
 {
-  ros::init(argc, argv, "chain_manager_tests");
+  rclcpp::init(argc, argv);
   testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }

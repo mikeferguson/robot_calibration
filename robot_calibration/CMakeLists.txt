@@ -165,7 +165,9 @@ target_link_libraries(viz_mesh
   ${orocos_kdl_LIBRARIES}
 )
 
-#add_subdirectory(test)
+if(BUILD_TESTING)
+  add_subdirectory(test)
+endif()
 
 install(DIRECTORY include/ DESTINATION include)
 
