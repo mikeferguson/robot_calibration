@@ -42,6 +42,11 @@
   <!-- Temporary hack for issue with geometric_shapes -->
   <build_depend>libboost-filesystem-dev</build_depend>
 
+  <test_depend>ament_cmake_gtest</test_depend>
+  <test_depend>launch</test_depend>
+  <test_depend>launch_ros</test_depend>
+  <test_depend>launch_testing</test_depend>
+
   <export>
     <build_type>ament_cmake</build_type>
   </export>
