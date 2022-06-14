@@ -101,13 +101,13 @@ int main(int argc, char** argv)
   std::vector<std::string> model_names;
   for (size_t i = 0; i < params.models.size(); ++i)
   {
-    if (params.models[i].type == "chain")
+    if (params.models[i].type == "chain3d")
     {
       RCLCPP_INFO_STREAM(node->get_logger(),
                          "Creating chain '" << params.models[i].name << "' from " <<
                                                params.base_link << " to " <<
-                                               ""); // TODO params.models[i].params["frame"]);
-      robot_calibration::Chain3dModel* model = new robot_calibration::Chain3dModel(params.models[i].name, tree, params.base_link, ""); // TODO params.models[i].params["frame"]);
+                                               params.models[i].frame);
+      robot_calibration::Chain3dModel* model = new robot_calibration::Chain3dModel(params.models[i].name, tree, params.base_link, params.models[i].frame);
       models[params.models[i].name] = model;
       model_names.push_back(params.models[i].name);
     }
@@ -115,14 +115,14 @@ int main(int argc, char** argv)
     {
       RCLCPP_INFO_STREAM(node->get_logger(),
                          "Creating camera3d '" << params.models[i].name << "' in frame " <<
-                                                  ""); // TODO params.models[i].params["frame"]);
-      std::string param_name = ""; // TODO params.models[i].params["param_name"];
+                                                  params.models[i].frame);
+      std::string param_name = params.models[i].param_name;
       if (param_name == "")
       {
         // Default to same name as sensor
         param_name = params.models[i].name;
       }
-      robot_calibration::Camera3dModel* model = new robot_calibration::Camera3dModel(params.models[i].name, param_name, tree, params.base_link, ""); // TODO params.models[i].params["frame"]);
+      robot_calibration::Camera3dModel* model = new robot_calibration::Camera3dModel(params.models[i].name, param_name, tree, params.base_link, params.models[i].frame);
       models[params.models[i].name] = model;
       model_names.push_back(params.models[i].name);
       camera_pubs[params.models[i].name] = node->create_publisher<sensor_msgs::msg::PointCloud2>(params.models[i].name, 1);
