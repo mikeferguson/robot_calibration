@@ -51,7 +51,9 @@ bool CheckerboardFinder::init(const std::string& name,
   std::string topic_name;
   topic_name = node->declare_parameter<std::string>(name + ".topic", name + "/points");
   subscriber_ = node->create_subscription<sensor_msgs::msg::PointCloud2>(
-    topic_name, 1, std::bind(&CheckerboardFinder::cameraCallback, this, std::placeholders::_1));
+    topic_name,
+    rclcpp::QoS(1).best_effort().keep_last(1),
+    std::bind(&CheckerboardFinder::cameraCallback, this, std::placeholders::_1));
 
   // Size of checkerboard
   points_x_ = node->declare_parameter<int>("points_x", 5);
@@ -93,6 +95,14 @@ void CheckerboardFinder::cameraCallback(sensor_msgs::msg::PointCloud2::ConstShar
 // Returns true if we got a message, false if we timeout
 bool CheckerboardFinder::waitForCloud()
 {
+  // Stored as weak pointer, need to grab a real shared pointer
+  auto node = node_ptr_.lock();
+  if (!node)
+  {
+    RCLCPP_ERROR(LOGGER, "Unable to get rclcpp::Node lock");
+    return false;
+  }
+
   // Initial wait cycle so that camera is definitely up to date.
   rclcpp::sleep_for(std::chrono::milliseconds(100));
 
@@ -106,7 +116,7 @@ bool CheckerboardFinder::waitForCloud()
       return true;
     }
     rclcpp::sleep_for(std::chrono::milliseconds(10));
-    // TODO ros::spinOnce();
+    rclcpp::spin_some(node);
   }
   RCLCPP_ERROR(LOGGER, "Failed to get cloud");
   return !waiting_;

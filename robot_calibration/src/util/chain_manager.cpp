@@ -28,6 +28,9 @@ namespace robot_calibration
 ChainManager::ChainManager(rclcpp::Node::SharedPtr node, long int wait_time) :
   state_is_valid_(false)
 {
+  // Store weak pointer to node
+  node_ptr_ = node;
+
   // We cannot do much without some kinematic chains
   std::vector<std::string> chain_names =
     node->declare_parameter<std::vector<std::string>>("chains", std::vector<std::string>());
@@ -75,6 +78,10 @@ ChainManager::ChainManager(rclcpp::Node::SharedPtr node, long int wait_time) :
 
   // Parameter to set velocity scaling factor for move_group
   velocity_factor_ = node->declare_parameter<double>("velocity_factor", 1.0);
+
+  // Parameter to limit settling timeout
+  // <= 0.0 disables timeout
+  settling_timeout_ = node->declare_parameter<double>("settling_timeout", 0.0);
 
   subscriber_ = node->create_subscription<sensor_msgs::msg::JointState>(
     "/joint_states", 10, std::bind(&ChainManager::stateCallback, this, std::placeholders::_1));
@@ -239,13 +246,21 @@ bool ChainManager::waitToSettle()
     return true;
   }
 
+  // Stored as weak pointer, need to grab a real shared pointer
+  auto node = node_ptr_.lock();
+  if (!node)
+  {
+    RCLCPP_ERROR(LOGGER, "Unable to get rclcpp::Node lock");
+    return false;
+  }
+
   // Reset to invalid so we know state is not stale
   {
     std::lock_guard<std::mutex> lock(state_mutex_);
     state_is_valid_ = false;
   }
 
-  // TODO: timeout?
+  rclcpp::Time start = node->now();
   while (true)
   {
     bool settled = true;
@@ -274,7 +289,9 @@ bool ChainManager::waitToSettle()
 
         // If at least one joint is not settled, break out of this for loop
         if (!settled)
+        {
           break;
+        }
       }
     }
     else
@@ -289,7 +306,17 @@ bool ChainManager::waitToSettle()
       break;
     }
 
-    // TODO ros::spinOnce();
+    // Exit if timed out
+    if (settling_timeout_ > 0.0)
+    {
+      if ((node->now() - start).seconds() > settling_timeout_)
+      {
+        // Timed out - return failure
+        return false;
+      }
+    }
+
+    rclcpp::spin_some(node);
   }
 
   return true;

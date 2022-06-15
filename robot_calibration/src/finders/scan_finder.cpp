@@ -52,7 +52,9 @@ bool ScanFinder::init(const std::string& name,
   std::string topic_name;
   topic_name = node->declare_parameter<std::string>(name + ".topic", name + "/scan");
   subscriber_ = node->create_subscription<sensor_msgs::msg::LaserScan>(
-    topic_name, 1, std::bind(&ScanFinder::scanCallback, this, std::placeholders::_1));
+    topic_name,
+    rclcpp::QoS(1).best_effort().keep_last(1),
+    std::bind(&ScanFinder::scanCallback, this, std::placeholders::_1));
 
   // Name of the sensor model that will be used during optimization
   laser_sensor_name_ = node->declare_parameter<std::string>("sensor_name", "laser");
@@ -92,6 +94,15 @@ void ScanFinder::scanCallback(sensor_msgs::msg::LaserScan::ConstSharedPtr scan)
 
 bool ScanFinder::waitForScan()
 {
+  // Stored as weak pointer, need to grab a real shared pointer
+  auto node = node_ptr_.lock();
+  if (!node)
+  {
+    RCLCPP_ERROR(LOGGER, "Unable to get rclcpp::Node lock");
+    return false;
+  }
+
+  // Initial wait cycle so that laser scan is definitely up to date.
   rclcpp::sleep_for(std::chrono::milliseconds(100));
 
   waiting_ = true;
@@ -104,7 +115,7 @@ bool ScanFinder::waitForScan()
       return true;
     }
     rclcpp::sleep_for(std::chrono::milliseconds(10));
-    // TODO rclcpp::spin_some(this->shared_from_this());
+    rclcpp::spin_some(node);
   }
   RCLCPP_ERROR(LOGGER, "Failed to get scan");
   return !waiting_;

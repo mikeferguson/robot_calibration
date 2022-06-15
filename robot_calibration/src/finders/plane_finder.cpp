@@ -107,7 +107,9 @@ bool PlaneFinder::init(const std::string& name,
   std::string topic_name =
     node->declare_parameter<std::string>(name + ".topic", name + "/points");
   subscriber_ = node->create_subscription<sensor_msgs::msg::PointCloud2>(
-    topic_name, 1, std::bind(&PlaneFinder::cameraCallback, this, std::placeholders::_1));
+    topic_name,
+    rclcpp::QoS(1).best_effort().keep_last(1),
+    std::bind(&PlaneFinder::cameraCallback, this, std::placeholders::_1));
 
   // Name of the sensor model that will be used during optimization
   plane_sensor_name_ = node->declare_parameter<std::string>(name + ".camera_sensor_name", "camera");
@@ -177,6 +179,15 @@ void PlaneFinder::cameraCallback(sensor_msgs::msg::PointCloud2::ConstSharedPtr c
 
 bool PlaneFinder::waitForCloud()
 {
+  // Stored as weak pointer, need to grab a real shared pointer
+  auto node = node_ptr_.lock();
+  if (!node)
+  {
+    RCLCPP_ERROR(LOGGER, "Unable to get rclcpp::Node lock");
+    return false;
+  }
+
+  // Initial wait cycle so that camera is definitely up to date.
   rclcpp::sleep_for(std::chrono::milliseconds(100));
 
   waiting_ = true;
@@ -189,7 +200,7 @@ bool PlaneFinder::waitForCloud()
       return true;
     }
     rclcpp::sleep_for(std::chrono::milliseconds(10));
-    // TODO ros::spinOnce();
+    rclcpp::spin_some(node);
   }
   RCLCPP_ERROR(LOGGER, "Failed to get cloud");
   return !waiting_;

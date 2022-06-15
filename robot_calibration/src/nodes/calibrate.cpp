@@ -91,6 +91,7 @@ int main(int argc, char** argv)
     std::vector<robot_calibration_msgs::msg::CaptureConfig> poses;
     if (pose_bag_name.compare("--manual") != 0)
     {
+      RCLCPP_INFO(logger, "Loading calibration poses from %s", pose_bag_name.c_str());
       if (!robot_calibration::getPosesFromBag(pose_bag_name, poses))
       {
         // Error will be printed in function
@@ -99,7 +100,7 @@ int main(int argc, char** argv)
     }
     else
     {
-      RCLCPP_INFO(logger, "Using manual calibration mode...");
+      RCLCPP_INFO(logger, "Using manual calibration mode");
     }
 
     // For each pose in the capture sequence.

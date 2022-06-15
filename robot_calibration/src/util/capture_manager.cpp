@@ -75,6 +75,7 @@ bool CaptureManager::captureFeatures(const std::vector<std::string>& feature_nam
     if (feature_names.empty() ||
         std::find(feature_names.begin(), feature_names.end(), it->first) != feature_names.end())
     {
+      RCLCPP_INFO(LOGGER, "Capturing features from %s", it->first.c_str());
       if (!it->second->find(&msg))
       {
         RCLCPP_WARN(LOGGER, "%s failed to capture features.", it->first.c_str());

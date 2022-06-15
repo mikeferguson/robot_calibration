@@ -80,6 +80,7 @@ public:
 
   /**
    * @brief Wait for joints to settle.
+   * @return True if joints have settled, false if timeout was hit.
    */
   bool waitToSettle();
 
@@ -108,6 +109,7 @@ private:
                                                        const std::vector<std::string>& joints);
 
   // Subscriber for joint_states topic, storage of message
+  rclcpp::Node::WeakPtr node_ptr_;
   rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr subscriber_;
   std::mutex state_mutex_;
   sensor_msgs::msg::JointState state_;
@@ -118,6 +120,9 @@ private:
   std::vector<std::shared_ptr<ChainController> > controllers_;
   std::shared_ptr<robot_calibration::ActionClient<MoveGroupAction>> move_group_;
   double velocity_factor_;  // scaling factor to slow down move_group plans
+
+  // Maximum time to wait (in seconds) for settling to occur
+  double settling_timeout_;
 };
 
 }  // namespace robot_calibration
