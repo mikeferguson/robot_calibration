@@ -9,7 +9,7 @@ class CameraInfoPublisher(Node):
 
     def __init__(self):
         super().__init__("fake_camera_info")
-        self.publisher = self.create_publisher(CameraInfo, "/head_camera2/depth/camera_info", 5)
+        self.publisher = self.create_publisher(CameraInfo, "/head_camera/depth/camera_info", 5)
 
         # This is for testing the DepthCameraInfoManager
         self.declare_parameter("z_offset_mm", 0)
