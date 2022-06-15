@@ -18,8 +18,8 @@
 
 // Author: Michael Ferguson
 
-#ifndef ROBOT_CALIBRATION_CAPTURE_POSES_FROM_BAG_H
-#define ROBOT_CALIBRATION_CAPTURE_POSES_FROM_BAG_H
+#ifndef ROBOT_CALIBRATION_CAPTURE_POSES_FROM_YAML_H
+#define ROBOT_CALIBRATION_CAPTURE_POSES_FROM_YAML_H
 
 #include <string>
 #include <vector>
@@ -29,11 +29,11 @@ namespace robot_calibration
 {
 
 /**
- * @brief Load a vector of calibration poses from a bagfile
+ * @brief Load a vector of calibration poses from a YAML file
  */
-bool getPosesFromBag(const std::string& pose_bag_name,
-                     std::vector<robot_calibration_msgs::msg::CaptureConfig>& poses);
+bool getPosesFromYaml(const std::string& filename,
+                      std::vector<robot_calibration_msgs::msg::CaptureConfig>& poses);
 
 }  // namespace robot_calibration
 
-#endif  // ROBOT_CALIBRATION_CAPTURE_POSES_FROM_BAG_H
+#endif  // ROBOT_CALIBRATION_CAPTURE_POSES_FROM_YAML_H

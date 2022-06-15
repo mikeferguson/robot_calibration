@@ -48,6 +48,7 @@ find_package(tf2_geometry_msgs REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(urdf REQUIRED)
 find_package(visualization_msgs REQUIRED)
+find_package(yaml-cpp REQUIRED)
 
 include_directories(include
                     ${Boost_INCLUDE_DIRS}
@@ -85,8 +86,9 @@ add_library(robot_calibration SHARED
   src/optimization/offsets.cpp
   src/optimization/params.cpp
   src/util/capture_manager.cpp
-  src/util/capture_poses.cpp
   src/util/chain_manager.cpp
+  src/util/poses_from_bag.cpp
+  src/util/poses_from_yaml.cpp
   src/util/mesh_loader.cpp
 )
 target_link_libraries(robot_calibration
