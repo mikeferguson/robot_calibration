@@ -50,7 +50,7 @@ public:
 
     // Get parameters of drivers
     std::string driver_name =
-      node->declare_parameter<std::string>(name + ".canera_driver", "/head_camera/driver");
+      node->declare_parameter<std::string>(name + ".camera_driver", "/head_camera/driver");
     auto params_client = std::make_shared<rclcpp::SyncParametersClient>(node, driver_name);
     if (params_client->wait_for_service(std::chrono::seconds(10)))
     {

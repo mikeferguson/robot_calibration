@@ -11,14 +11,15 @@ def main(argv=sys.argv[1:]):
     test_node = Node(
         executable=[os.getenv("TEST_EXECUTABLE")],
         name="camera_info_tests",
-        parameters=[{"test_manager.z_offset_mm": 2,
-                     "test_manager.z_scaling": 1.1}],
+        parameters=[{"test_manager.camera_driver": "/camera_info_publisher"}],
         output="screen",
     )
 
     info_publisher = Node(
         executable=[os.getenv("INFO_PUBLISHER")],
         name="camera_info_publisher",
+        parameters=[{"z_offset_mm": 2,
+                     "z_scaling": 1.1}],
         output="screen",
     )
 
