@@ -74,13 +74,13 @@ bool load_bag(const std::string& file_name,
   {
     auto bag_message = reader.read_next();
 
-    if (bag_message->topic_name == "robot_description")
+    if (bag_message->topic_name == "/robot_description")
     {
       rclcpp::SerializedMessage extracted_serialized_msg(*bag_message->serialized_data);
       rclcpp::Serialization<std_msgs::msg::String> serialization;
       serialization.deserialize_message(&extracted_serialized_msg, &description_msg);
     }
-    else if (bag_message->topic_name == "calibration_data")
+    else if (bag_message->topic_name == "/calibration_data")
     {
       robot_calibration_msgs::msg::CalibrationData msg;
       rclcpp::SerializedMessage extracted_serialized_msg(*bag_message->serialized_data);

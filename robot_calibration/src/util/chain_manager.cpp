@@ -46,31 +46,29 @@ ChainManager::ChainManager(rclcpp::Node::SharedPtr node, long int wait_time) :
     std::string topic, group;
     topic = node->declare_parameter<std::string>(name + ".topic", std::string());
     group = node->declare_parameter<std::string>(name + ".planning_group", std::string());
+
+    RCLCPP_INFO(LOGGER, "Creating chain %s on topic %s", name.c_str(), topic.c_str());
     
-    if (topic != "")
+    std::shared_ptr<ChainController> controller(new ChainController(node, name, topic, group));
+    controller->joint_names =
+      node->declare_parameter<std::vector<std::string>>(name + ".joints", std::vector<std::string>());
+
+    if (!controller->client.waitForServer(wait_time))
     {
-      std::shared_ptr<ChainController> controller(new ChainController(node, name, topic, group));
-      controller->joint_names =
-        node->declare_parameter<std::vector<std::string>>(name + ".joints", std::vector<std::string>());
-
-      RCLCPP_INFO(LOGGER, "Waiting for %s...", topic.c_str());
-      if (!controller->client.waitForServer(wait_time))
-      {
-        RCLCPP_WARN(LOGGER, "Failed to connect to %s", topic.c_str());
-      }
-
-      if (controller->shouldPlan() && (!move_group_))
-      {
-        move_group_ = std::make_shared<ActionClient<MoveGroupAction>>();
-        move_group_->init(node, "move_group");
-        if (!move_group_->waitForServer(wait_time))
-        {
-          RCLCPP_WARN(LOGGER, "Failed to connect to move_group");
-        }
-      }
-
-      controllers_.push_back(controller);
+      RCLCPP_WARN(LOGGER, "Failed to connect to %s", topic.c_str());
     }
+
+    if (controller->shouldPlan() && (!move_group_))
+    {
+      move_group_ = std::make_shared<ActionClient<MoveGroupAction>>();
+      move_group_->init(node, "move_group");
+      if (!move_group_->waitForServer(wait_time))
+      {
+        RCLCPP_WARN(LOGGER, "Failed to connect to move_group");
+      }
+    }
+
+    controllers_.push_back(controller);
   }
 
   // Parameter to set movement time
