@@ -29,6 +29,7 @@
 #include <robot_calibration/util/calibration_data.hpp>
 #include <robot_calibration/util/capture_manager.hpp>
 #include <robot_calibration/util/poses_from_bag.hpp>
+#include <robot_calibration/util/poses_from_yaml.hpp>
 
 /** \mainpage
  * \section parameters Parameters of the Optimization:
@@ -73,12 +74,16 @@ int main(int argc, char** argv)
   std_msgs::msg::String description_msg;
   std::vector<robot_calibration_msgs::msg::CalibrationData> data;
 
-  // What bag to use to load calibration poses out of (for capture)
-  std::string pose_bag_name("calibration_poses.bag");
+  // Where should calibration data come from:
+  //  --manual          manually trigger after moving robot to poses
+  //  --from-bag <bag>  use a bagfile of pre-recorded data
+  //  poses.yaml        load poses from a YAML file and capture each pose
+  //  poses.bag         load poses from a bagfile and capture each pose
+  std::string data_source("calibration_poses.yaml");
   if (argc > 1)
-    pose_bag_name = argv[1];
+    data_source = argv[1];
 
-  if (pose_bag_name.compare("--from-bag") != 0)
+  if (data_source.compare("--from-bag") != 0)
   {
     // No name provided for a calibration bag file, must do capture
     robot_calibration::CaptureManager capture_manager;
@@ -89,13 +94,25 @@ int main(int argc, char** argv)
 
     // Load a set of calibration poses
     std::vector<robot_calibration_msgs::msg::CaptureConfig> poses;
-    if (pose_bag_name.compare("--manual") != 0)
+    if (data_source.compare("--manual") != 0)
     {
-      RCLCPP_INFO(logger, "Loading calibration poses from %s", pose_bag_name.c_str());
-      if (!robot_calibration::getPosesFromBag(pose_bag_name, poses))
+      if (data_source.find(".yaml") != std::string::npos)
       {
-        // Error will be printed in function
-        return -1;
+        RCLCPP_INFO(logger, "Loading YAML calibration poses from %s", data_source.c_str());
+        if (!robot_calibration::getPosesFromYaml(data_source, poses))
+        {
+          // Error will be printed in function
+          return -1;
+        }
+      }
+      else
+      {
+        RCLCPP_INFO(logger, "Loading bagfile calibration poses from %s", data_source.c_str());
+        if (!robot_calibration::getPosesFromBag(data_source, poses))
+        {
+          // Error will be printed in function
+          return -1;
+        }
       }
     }
     else

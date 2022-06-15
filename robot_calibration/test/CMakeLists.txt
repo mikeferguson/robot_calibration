@@ -11,6 +11,11 @@ target_link_libraries(chain_model_tests robot_calibration
                                         ${orocos_kdl_LIBRARIES})
 ament_target_dependencies(chain_model_tests ${dependencies})
 
+ament_add_gtest(poses_from_yaml_tests poses_from_yaml_tests.cpp
+                WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
+target_link_libraries(poses_from_yaml_tests robot_calibration)
+ament_target_dependencies(poses_from_yaml_tests ${dependencies})
+
 ament_add_gtest(rotation_tests rotation_tests.cpp)
 target_link_libraries(rotation_tests robot_calibration
                                      ${CERES_LIBRARIES}

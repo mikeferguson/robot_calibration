@@ -1,0 +1,15 @@
+- joints: [j1, j2, j3]
+  positions: [0.1, 0.2, 0.3]
+  features: [feature1, feature2]
+- joints:
+  - j1
+  - j2
+  - j3
+  positions:
+  - 0.4
+  - 0.5
+  - 0.6
+- joints: [j1, j2]
+  positions: [0.4, 0.5, 0.6]
+- joints: [j4, j5 , j6]
+  positions: [0.7, 0.8, 0.9]

@@ -38,6 +38,7 @@
   <depend>libgflags-dev</depend>
   <depend>suitesparse</depend>
   <depend>protobuf-dev</depend>
+  <depend>yaml-cpp</depend>
 
   <!-- Temporary hack for issue with geometric_shapes -->
   <build_depend>libboost-filesystem-dev</build_depend>
