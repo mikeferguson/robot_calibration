@@ -1,4 +1,5 @@
 /*
+ * Copyright (C) 2022 Michael Ferguson
  * Copyright (C) 2014 Fetch Robotics Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,14 +15,14 @@
  * limitations under the License.
  */
 
-#include <robot_calibration/ceres/optimization_params.h>
+#include <robot_calibration/optimization/params.hpp>
 #include <gtest/gtest.h>
 
-TEST(ChainManagerTests, test_rosparam_loading)
+TEST(OptimizationParamsTests, test_rosparam_loading)
 {
-  ros::NodeHandle nh("~");
+  rclcpp::Node::SharedPtr node = std::make_shared<rclcpp::Node>("optimization_param_tests");
   robot_calibration::OptimizationParams params;
-  params.LoadFromROS(nh);
+  params.LoadFromROS(node, "first_calibration_step");
 
   EXPECT_EQ(static_cast<size_t>(14), params.free_params.size());
 
@@ -33,14 +34,27 @@ TEST(ChainManagerTests, test_rosparam_loading)
 
   EXPECT_EQ(static_cast<size_t>(2), params.models.size());
   EXPECT_EQ("arm", params.models[0].name);
-  EXPECT_EQ("chain", params.models[0].type);
-  EXPECT_EQ("gripper_led_frame", static_cast<std::string>(params.models[0].params["frame"]));
+  EXPECT_EQ("chain3d", params.models[0].type);
+  EXPECT_EQ("gripper_led_frame", params.models[0].frame);
+  EXPECT_EQ("camera", params.models[1].name);
+  EXPECT_EQ("camera3d", params.models[1].type);
+  EXPECT_EQ("head_camera_rgb_optical_frame", params.models[1].frame);
 
   EXPECT_EQ(static_cast<size_t>(2), params.error_blocks.size());
-  EXPECT_EQ("hand_eye", params.error_blocks[0].name);
-  EXPECT_EQ("chain3d_to_chain3d", params.error_blocks[0].type);
-  EXPECT_EQ("camera", static_cast<std::string>(params.error_blocks[0].params["model_a"]));
-  EXPECT_EQ("arm", static_cast<std::string>(params.error_blocks[0].params["model_b"]));
+  // Check generic parameter values
+  EXPECT_EQ("hand_eye", params.error_blocks[0]->name);
+  EXPECT_EQ("chain3d_to_chain3d", params.error_blocks[0]->type);
+  EXPECT_EQ("restrict_camera", params.error_blocks[1]->name);
+  EXPECT_EQ("outrageous", params.error_blocks[1]->type);
+  // Check specific values
+  auto block0 = std::dynamic_pointer_cast<robot_calibration::OptimizationParams::Chain3dToChain3dParams>(params.error_blocks[0]);
+  EXPECT_EQ("camera", block0->model_a);
+  EXPECT_EQ("arm", block0->model_b);
+  auto block1 = std::dynamic_pointer_cast<robot_calibration::OptimizationParams::OutrageousParams>(params.error_blocks[1]);
+  EXPECT_EQ("head_camera_rgb_joint", block1->param);
+  EXPECT_EQ(0.0, block1->joint_scale);
+  EXPECT_EQ(0.1, block1->position_scale);
+  EXPECT_EQ(0.1, block1->rotation_scale);
 
   EXPECT_EQ(static_cast<size_t>(1), params.free_frames_initial_values.size());
   EXPECT_EQ("checkerboard", params.free_frames_initial_values[0].name);
@@ -51,7 +65,7 @@ TEST(ChainManagerTests, test_rosparam_loading)
 
 int main(int argc, char** argv)
 {
-  ros::init(argc, argv, "optimization_param_tests");
+  rclcpp::init(argc, argv);
   testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }

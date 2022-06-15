@@ -1,4 +1,5 @@
 /*
+ * Copyright (C) 2022 Michael Ferguson
  * Copyright (C) 2015 Fetch Robotics Inc.
  * Copyright (C) 2013-2014 Unbounded Robotics Inc.
  *
@@ -17,11 +18,10 @@
 
 // Author: Michael Ferguson
 
-#include <pluginlib/class_list_macros.h>
-#include <robot_calibration/capture/checkerboard_finder.h>
-#include <sensor_msgs/point_cloud2_iterator.h>
+#include <robot_calibration/finders/checkerboard_finder.hpp>
+#include <sensor_msgs/point_cloud2_iterator.hpp>
 
-PLUGINLIB_EXPORT_CLASS(robot_calibration::CheckerboardFinder, robot_calibration::FeatureFinder)
+static const rclcpp::Logger LOGGER = rclcpp::get_logger("checkerboard_finder");
 
 namespace robot_calibration
 {
@@ -37,39 +37,44 @@ CheckerboardFinder::CheckerboardFinder() :
 }
 
 bool CheckerboardFinder::init(const std::string& name,
-                              ros::NodeHandle & nh)
+                              std::shared_ptr<tf2_ros::Buffer> buffer,
+                              rclcpp::Node::SharedPtr node)
 {
-  if (!FeatureFinder::init(name, nh))
+  if (!FeatureFinder::init(name, buffer, node))
+  {
     return false;
+  }
 
-  // Setup Scriber
+  clock_ = node->get_clock();
+
+  // Setup subscriber
   std::string topic_name;
-  nh.param<std::string>("topic", topic_name, "/points");
-  subscriber_ = nh.subscribe(topic_name,
-                             1,
-                             &CheckerboardFinder::cameraCallback,
-                             this);
+  topic_name = node->declare_parameter<std::string>(name + ".topic", name + "/points");
+  subscriber_ = node->create_subscription<sensor_msgs::msg::PointCloud2>(
+    topic_name,
+    rclcpp::QoS(1).best_effort().keep_last(1),
+    std::bind(&CheckerboardFinder::cameraCallback, this, std::placeholders::_1));
 
   // Size of checkerboard
-  nh.param<int>("points_x", points_x_, 5);
-  nh.param<int>("points_y", points_y_, 4);
-  nh.param<double>("size", square_size_, 0.0245);
+  points_x_ = node->declare_parameter<int>("points_x", 5);
+  points_y_ = node->declare_parameter<int>("points_y", 4);
+  square_size_ = node->declare_parameter<double>("size", 0.0245);
 
   // Should we include debug image/cloud in observations
-  nh.param<bool>("debug", output_debug_, false);
+  output_debug_ = node->declare_parameter<bool>("debug", false);
 
   // Name of checkerboard frame that will be used during optimization
-  nh.param<std::string>("frame_id", frame_id_, "checkerboard");
+  frame_id_ = node->declare_parameter<std::string>("frame_id", "checkerboard");
 
   // Name of the sensor model that will be used during optimization
-  nh.param<std::string>("camera_sensor_name", camera_sensor_name_, "camera");
-  nh.param<std::string>("chain_sensor_name", chain_sensor_name_, "arm");
+  camera_sensor_name_ = node->declare_parameter<std::string>("camera_sensor_name", "camera");
+  chain_sensor_name_ = node->declare_parameter<std::string>("framchain_sensor_namee_id", "arm");
 
   // Publish where checkerboard points were seen
-  publisher_ = nh.advertise<sensor_msgs::PointCloud2>(getName() + "_points", 10);
+  publisher_ = node->create_publisher<sensor_msgs::msg::PointCloud2>(getName() + "_points", 10);
 
   // Setup to get camera depth info
-  if (!depth_camera_manager_.init(nh))
+  if (!depth_camera_manager_.init(name, node, LOGGER))
   {
     // Error will have been printed by manager
     return false;
@@ -78,11 +83,11 @@ bool CheckerboardFinder::init(const std::string& name,
   return true;
 }
 
-void CheckerboardFinder::cameraCallback(const sensor_msgs::PointCloud2& cloud)
+void CheckerboardFinder::cameraCallback(sensor_msgs::msg::PointCloud2::ConstSharedPtr cloud)
 {
   if (waiting_)
   {
-    cloud_ = cloud;
+    cloud_ = *cloud;
     waiting_ = false;
   }
 }
@@ -90,8 +95,16 @@ void CheckerboardFinder::cameraCallback(const sensor_msgs::PointCloud2& cloud)
 // Returns true if we got a message, false if we timeout
 bool CheckerboardFinder::waitForCloud()
 {
+  // Stored as weak pointer, need to grab a real shared pointer
+  auto node = node_ptr_.lock();
+  if (!node)
+  {
+    RCLCPP_ERROR(LOGGER, "Unable to get rclcpp::Node lock");
+    return false;
+  }
+
   // Initial wait cycle so that camera is definitely up to date.
-  ros::Duration(1/10.0).sleep();
+  rclcpp::sleep_for(std::chrono::milliseconds(100));
 
   waiting_ = true;
   int count = 250;
@@ -102,20 +115,20 @@ bool CheckerboardFinder::waitForCloud()
       // success
       return true;
     }
-    ros::Duration(0.01).sleep();
-    ros::spinOnce();
+    rclcpp::sleep_for(std::chrono::milliseconds(10));
+    rclcpp::spin_some(node);
   }
-  ROS_ERROR("Failed to get cloud");
+  RCLCPP_ERROR(LOGGER, "Failed to get cloud");
   return !waiting_;
 }
 
-bool CheckerboardFinder::find(robot_calibration_msgs::CalibrationData * msg)
+bool CheckerboardFinder::find(robot_calibration_msgs::msg::CalibrationData * msg)
 {
   // Try up to 50 frames
   for (int i = 0; i < 50; ++i)
   {
     // temporary copy of msg, so we throw away all changes if findInternal() returns false
-    robot_calibration_msgs::CalibrationData tmp_msg(*msg);
+    robot_calibration_msgs::msg::CalibrationData tmp_msg(*msg);
     if (findInternal(&tmp_msg))
     {
       *msg = tmp_msg;
@@ -125,26 +138,26 @@ bool CheckerboardFinder::find(robot_calibration_msgs::CalibrationData * msg)
   return false;
 }
 
-bool CheckerboardFinder::findInternal(robot_calibration_msgs::CalibrationData * msg)
+bool CheckerboardFinder::findInternal(robot_calibration_msgs::msg::CalibrationData * msg)
 {
-  geometry_msgs::PointStamped rgbd;
-  geometry_msgs::PointStamped world;
+  geometry_msgs::msg::PointStamped rgbd;
+  geometry_msgs::msg::PointStamped world;
 
   // Get cloud
   if (!waitForCloud())
   {
-    ROS_ERROR("No point cloud data");
+    RCLCPP_ERROR(LOGGER, "No point cloud data");
     return false;
   }
 
   if (cloud_.height == 1)
   {
-    ROS_ERROR("OpenCV does not support unorganized cloud/image.");
+    RCLCPP_ERROR(LOGGER, "OpenCV does not support unorganized cloud/image.");
     return false;
   }
 
   // Get an image message from point cloud
-  sensor_msgs::ImagePtr image_msg(new sensor_msgs::Image);
+  sensor_msgs::msg::Image::SharedPtr image_msg(new sensor_msgs::msg::Image);
   sensor_msgs::PointCloud2ConstIterator<uint8_t> rgb(cloud_, "rgb");
   image_msg->encoding = "bgr8";
   image_msg->height = cloud_.height;
@@ -171,7 +184,7 @@ bool CheckerboardFinder::findInternal(robot_calibration_msgs::CalibrationData * 
   }
   catch(cv_bridge::Exception& e)
   {
-    ROS_ERROR("Conversion failed");
+    RCLCPP_ERROR(LOGGER, "Conversion failed");
     return false;
   }
 
@@ -184,13 +197,13 @@ bool CheckerboardFinder::findInternal(robot_calibration_msgs::CalibrationData * 
 
   if (found)
   {
-    ROS_INFO("Found the checkboard");
+    RCLCPP_INFO(LOGGER, "Found the checkboard");
 
     // Create PointCloud2 to publish
-    sensor_msgs::PointCloud2 cloud;
+    sensor_msgs::msg::PointCloud2 cloud;
     cloud.width = 0;
     cloud.height = 0;
-    cloud.header.stamp = ros::Time::now();
+    cloud.header.stamp = clock_->now();
     cloud.header.frame_id = cloud_.header.frame_id;
     sensor_msgs::PointCloud2Modifier cloud_mod(cloud);
     cloud_mod.setPointCloud2FieldsByString(1, "xyz");
@@ -206,7 +219,6 @@ bool CheckerboardFinder::findInternal(robot_calibration_msgs::CalibrationData * 
          
     msg->observations[idx_cam].features.resize(points_x_ * points_y_);
     msg->observations[idx_chain].features.resize(points_x_ * points_y_);
-
 
     // Fill in the headers
     rgbd.header = cloud_.header;
@@ -230,7 +242,7 @@ bool CheckerboardFinder::findInternal(robot_calibration_msgs::CalibrationData * 
           std::isnan(rgbd.point.y) ||
           std::isnan(rgbd.point.z))
       {
-        ROS_ERROR_STREAM("NAN point on " << i);
+        RCLCPP_ERROR_STREAM(LOGGER, "NAN point on " << i);
         return false;
       }
 
@@ -252,7 +264,7 @@ bool CheckerboardFinder::findInternal(robot_calibration_msgs::CalibrationData * 
     }
 
     // Publish results
-    publisher_.publish(cloud);
+    publisher_->publish(cloud);
 
     // Found all points
     return true;
@@ -262,3 +274,6 @@ bool CheckerboardFinder::findInternal(robot_calibration_msgs::CalibrationData * 
 }
 
 }  // namespace robot_calibration
+
+#include <pluginlib/class_list_macros.hpp>
+PLUGINLIB_EXPORT_CLASS(robot_calibration::CheckerboardFinder, robot_calibration::FeatureFinder)

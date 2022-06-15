@@ -1,6 +1,0 @@
-<launch>
-  <node pkg="robot_calibration" type="feature_finder_loader_tests.py" name="fake_camera_info" />
-  <test time-limit="300" test-name="feature_finder_loader_tests" pkg="robot_calibration" type="feature_finder_loader_tests">
-    <rosparam file="$(find robot_calibration)/test/feature_finder_loader_tests.yaml" command="load" />
-  </test>
-</launch>

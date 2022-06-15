@@ -1,4 +1,5 @@
 /*
+ * Copyright (C) 2022 Michael Ferguson
  * Copyright (C) 2015 Fetch Robotics Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,7 +16,7 @@
  */
 
 #include <urdf/model.h>
-#include <robot_calibration/ceres/optimizer.h>
+#include <robot_calibration/optimization/ceres_optimizer.hpp>
 #include <gtest/gtest.h>
 
 std::string robot_description =
@@ -201,12 +202,12 @@ std::string robot_description =
 
 TEST(ErrorBlockTests, error_blocks_maxwell)
 {
-  ros::NodeHandle nh("~");
+  rclcpp::Node::SharedPtr node = std::make_shared<rclcpp::Node>("error_block_tests2");
 
   robot_calibration::Optimizer opt(robot_description);
 
-  std::vector<robot_calibration_msgs::CalibrationData> data;
-  robot_calibration_msgs::CalibrationData msg;
+  std::vector<robot_calibration_msgs::msg::CalibrationData> data;
+  robot_calibration_msgs::msg::CalibrationData msg;
 
   // Match expected output from chain manager
   msg.joint_states.name.resize(10);
@@ -243,10 +244,10 @@ TEST(ErrorBlockTests, error_blocks_maxwell)
   msg.observations[0].features[0].point.y = 0.111304592065;
   msg.observations[0].features[0].point.z = 0.522079317365;
 
-  msg.observations[0].ext_camera_info.camera_info.P[0] = 100.0;  // fx
-  msg.observations[0].ext_camera_info.camera_info.P[5] = 100.0;  // fy
-  msg.observations[0].ext_camera_info.camera_info.P[2] = 320.0;  // cx
-  msg.observations[0].ext_camera_info.camera_info.P[6] = 240.0;  // cy
+  msg.observations[0].ext_camera_info.camera_info.p[0] = 100.0;  // fx
+  msg.observations[0].ext_camera_info.camera_info.p[5] = 100.0;  // fy
+  msg.observations[0].ext_camera_info.camera_info.p[2] = 320.0;  // cx
+  msg.observations[0].ext_camera_info.camera_info.p[6] = 240.0;  // cy
   msg.observations[0].ext_camera_info.parameters.resize(2);
   msg.observations[0].ext_camera_info.parameters[0].name = "z_offset";
   msg.observations[0].ext_camera_info.parameters[0].value = 0.0;
@@ -280,10 +281,16 @@ TEST(ErrorBlockTests, error_blocks_maxwell)
 
   // Setup params
   robot_calibration::OptimizationParams params;
-  params.LoadFromROS(nh);
+  params.LoadFromROS(node, "step_1");
+
+  EXPECT_EQ(1, static_cast<int>(params.error_blocks.size()));
+  auto block0 = std::dynamic_pointer_cast<robot_calibration::OptimizationParams::Chain3dToChain3dParams>(params.error_blocks[0]);
+  EXPECT_EQ("camera", block0->model_a);
+  EXPECT_EQ("arm", block0->model_b);
 
   // Optimize
-  opt.optimize(params, data, false);
+  rclcpp::Logger logger = node->get_logger();
+  opt.optimize(params, data, logger, false);
   EXPECT_GT(opt.summary()->initial_cost, 0.001);
   EXPECT_LT(opt.summary()->final_cost, 1e-18);
   EXPECT_GT(opt.summary()->iterations.size(), static_cast<size_t>(1));  // expect more than 1 iteration
@@ -297,7 +304,7 @@ TEST(ErrorBlockTests, error_blocks_maxwell)
 
 int main(int argc, char** argv)
 {
-  ros::init(argc, argv, "error_block_tests");
+  rclcpp::init(argc, argv);
   testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }

@@ -1,56 +1,66 @@
-models:
- - name: arm
-   type: chain
-   frame: gripper_led_frame
- - name: camera
-   type: camera3d
-   frame: head_camera_rgb_optical_frame
-free_params:
- - arm_shoulder_pan_joint
- - arm_shoulder_lift_joint
- - arm_upperarm_roll_joint
- - arm_elbow_flex_joint
- - arm_wrist_flex_joint
- - arm_wrist_roll_joint
- - head_pan_joint
- - head_tilt_joint
- - camera_fx
- - camera_fy
- - camera_cx
- - camera_xy
- - camera_z_offset
- - camera_z_scaling
-free_frames:
- - name: head_camera_rgb_joint
-   x: true
-   y: true
-   z: true
-   roll: true
-   pitch: true
-   yaw: true
- - name: checkerboard
-   x: true
-   y: true
-   z: true
-   roll: false
-   pitch: true
-   yaw: true
-free_frames_initial_values:
- - name: checkerboard
-   x: 0.0
-   y: 1.0
-   z: 2.0
-   roll: 0.0
-   pitch: 0.0
-   yaw: 0.0
-error_blocks:
- - name: hand_eye
-   type: chain3d_to_chain3d
-   model_a: camera
-   model_b: arm
- - name: restrict_camera
-   type: outrageous
-   param: head_camera_rgb_joint
-   joint_scale: 0.0
-   position_scale: 0.1
-   rotation_scale: 0.1
+optimization_param_tests:
+  ros__parameters:
+    first_calibration_step:
+      models:
+      - arm
+      - camera
+      arm:
+        type: chain3d
+        frame: gripper_led_frame
+      camera:
+        type: camera3d
+        frame: head_camera_rgb_optical_frame
+      free_params:
+      - arm_shoulder_pan_joint
+      - arm_shoulder_lift_joint
+      - arm_upperarm_roll_joint
+      - arm_elbow_flex_joint
+      - arm_wrist_flex_joint
+      - arm_wrist_roll_joint
+      - head_pan_joint
+      - head_tilt_joint
+      - camera_fx
+      - camera_fy
+      - camera_cx
+      - camera_xy
+      - camera_z_offset
+      - camera_z_scaling
+      free_frames:
+      - head_camera_rgb_joint
+      - checkerboard
+      head_camera_rgb_joint:
+        x: true
+        y: true
+        z: true
+        roll: true
+        pitch: true
+        yaw: true
+      checkerboard:
+        x: true
+        y: true
+        z: true
+        roll: false
+        pitch: true
+        yaw: true
+      free_frames_initial_values:
+      - checkerboard
+      checkerboard_initial_values:
+        x: 0.0
+        y: 1.0
+        z: 2.0
+        roll: 0.0
+        pitch: 0.0
+        yaw: 0.0
+      error_blocks:
+      - hand_eye
+      - restrict_camera
+      hand_eye:
+        type: chain3d_to_chain3d
+        model_a: camera
+        model_b: arm
+      restrict_camera:
+        type: outrageous
+        param: head_camera_rgb_joint
+        joint_scale: 0.0
+        position_scale: 0.1
+        rotation_scale: 0.1

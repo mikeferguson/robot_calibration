@@ -1,4 +1,4 @@
-#include <robot_calibration/models/chain.h>
+#include <robot_calibration/models/chain3d.hpp>
 #include <gtest/gtest.h>
 
 using robot_calibration::rotation_from_axis_magnitude;

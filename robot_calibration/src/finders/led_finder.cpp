@@ -1,4 +1,5 @@
 /*
+ * Copyright (C) 2022 Michael Ferguson
  * Copyright (C) 2015 Fetch Robotics Inc.
  * Copyright (C) 2013-2014 Unbounded Robotics Inc.
  *
@@ -18,12 +19,11 @@
 // Author: Michael Ferguson
 
 #include <math.h>
-#include <pluginlib/class_list_macros.h>
-#include <robot_calibration/capture/led_finder.h>
-#include <sensor_msgs/point_cloud2_iterator.h>
-#include <sensor_msgs/image_encodings.h>
+#include <robot_calibration/finders/led_finder.hpp>
+#include <sensor_msgs/point_cloud2_iterator.hpp>
+#include <sensor_msgs/image_encodings.hpp>
 
-PLUGINLIB_EXPORT_CLASS(robot_calibration::LedFinder, robot_calibration::FeatureFinder)
+static const rclcpp::Logger LOGGER = rclcpp::get_logger("led_finder");
 
 namespace robot_calibration
 {
@@ -37,8 +37,8 @@ const unsigned G = 1;
 const unsigned B = 2;
 
 double distancePoints(
-  const geometry_msgs::Point p1,
-  const geometry_msgs::Point p2)
+  const geometry_msgs::msg::Point p1,
+  const geometry_msgs::msg::Point p2)
 {
   return std::sqrt((p1.x-p2.x) * (p1.x-p2.x) +
                    (p1.y-p2.y) * (p1.y-p2.y) +
@@ -51,70 +51,74 @@ LedFinder::LedFinder() :
 }
 
 bool LedFinder::init(const std::string& name,
-                     ros::NodeHandle& nh)
+                     std::shared_ptr<tf2_ros::Buffer> buffer,
+                     rclcpp::Node::SharedPtr node)
 {
-  if (!FeatureFinder::init(name, nh))
+  if (!FeatureFinder::init(name, buffer, node))
+  {
     return false;
+  }
+
+  clock_ = node->get_clock();
 
   // Setup the action client
-  std::string topic_name;
-  nh.param<std::string>("action", topic_name, "/gripper_led_action");
-  client_.reset(new LedClient(topic_name, true));
-  ROS_INFO("Waiting for %s...", topic_name.c_str());
-  client_->waitForServer();
+  std::string topic_name =
+    node->declare_parameter<std::string>(name + ".action", "/gripper_led_action");
+  client_.init(node, topic_name);
+  client_.waitForServer(10.0);
 
   // Setup subscriber
-  nh.param<std::string>("topic", topic_name, "/points");
-  subscriber_ = nh.subscribe(topic_name,
-                             1,
-                             &LedFinder::cameraCallback,
-                             this);
+  topic_name = node->declare_parameter<std::string>(name + ".topic", name + "/points");
+  subscriber_ = node->create_subscription<sensor_msgs::msg::PointCloud2>(
+    topic_name,
+    rclcpp::QoS(1).best_effort().keep_last(1),
+    std::bind(&LedFinder::cameraCallback, this, std::placeholders::_1));
 
   // Publish where LEDs were seen
-  publisher_ = nh.advertise<sensor_msgs::PointCloud2>(getName() + "_points", 10);
+  publisher_ = node->create_publisher<sensor_msgs::msg::PointCloud2>(name + "_points", 10);
 
   // Maximum distance LED can be from expected pose
-  nh.param<double>("max_error", max_error_, 0.1);
+  max_error_ = node->declare_parameter<double>(name + ".max_error", 0.1);
   // Maximum relative difference between two LEDs
-  nh.param<double>("max_inconsistency", max_inconsistency_, 0.01);
+  max_inconsistency_ = node->declare_parameter<double>(name + ".max_inconsistency", 0.01);
 
   // Parameters for detection
-  nh.param<double>("threshold", threshold_, 1000.0);
-  nh.param<int>("max_iterations", max_iterations_, 50);
+  threshold_ = node->declare_parameter<double>(name + ".threshold", 1000.0);
+  max_iterations_ = node->declare_parameter<int>(name + ".max_iterations", 50);
 
   // Should we output debug image/cloud
-  nh.param<bool>("debug", output_debug_, false);
+  output_debug_ = node->declare_parameter<bool>(name + ".debug", false);
 
   // Name of the sensor model that will be used during optimization
-  nh.param<std::string>("camera_sensor_name", camera_sensor_name_, "camera");
-  nh.param<std::string>("chain_sensor_name", chain_sensor_name_, "arm");
+  camera_sensor_name_ = node->declare_parameter<std::string>(name + ".camera_sensor_name", "camera");
+  chain_sensor_name_ = node->declare_parameter<std::string>(name + ".chain_sensor_name", "arm");
 
   // Parameters for LEDs themselves
-  std::string gripper_led_frame;
-  nh.param<std::string>("gripper_led_frame", gripper_led_frame, "wrist_roll_link");
-  XmlRpc::XmlRpcValue led_poses;
-  nh.getParam("poses", led_poses);
-  ROS_ASSERT(led_poses.getType() == XmlRpc::XmlRpcValue::TypeArray);
-  // Each LED has a code, and pose in the gripper_led_frame
-  for (int i = 0; i < led_poses.size(); ++i)
+  std::string gripper_led_frame =
+    node->declare_parameter<std::string>(name + ".gripper_led_frame", "wrist_roll_link");
+  std::vector<std::string> led_names =
+    node->declare_parameter<std::vector<std::string>>(name + ".leds", std::vector<std::string>());
+  for (auto led_name : led_names)
   {
-    codes_.push_back(static_cast<int>(led_poses[i]["code"]));
+    int code = node->declare_parameter<int>(name + "." + led_name + ".code", 0);
+    codes_.push_back(code);
     codes_.push_back(0);  // assumes "0" is code for "OFF"
 
     double x, y, z;
-    x = static_cast<double>(led_poses[i]["x"]);
-    y = static_cast<double>(led_poses[i]["y"]);
-    z = static_cast<double>(led_poses[i]["z"]);
+    x = node->declare_parameter<double>(name + "." + led_name + ".x", 0.0);
+    y = node->declare_parameter<double>(name + "." + led_name + ".y", 0.0);
+    z = node->declare_parameter<double>(name + "." + led_name + ".z", 0.0);
     trackers_.push_back(CloudDifferenceTracker(gripper_led_frame, x, y, z));
 
     // Publisher
-    boost::shared_ptr<ros::Publisher> pub(new ros::Publisher);
-    *pub = nh.advertise<sensor_msgs::Image>(static_cast<std::string>(led_poses[i]["topic"]), 10);
+    topic_name = node->declare_parameter<std::string>(name + "." + led_name + ".topic", led_name + "_debug");
+    rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr pub =
+      node->create_publisher<sensor_msgs::msg::Image>(topic_name, 10);
     tracker_publishers_.push_back(pub);
   }
 
   // Setup to get camera depth info
-  if (!depth_camera_manager_.init(nh))
+  if (!depth_camera_manager_.init(name, node, LOGGER))
   {
     // Error will have been printed by manager
     return false;
@@ -123,7 +127,7 @@ bool LedFinder::init(const std::string& name,
   return true;
 }
 
-void LedFinder::cameraCallback(const sensor_msgs::PointCloud2::ConstPtr& cloud)
+void LedFinder::cameraCallback(sensor_msgs::msg::PointCloud2::ConstSharedPtr cloud)
 {
   if (waiting_)
   {
@@ -135,8 +139,16 @@ void LedFinder::cameraCallback(const sensor_msgs::PointCloud2::ConstPtr& cloud)
 // Returns true if we got a message, false if we timeout.
 bool LedFinder::waitForCloud()
 {
+  // Stored as weak pointer, need to grab a real shared pointer
+  auto node = node_ptr_.lock();
+  if (!node)
+  {
+    RCLCPP_ERROR(LOGGER, "Unable to get rclcpp::Node lock");
+    return false;
+  }
+
   // Initial wait cycle so that camera is definitely up to date.
-  ros::Duration(1/10.0).sleep();
+  rclcpp::sleep_for(std::chrono::milliseconds(100));
 
   waiting_ = true;
   int count = 250;
@@ -147,26 +159,26 @@ bool LedFinder::waitForCloud()
       // success
       return true;
     }
-    ros::Duration(0.01).sleep();
-    ros::spinOnce();
+    rclcpp::sleep_for(std::chrono::milliseconds(10));
+    rclcpp::spin_some(node);
   }
-  ROS_ERROR("Failed to get cloud");
+  RCLCPP_ERROR(LOGGER, "Failed to get cloud");
   return !waiting_;
 }
 
-bool LedFinder::find(robot_calibration_msgs::CalibrationData * msg)
+bool LedFinder::find(robot_calibration_msgs::msg::CalibrationData * msg)
 {
   uint8_t code_idx = -1;
 
-  std::vector<geometry_msgs::PointStamped> rgbd;
-  std::vector<geometry_msgs::PointStamped> world;
+  std::vector<geometry_msgs::msg::PointStamped> rgbd;
+  std::vector<geometry_msgs::msg::PointStamped> world;
 
-  sensor_msgs::PointCloud2 prev_cloud;
+  sensor_msgs::msg::PointCloud2 prev_cloud;
 
-  robot_calibration_msgs::GripperLedCommandGoal command;
+  auto command = LedAction::Goal();
   command.led_code = 0;
-  client_->sendGoal(command);
-  client_->waitForResult(ros::Duration(10.0));
+  client_.sendGoal(command);
+  client_.waitForResult(rclcpp::Duration::from_seconds(10.0));
 
   // Get initial cloud
   if (!waitForCloud())
@@ -187,8 +199,8 @@ bool LedFinder::find(robot_calibration_msgs::CalibrationData * msg)
     // Toggle LED to next state
     code_idx = (code_idx + 1) % codes_.size();
     command.led_code = codes_[code_idx];
-    client_->sendGoal(command);
-    client_->waitForResult(ros::Duration(10.0));
+    client_.sendGoal(command);
+    client_.waitForResult(rclcpp::Duration::from_seconds(10.0));
 
     // Get a point cloud
     if (!waitForCloud())
@@ -214,17 +226,16 @@ bool LedFinder::find(robot_calibration_msgs::CalibrationData * msg)
     }
 
     // Get expected pose of LED in the cloud frame
-    geometry_msgs::PointStamped led;
+    geometry_msgs::msg::PointStamped led;
     led.point = trackers_[tracker].point_;
     led.header.frame_id = trackers_[tracker].frame_;
     try
     {
-      listener_.transformPoint(cloud_.header.frame_id, ros::Time(0), led,
-                               led.header.frame_id, led);
+      tf2_buffer_->transform(led, led, cloud_.header.frame_id);
     }
-    catch (const tf::TransformException& ex)
+    catch (tf2::TransformException& ex)
     {
-      ROS_ERROR_STREAM("Failed to transform feature to " << cloud_.header.frame_id);
+      RCLCPP_ERROR(LOGGER, "Failed to transform feature to %s", cloud_.header.frame_id.c_str());
       return false;
     }
 
@@ -233,7 +244,7 @@ bool LedFinder::find(robot_calibration_msgs::CalibrationData * msg)
 
     if (++cycles > max_iterations_)
     {
-      ROS_ERROR("Failed to find features before using maximum iterations.");
+      RCLCPP_ERROR(LOGGER, "Failed to find features before using maximum iterations.");
       return false;
     }
 
@@ -242,16 +253,16 @@ bool LedFinder::find(robot_calibration_msgs::CalibrationData * msg)
     // Publish state of each tracker
     for (size_t i = 0; i < trackers_.size(); i++)
     {
-      sensor_msgs::Image image = trackers_[i].getImage();
+      sensor_msgs::msg::Image image = trackers_[i].getImage();
       tracker_publishers_[i]->publish(image);
     }
   }
 
   // Create PointCloud2 to publish
-  sensor_msgs::PointCloud2 cloud;
+  sensor_msgs::msg::PointCloud2 cloud;
   cloud.width = 0;
   cloud.height = 0;
-  cloud.header.stamp = ros::Time::now();
+  cloud.header.stamp = clock_->now();
   cloud.header.frame_id = cloud_.header.frame_id;
   sensor_msgs::PointCloud2Modifier cloud_mod(cloud);
   cloud_mod.setPointCloud2FieldsByString(1, "xyz");
@@ -261,37 +272,36 @@ bool LedFinder::find(robot_calibration_msgs::CalibrationData * msg)
   // Collect Results
   const int CAMERA = 0;
   const int CHAIN = 1;
-  robot_calibration_msgs::Observation observations[2];
+  robot_calibration_msgs::msg::Observation observations[2];
   observations[CAMERA].sensor_name = camera_sensor_name_;
   observations[CHAIN].sensor_name = chain_sensor_name_;
 
   for (size_t t = 0; t < trackers_.size(); ++t)
   {
-    geometry_msgs::PointStamped rgbd_pt;
-    geometry_msgs::PointStamped world_pt;
+    geometry_msgs::msg::PointStamped rgbd_pt;
+    geometry_msgs::msg::PointStamped world_pt;
 
     // Get point
     if (!trackers_[t].getRefinedCentroid(cloud_, rgbd_pt))
     {
-      ROS_ERROR_STREAM("No centroid for feature " << t);
+      RCLCPP_ERROR_STREAM(LOGGER, "No centroid for feature " << t);
       return false;
     }
 
     // Check that point is close enough to expected pose
     try
     {
-      listener_.transformPoint(trackers_[t].frame_, ros::Time(0), rgbd_pt,
-                               rgbd_pt.header.frame_id, world_pt);
+      tf2_buffer_->transform(rgbd_pt, world_pt, trackers_[t].frame_);
     }
-    catch(const tf::TransformException &ex)
+    catch (tf2::TransformException& ex)
     {
-      ROS_ERROR_STREAM("Failed to transform feature to " << trackers_[t].frame_);
+      RCLCPP_ERROR_STREAM(LOGGER, "Failed to transform feature to " << trackers_[t].frame_);
       return false;
     }
     double distance = distancePoints(world_pt.point, trackers_[t].point_);
     if (distance > max_error_)
     {
-      ROS_ERROR_STREAM("Feature was too far away from expected pose in " << trackers_[t].frame_ << ": " << distance);
+      RCLCPP_ERROR_STREAM(LOGGER, "Feature was too far away from expected pose in " << trackers_[t].frame_ << ": " << distance);
       return false;
     }
 
@@ -302,7 +312,7 @@ bool LedFinder::find(robot_calibration_msgs::CalibrationData * msg)
       double actual = distancePoints(observations[CAMERA].features[t2].point, rgbd_pt.point);
       if (fabs(expected-actual) > max_inconsistency_)
       {
-        ROS_ERROR_STREAM("Features not internally consistent: " << expected << " " << actual);
+        RCLCPP_ERROR_STREAM(LOGGER, "Features not internally consistent: " << expected << " " << actual);
         return false;
       }
     }
@@ -340,7 +350,7 @@ bool LedFinder::find(robot_calibration_msgs::CalibrationData * msg)
   msg->observations.push_back(observations[CHAIN]);
 
   // Publish results
-  publisher_.publish(cloud);
+  publisher_->publish(cloud);
 
   return true;
 }
@@ -377,15 +387,15 @@ void LedFinder::CloudDifferenceTracker::reset(size_t height, size_t width)
 
 // Weight should be +/- 1 typically
 bool LedFinder::CloudDifferenceTracker::process(
-  sensor_msgs::PointCloud2& cloud,
-  sensor_msgs::PointCloud2& prev,
-  geometry_msgs::Point& led_point,
+  sensor_msgs::msg::PointCloud2& cloud,
+  sensor_msgs::msg::PointCloud2& prev,
+  geometry_msgs::msg::Point& led_point,
   double max_distance,
   double weight)
 {
   if ((cloud.width * cloud.height) != diff_.size())
   {
-    ROS_ERROR("Cloud size has changed");
+    RCLCPP_ERROR(LOGGER, "Cloud size has changed");
     return false;
   }
 
@@ -405,7 +415,7 @@ bool LedFinder::CloudDifferenceTracker::process(
   for (size_t i = 0; i < num_points; i++)
   {
     // If within range of LED pose...
-    geometry_msgs::Point p;
+    geometry_msgs::msg::Point p;
     p.x = (xyz + i)[X];
     p.y = (xyz + i)[Y];
     p.z = (xyz + i)[Z];
@@ -453,7 +463,7 @@ bool LedFinder::CloudDifferenceTracker::process(
 }
 
 bool LedFinder::CloudDifferenceTracker::isFound(
-  const sensor_msgs::PointCloud2& cloud,
+  const sensor_msgs::msg::PointCloud2& cloud,
   double threshold)
 {
   // Returns true only if the max exceeds threshold
@@ -478,8 +488,8 @@ bool LedFinder::CloudDifferenceTracker::isFound(
 }
 
 bool LedFinder::CloudDifferenceTracker::getRefinedCentroid(
-  const sensor_msgs::PointCloud2& cloud,
-  geometry_msgs::PointStamped& centroid)
+  const sensor_msgs::msg::PointCloud2& cloud,
+  geometry_msgs::msg::PointStamped& centroid)
 {
   // Access point in cloud
   sensor_msgs::PointCloud2ConstIterator<float> iter(cloud, "x");
@@ -541,9 +551,9 @@ bool LedFinder::CloudDifferenceTracker::getRefinedCentroid(
   return true;
 }
 
-sensor_msgs::Image LedFinder::CloudDifferenceTracker::getImage()
+sensor_msgs::msg::Image LedFinder::CloudDifferenceTracker::getImage()
 {
-  sensor_msgs::Image image;
+  sensor_msgs::msg::Image image;
 
   image.height = height_;
   image.width = width_;
@@ -579,3 +589,6 @@ sensor_msgs::Image LedFinder::CloudDifferenceTracker::getImage()
 }
 
 }  // namespace robot_calibration
+
+#include <pluginlib/class_list_macros.hpp>
+PLUGINLIB_EXPORT_CLASS(robot_calibration::LedFinder, robot_calibration::FeatureFinder)

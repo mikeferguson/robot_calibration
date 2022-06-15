@@ -1,6 +1,0 @@
-<launch>
-  <param name="head_camera/driver/z_offset_mm" value="2.0"/>
-  <param name="head_camera/driver/z_scaling" value="1.1"/>
-  <node pkg="robot_calibration" type="feature_finder_loader_tests.py" name="fake_camera_info" />
-  <test time-limit="300" test-name="camera_info_tests" pkg="robot_calibration" type="camera_info_tests"/>
-</launch>

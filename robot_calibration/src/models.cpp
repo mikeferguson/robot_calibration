@@ -1,4 +1,5 @@
 /*
+ * Copyright (C) 2022 Michael Ferguson
  * Copyright (C) 2015 Fetch Robotics Inc.
  * Copyright (C) 2013-2014 Unbounded Robotics Inc.
  *
@@ -17,15 +18,15 @@
 
 // Author: Michael Ferguson
 
-#include <ros/console.h>
-#include <robot_calibration/models/chain.h>
-#include <robot_calibration/models/camera3d.h>
+#include <iostream>
+#include <robot_calibration/models/chain3d.hpp>
+#include <robot_calibration/models/camera3d.hpp>
 
 namespace robot_calibration
 {
 
 double positionFromMsg(const std::string& name,
-                       const sensor_msgs::JointState& msg)
+                       const sensor_msgs::msg::JointState& msg)
 {
   for (size_t i = 0; i < msg.name.size(); ++i)
   {
@@ -38,24 +39,24 @@ double positionFromMsg(const std::string& name,
   return 0.0;
 }
 
-ChainModel::ChainModel(const std::string& name, KDL::Tree model, std::string root, std::string tip) :
+Chain3dModel::Chain3dModel(const std::string& name, KDL::Tree model, std::string root, std::string tip) :
     root_(root), tip_(tip), name_(name)
 {
   // Create a KDL::Chain
   if (!model.getChain(root, tip, chain_))
   {
     auto error_msg = std::string{"Failed to build a chain model from "} + root + " to " + tip + ", check the link names";
-    ROS_ERROR("%s", error_msg.c_str());
+    //ROS_ERROR("%s", error_msg.c_str());
     throw std::runtime_error(error_msg);
   }
 }
 
-std::vector<geometry_msgs::PointStamped> ChainModel::project(
-    const robot_calibration_msgs::CalibrationData& data,
-    const CalibrationOffsetParser& offsets)
+std::vector<geometry_msgs::msg::PointStamped> Chain3dModel::project(
+    const robot_calibration_msgs::msg::CalibrationData& data,
+    const OptimizationOffsets& offsets)
 {
   // Projected points, to be returned
-  std::vector<geometry_msgs::PointStamped> points;
+  std::vector<geometry_msgs::msg::PointStamped> points;
 
   // Determine which observation to use
   int sensor_idx = -1;
@@ -114,8 +115,8 @@ std::vector<geometry_msgs::PointStamped> ChainModel::project(
   return points;
 }
 
-KDL::Frame ChainModel::getChainFK(const CalibrationOffsetParser& offsets,
-                                  const sensor_msgs::JointState& state)
+KDL::Frame Chain3dModel::getChainFK(const OptimizationOffsets& offsets,
+                                  const sensor_msgs::msg::JointState& state)
 {
   // FK from root to tip
   KDL::Frame p_out = KDL::Frame::Identity();
@@ -149,28 +150,28 @@ KDL::Frame ChainModel::getChainFK(const CalibrationOffsetParser& offsets,
   return p_out;
 }
 
-std::string ChainModel::getName() const
+std::string Chain3dModel::getName() const
 {
   return name_;
 }
 
-std::string ChainModel::getType() const
+std::string Chain3dModel::getType() const
 {
-  return "ChainModel";
+  return "Chain3dModel";
 }
 
 Camera3dModel::Camera3dModel(const std::string& name, const std::string& param_name, KDL::Tree model, std::string root, std::string tip) :
-    ChainModel(name, model, root, tip),
+    Chain3dModel(name, model, root, tip),
     param_name_(param_name)
 {
   // TODO add additional parameters for unprojecting observations using initial parameters
 }
 
-std::vector<geometry_msgs::PointStamped> Camera3dModel::project(
-    const robot_calibration_msgs::CalibrationData& data,
-    const CalibrationOffsetParser& offsets)
+std::vector<geometry_msgs::msg::PointStamped> Camera3dModel::project(
+    const robot_calibration_msgs::msg::CalibrationData& data,
+    const OptimizationOffsets& offsets)
 {
-  std::vector<geometry_msgs::PointStamped> points;
+  std::vector<geometry_msgs::msg::PointStamped> points;
 
   // Determine which observation to use
   int sensor_idx = -1;
@@ -190,13 +191,13 @@ std::vector<geometry_msgs::PointStamped> Camera3dModel::project(
   }
 
   // Get existing camera info
-  if (data.observations[sensor_idx].ext_camera_info.camera_info.P.size() != 12)
+  if (data.observations[sensor_idx].ext_camera_info.camera_info.p.size() != 12)
     std::cerr << "Unexpected CameraInfo projection matrix size" << std::endl;
 
-  double camera_fx = data.observations[sensor_idx].ext_camera_info.camera_info.P[CAMERA_INFO_P_FX_INDEX];
-  double camera_fy = data.observations[sensor_idx].ext_camera_info.camera_info.P[CAMERA_INFO_P_FY_INDEX];
-  double camera_cx = data.observations[sensor_idx].ext_camera_info.camera_info.P[CAMERA_INFO_P_CX_INDEX];
-  double camera_cy = data.observations[sensor_idx].ext_camera_info.camera_info.P[CAMERA_INFO_P_CY_INDEX];
+  double camera_fx = data.observations[sensor_idx].ext_camera_info.camera_info.p[CAMERA_INFO_P_FX_INDEX];
+  double camera_fy = data.observations[sensor_idx].ext_camera_info.camera_info.p[CAMERA_INFO_P_FY_INDEX];
+  double camera_cx = data.observations[sensor_idx].ext_camera_info.camera_info.p[CAMERA_INFO_P_CX_INDEX];
+  double camera_cy = data.observations[sensor_idx].ext_camera_info.camera_info.p[CAMERA_INFO_P_CY_INDEX];
 
   /*
    * z_scale and z_offset defined in openni2_camera/src/openni2_driver.cpp

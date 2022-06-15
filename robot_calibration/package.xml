@@ -11,11 +11,10 @@
   <license>Apache2</license>
   <url>http://ros.org/wiki/robot_calibration</url>
   
-  <buildtool_depend>catkin</buildtool_depend>
+  <buildtool_depend>ament_cmake</buildtool_depend>
 
   <build_depend>eigen</build_depend>
 
-  <depend>actionlib</depend>
   <depend>camera_calibration_parsers</depend>
   <depend>control_msgs</depend>
   <depend>cv_bridge</depend>
@@ -24,15 +23,14 @@
   <depend>kdl_parser</depend>
   <depend>moveit_msgs</depend>
   <depend>nav_msgs</depend>
-  <depend condition="$ROS_DISTRO != noetic">orocos_kdl</depend>
-  <depend condition="$ROS_DISTRO == noetic">liborocos-kdl-dev</depend>
+  <depend>liborocos-kdl-dev</depend>
   <depend>pluginlib</depend>
+  <depend>rclcpp</depend>
+  <depend>rclcpp_action</depend>
   <depend>robot_calibration_msgs</depend>
-  <depend>roscpp</depend>
-  <depend>rosbag</depend>
+  <depend>rosbag2_cpp</depend>
   <depend>sensor_msgs</depend>
   <depend>std_msgs</depend>
-  <depend>tf</depend>
   <depend>tf2_geometry_msgs</depend>
   <depend>tf2_ros</depend>
   <depend>visualization_msgs</depend>
@@ -41,10 +39,16 @@
   <depend>suitesparse</depend>
   <depend>protobuf-dev</depend>
 
-  <test_depend>code_coverage</test_depend>
+  <!-- Temporary hack for issue with geometric_shapes -->
+  <build_depend>libboost-filesystem-dev</build_depend>
+
+  <test_depend>ament_cmake_gtest</test_depend>
+  <test_depend>launch</test_depend>
+  <test_depend>launch_ros</test_depend>
+  <test_depend>launch_testing</test_depend>
 
   <export>
-    <robot_calibration plugin="${prefix}/robot_calibration.xml"/>
+    <build_type>ament_cmake</build_type>
   </export>
 
 </package>

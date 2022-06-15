@@ -20,49 +20,47 @@
 
 #include <cmath>
 #include <fstream>
-#include <boost/thread/recursive_mutex.hpp>
-
-#include <ros/ros.h>
-#include <geometry_msgs/Twist.h>
-#include <sensor_msgs/Imu.h>
-#include <sensor_msgs/LaserScan.h>
-#include <nav_msgs/Odometry.h>
-#include "robot_calibration/calibration/base_calibration.h"
+#include <robot_calibration/optimization/base_calibration.hpp>
 
 #define PI          3.14159265359
 
+static const rclcpp::Logger LOGGER = rclcpp::get_logger("robot_calibration");
+using std::placeholders::_1;
+
 namespace robot_calibration
 {
-BaseCalibration::BaseCalibration(ros::NodeHandle& n) : ready_(false)
+BaseCalibration::BaseCalibration()
+  : rclcpp::Node("base_calibration_node"),
+    ready_(false)
 {
   // Setup times
-  last_odom_stamp_ = last_imu_stamp_ = last_scan_stamp_ = ros::Time::now();
-
-  // Get params
-  ros::NodeHandle nh("~");
+  last_odom_stamp_ = last_imu_stamp_ = last_scan_stamp_ = this->now();
 
   // Min/Max acceptable error to continue aligning with wall
-  nh.param<double>("min_angle", min_angle_, -0.5);
-  nh.param<double>("max_angle", max_angle_, 0.5);
+  min_angle_ = this->declare_parameter<double>("min_angle", -0.5);
+  max_angle_ = this->declare_parameter<double>("max_angle", 0.5);
 
   // How fast to accelerate
-  nh.param<double>("accel_limit", accel_limit_, 2.0);
+  accel_limit_ = this->declare_parameter<double>("accel_limit", 2.0);
   // Maximum velocity to command base during alignment
-  nh.param<double>("align_velocity", align_velocity_, 0.2);
+  align_velocity_ = this->declare_parameter<double>("align_velocity", 0.2);
   // Gain to turn alignment error into velocity
-  nh.param<double>("align_gain", align_gain_, 2.0);
+  align_gain_ = this->declare_parameter<double>("align_gain", 2.0);
   // Tolerance when aligning the base
-  nh.param<double>("align_tolerance", align_tolerance_, 0.2);
+  align_tolerance_ = this->declare_parameter<double>("align_tolerance", 0.2);
   // Tolerance for r2
-  nh.param<double>("r2_tolerance", r2_tolerance_, 0.1);
+  r2_tolerance_ = this->declare_parameter<double>("r2_tolerance", 0.1);
 
   // Command publisher
-  cmd_pub_ = n.advertise<geometry_msgs::Twist>("cmd_vel", 10);
+  cmd_pub_ = this->create_publisher<geometry_msgs::msg::Twist>("cmd_vel", 10);
 
   // Subscribe
-  odom_subscriber_ = n.subscribe("odom", 5, &BaseCalibration::odometryCallback, this);
-  imu_subscriber_ =  n.subscribe("imu", 5, &BaseCalibration::imuCallback, this);
-  scan_subscriber_ = n.subscribe("base_scan", 1, &BaseCalibration::laserCallback, this);
+  odom_subscriber_ = this->create_subscription<nav_msgs::msg::Odometry>(
+    "odom", 5, std::bind(&BaseCalibration::odometryCallback, this, _1));
+  imu_subscriber_ =  this->create_subscription<sensor_msgs::msg::Imu>(
+    "imu", 5, std::bind(&BaseCalibration::imuCallback, this, _1));
+  scan_subscriber_ = this->create_subscription<sensor_msgs::msg::LaserScan>(
+    "base_scan", 1, std::bind(&BaseCalibration::laserCallback, this, _1));
 
   resetInternal();
 }
@@ -84,9 +82,8 @@ std::string BaseCalibration::print()
 std::string BaseCalibration::printCalibrationData()
 {
   double odom, imu;
-  ros::NodeHandle nh;
-  nh.param<double>("base_controller/track_width", odom, 0.37476);
-  nh.param<double>("imu/gyro/scale", imu, 0.001221729);
+  odom = this->declare_parameter<double>("base_controller/track_width", 0.37476);
+  imu = this->declare_parameter<double>("imu_gyro_scale", 0.001221729);
 
   // Scaling to be computed
   double odom_scale = 0.0;
@@ -112,9 +109,9 @@ bool BaseCalibration::align(double angle, bool verbose)
 {
   while (!ready_)
   {
-    ROS_WARN("Not ready!");
-    ros::Duration(0.1).sleep();
-    ros::spinOnce();
+    RCLCPP_WARN(LOGGER, "Not ready!");
+    rclcpp::sleep_for(std::chrono::milliseconds(100));
+    rclcpp::spin_some(this->shared_from_this());
   }
 
   std::cout << "aligning..." << std::endl;
@@ -132,14 +129,14 @@ bool BaseCalibration::align(double angle, bool verbose)
     sendVelocityCommand(velocity);
 
     // Sleep a moment
-    ros::Duration(0.02).sleep();
-    ros::spinOnce();
+    rclcpp::sleep_for(std::chrono::milliseconds(20));
+    rclcpp::spin_some(this->shared_from_this());
 
     // Update error before comparing again
     error = scan_angle_ - angle;
 
     // Exit if shutting down
-    if (!ros::ok())
+    if (!rclcpp::ok())
     {
       sendVelocityCommand(0.0);
       return false;
@@ -149,7 +146,7 @@ bool BaseCalibration::align(double angle, bool verbose)
   // Done - stop the robot
   sendVelocityCommand(0.0);
   std::cout << "...done" << std::endl;
-  ros::Duration(0.25).sleep();
+  rclcpp::sleep_for(std::chrono::milliseconds(250));
 
   return true;
 }
@@ -173,11 +170,11 @@ bool BaseCalibration::spin(double velocity, int rotations, bool verbose)
       std::cout << scan_angle_ << " " << odom_angle_ << " " << imu_angle_ << std::endl;
     }
     sendVelocityCommand(velocity);
-    ros::Duration(0.02).sleep();
-    ros::spinOnce();
+    rclcpp::sleep_for(std::chrono::milliseconds(20));
+    rclcpp::spin_some(this->shared_from_this());
 
     // Exit if shutting down
-    if (!ros::ok())
+    if (!rclcpp::ok())
     {
       sendVelocityCommand(0.0);
       return false;
@@ -189,7 +186,7 @@ bool BaseCalibration::spin(double velocity, int rotations, bool verbose)
   std::cout << "...done" << std::endl;
 
   // Wait to stop
-  ros::Duration(0.5 + fabs(velocity) / accel_limit_).sleep();
+  rclcpp::sleep_for(std::chrono::seconds(1));
 
   // Save measurements
   imu_.push_back(imu_angle_);
@@ -206,29 +203,29 @@ bool BaseCalibration::spin(double velocity, int rotations, bool verbose)
   return true;
 }
 
-void BaseCalibration::odometryCallback(const nav_msgs::Odometry::Ptr& odom)
+void BaseCalibration::odometryCallback(const nav_msgs::msg::Odometry::ConstSharedPtr& odom)
 {
-  boost::recursive_mutex::scoped_lock lock(data_mutex_);
+  std::lock_guard<std::recursive_mutex> lock(data_mutex_);
 
-  double dt = (odom->header.stamp - last_odom_stamp_).toSec();
+  double dt = rclcpp::Time(odom->header.stamp).seconds() - last_odom_stamp_.seconds();
   odom_angle_ += odom->twist.twist.angular.z * dt;
 
   last_odom_stamp_ = odom->header.stamp;
 }
 
-void BaseCalibration::imuCallback(const sensor_msgs::Imu::Ptr& imu)
+void BaseCalibration::imuCallback(const sensor_msgs::msg::Imu::ConstSharedPtr& imu)
 {
-  boost::recursive_mutex::scoped_lock lock(data_mutex_);
+  std::lock_guard<std::recursive_mutex> lock(data_mutex_);
 
-  double dt = (imu->header.stamp - last_imu_stamp_).toSec();
+  double dt = rclcpp::Time(imu->header.stamp).seconds() - last_imu_stamp_.seconds();
   imu_angle_ += imu->angular_velocity.z * dt;
 
   last_imu_stamp_ = imu->header.stamp;
 }
 
-void BaseCalibration::laserCallback(const sensor_msgs::LaserScan::Ptr& scan)
+void BaseCalibration::laserCallback(const sensor_msgs::msg::LaserScan::ConstSharedPtr& scan)
 {
-  boost::recursive_mutex::scoped_lock lock(data_mutex_);
+  std::lock_guard<std::recursive_mutex> lock(data_mutex_);
 
   double angle = scan->angle_min;
   double mean_x, mean_y, n;
@@ -305,14 +302,14 @@ void BaseCalibration::laserCallback(const sensor_msgs::LaserScan::Ptr& scan)
 
 void BaseCalibration::sendVelocityCommand(double vel)
 {
-  geometry_msgs::Twist twist;
+  geometry_msgs::msg::Twist twist;
   twist.angular.z = vel;
-  cmd_pub_.publish(twist);
+  cmd_pub_->publish(twist);
 }
 
 void BaseCalibration::resetInternal()
 {
-  boost::recursive_mutex::scoped_lock lock(data_mutex_);
+  std::lock_guard<std::recursive_mutex> lock(data_mutex_);
   odom_angle_ = imu_angle_ = scan_angle_ = scan_r2_ = 0.0;
 }
 
