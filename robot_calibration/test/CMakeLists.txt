@@ -2,8 +2,7 @@ find_package(ament_cmake_gtest REQUIRED)
 
 ament_add_gtest(optimization_offsets_tests optimization_offsets_tests.cpp)
 target_link_libraries(optimization_offsets_tests robot_calibration
-                                                 ${orocos_kdl_LIBRARIES}
-                                                 ${tinyxml_LIBRARIES})
+                                                 ${orocos_kdl_LIBRARIES})
 ament_target_dependencies(optimization_offsets_tests ${dependencies})
 
 ament_add_gtest(chain_model_tests chain_model_tests.cpp)
