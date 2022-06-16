@@ -146,6 +146,8 @@ int main(int argc, char** argv)
           RCLCPP_WARN(logger, "Failed to capture sample %u.", pose_idx);
           continue;
         }
+
+        RCLCPP_INFO(logger, "Captured pose %u", pose_idx + 1);
       }
       else
       {
@@ -165,9 +167,10 @@ int main(int argc, char** argv)
           RCLCPP_WARN(logger, "Failed to capture sample %u.", pose_idx);
           continue;
         }
+
+        RCLCPP_INFO(logger, "Captured pose %u of %lu", pose_idx + 1, poses.size());
       }
 
-      RCLCPP_INFO(logger, "Captured pose %u", pose_idx);
 
       // Add to samples
       data.push_back(msg);

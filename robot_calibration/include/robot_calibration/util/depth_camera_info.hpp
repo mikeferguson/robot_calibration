@@ -22,6 +22,7 @@
 #define ROBOT_CALIBRATION_CAPTURE_DEPTH_CAMERA_H
 
 #include <rclcpp/rclcpp.hpp>
+#include <rclcpp/parameter_client.hpp>
 #include <sensor_msgs/msg/camera_info.hpp>
 #include <robot_calibration_msgs/msg/calibration_data.hpp>
 #include <robot_calibration_msgs/msg/extended_camera_info.hpp>
@@ -43,9 +44,35 @@ public:
     camera_info_subscriber_ = node->create_subscription<sensor_msgs::msg::CameraInfo>(
       topic_name, 1, std::bind(&DepthCameraInfoManager::cameraInfoCallback, this, std::placeholders::_1));
 
+    // Set default driver parameters
+    z_offset_mm_ = 0;
+    z_scaling_ = 1.0;
+
     // Get parameters of drivers
-    z_offset_mm_ = node->declare_parameter<int>(name + ".z_offset_mm", 0);
-    z_scaling_ = node->declare_parameter<double>(name + ".z_scaling", 1.0);
+    std::string driver_name =
+      node->declare_parameter<std::string>(name + ".camera_driver", "/head_camera/driver");
+    auto params_client = std::make_shared<rclcpp::SyncParametersClient>(node, driver_name);
+    if (params_client->wait_for_service(std::chrono::seconds(10)))
+    {
+      auto parameters = params_client->get_parameters({"z_offset_mm", "z_scaling"});
+      for (auto& param : parameters)
+      {
+        if (param.get_name() == "z_offset_mm")
+        {
+          z_offset_mm_ = param.as_int();
+          RCLCPP_INFO(node->get_logger(), "Got value of %f for z_offset_mm", z_offset_mm_);
+        }
+        else if (param.get_name() == "z_scaling")
+        {
+          z_scaling_ = param.as_double();
+          RCLCPP_INFO(node->get_logger(), "Got value of %f for z_scaling", z_scaling_);
+        }
+      }
+    }
+    else
+    {
+      RCLCPP_WARN(node->get_logger(), "Unable to get parameters from %s", driver_name.c_str());
+    }
 
     // Wait for camera_info
     int count = 25;

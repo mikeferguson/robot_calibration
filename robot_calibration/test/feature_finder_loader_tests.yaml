@@ -4,12 +4,14 @@ feature_finder_loader_tests:
     - checkerboard_finder
     - ground_plane_finder
     checkerboard_finder:
-      type: robot_calibration/CheckerboardFinder
+      type: robot_calibration::CheckerboardFinder
       topic: /head_camera/depth_registered/points
       camera_sensor_name: camera
       chain_sensor_name: arm
+      camera_driver: /camera_info_publisher
     ground_plane_finder:
-      type: robot_calibration/PlaneFinder
+      type: robot_calibration::PlaneFinder
       topic: /head_camera/depth_registered/points
       camera_sensor_name: camera
       transform_frame: base_link
+      camera_driver: /camera_info_publisher
