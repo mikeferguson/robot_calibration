@@ -2,6 +2,28 @@
 Changelog for package robot_calibration
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* enhance alignment (`#130 <https://github.com/mikeferguson/robot_calibration/issues/130>`_)
+  * handle NANs in laser data
+  * add r2_tolerance
+  * add spinOnce so that we can run single threaded
+  * exit loop if shutting down
+* fix regression in manual calibration (`#129 <https://github.com/mikeferguson/robot_calibration/issues/129>`_)
+* fix warnings reported on ros.org buildfarm (`#128 <https://github.com/mikeferguson/robot_calibration/issues/128>`_)
+* improve base calibration alignment (`#127 <https://github.com/mikeferguson/robot_calibration/issues/127>`_)
+  * add feature to align to arbitrary angle
+  * parameterize things, including verbose
+* refactor base_calibration into separate class (`#126 <https://github.com/mikeferguson/robot_calibration/issues/126>`_)
+* major refactor into re-usable components (`#125 <https://github.com/mikeferguson/robot_calibration/issues/125>`_)
+  * add getPosesFromBag function
+  * add captureManager to clean up code and improve re-usability
+  * split out exportResults as a function
+  * for all models, renamed name() to getName(), added getType() function
+  * add getCameraNames() function to optimizer, so that we can:
+  * output camera calibrations for ALL cameras
+* Contributors: Michael Ferguson
+
 0.7.0 (2022-04-20)
 ------------------
 * filter planes by closeness to desired normal (`#124 <https://github.com/mikeferguson/robot_calibration/issues/124>`_)
