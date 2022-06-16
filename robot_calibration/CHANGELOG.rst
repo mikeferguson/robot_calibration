@@ -2,8 +2,8 @@
 Changelog for package robot_calibration
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.7.1 (2022-06-15)
+------------------
 * enhance alignment (`#130 <https://github.com/mikeferguson/robot_calibration/issues/130>`_)
   * handle NANs in laser data
   * add r2_tolerance
