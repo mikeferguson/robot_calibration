@@ -2,8 +2,8 @@
 Changelog for package robot_calibration
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.8.0 (2022-06-25)
+------------------
 * various fixes from on-robot testing (`#136 <https://github.com/mikeferguson/robot_calibration/issues/136>`_)
   * fix topic names in load_bag
   * update DepthCameraInfoManager to read proper parameters from camera node

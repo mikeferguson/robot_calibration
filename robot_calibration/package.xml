@@ -2,7 +2,7 @@
 <package format="3">
 
   <name>robot_calibration</name>
-  <version>0.7.0</version>
+  <version>0.8.0</version>
   <description>
     Calibrate a Robot
   </description>
