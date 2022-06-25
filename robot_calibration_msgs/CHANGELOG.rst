@@ -2,6 +2,11 @@
 Changelog for package robot_calibration_msgs
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* port robot_calibration_msgs to ROS2, update CI (`#131 <https://github.com/mikeferguson/robot_calibration/issues/131>`_)
+* Contributors: Michael Ferguson
+
 0.7.0 (2022-04-20)
 ------------------
 * bump cmake version to silence warnings on noetic (`#107 <https://github.com/mikeferguson/robot_calibration/issues/107>`_)
