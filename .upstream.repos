@@ -1,5 +1,0 @@
-repositories:
-    code_coverage:
-        type: git
-        url: https://github.com/mikeferguson/code_coverage.git
-        version: master
