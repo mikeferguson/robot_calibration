@@ -35,10 +35,10 @@ int main(int argc, char** argv)
   // Rotate at several different speeds
   b->spin(0.5, 1, verbose);
   b->spin(1.5, 1, verbose);
-  //b->spin(3.0, 2, verbose);
+  b->spin(3.0, 2, verbose);
   b->spin(-0.5, 1, verbose);
   b->spin(-1.5, 1, verbose);
-  //b->spin(-3.0, 2, verbose);
+  b->spin(-3.0, 2, verbose);
 
   // TODO: drive towards wall, to calibrate rollout
 
