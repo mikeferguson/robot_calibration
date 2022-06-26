@@ -26,18 +26,19 @@ int main(int argc, char** argv)
 {
   rclcpp::init(argc, argv);
 
-  robot_calibration::BaseCalibration b;
-  b.clearMessages();
+  std::shared_ptr<robot_calibration::BaseCalibration> b =
+    std::make_shared<robot_calibration::BaseCalibration>();
+  b->clearMessages();
 
-  bool verbose = b.declare_parameter<bool>("verbose", false);
+  bool verbose = b->declare_parameter<bool>("verbose", false);
 
   // Rotate at several different speeds
-  b.spin(0.5, 1, verbose);
-  b.spin(1.5, 1, verbose);
-  b.spin(3.0, 2, verbose);
-  b.spin(-0.5, 1, verbose);
-  b.spin(-1.5, 1, verbose);
-  b.spin(-3.0, 2, verbose);
+  b->spin(0.5, 1, verbose);
+  b->spin(1.5, 1, verbose);
+  //b->spin(3.0, 2, verbose);
+  b->spin(-0.5, 1, verbose);
+  b->spin(-1.5, 1, verbose);
+  //b->spin(-3.0, 2, verbose);
 
   // TODO: drive towards wall, to calibrate rollout
 
@@ -53,7 +54,7 @@ int main(int argc, char** argv)
     yaml_name << "/tmp/base_calibration_" << datecode << ".yaml";
     std::ofstream file;
     file.open(yaml_name.str().c_str());
-    std::string cal = b.printCalibrationData();
+    std::string cal = b->printCalibrationData();
     file << cal;
     file.close();
     std::cout << cal;
