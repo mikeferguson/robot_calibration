@@ -25,7 +25,7 @@
 #include <boost/shared_ptr.hpp>
 
 #include <ros/ros.h>
-#include <pluginlib/class_loader.h>
+#include <pluginlib/class_loader.hpp>
 #include <robot_calibration/plugins/feature_finder.h>
 
 namespace robot_calibration
