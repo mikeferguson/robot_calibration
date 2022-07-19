@@ -21,7 +21,7 @@
 #include <math.h>
 #include <stdlib.h>
 
-#include <pluginlib/class_list_macros.h>
+#include <pluginlib/class_list_macros.hpp>
 #include <robot_calibration/capture/plane_finder.h>
 #include <robot_calibration/eigen_geometry.h>
 #include <sensor_msgs/point_cloud2_iterator.h>

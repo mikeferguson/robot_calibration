@@ -1,10 +1,6 @@
 cmake_minimum_required(VERSION 3.0.2)
 project(robot_calibration)
 
-if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall")
-endif()
-
 find_package(Boost REQUIRED system thread)
 
 find_library(tinyxml_library tinyxml)

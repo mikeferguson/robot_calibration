@@ -18,6 +18,7 @@
 
 // Author: Michael Ferguson
 
+#include <boost/foreach.hpp>
 #include <ros/ros.h>
 #include <rosbag/bag.h>
 #include <rosbag/view.h>

@@ -19,7 +19,7 @@
 // Author: Michael Ferguson
 
 #include <math.h>
-#include <pluginlib/class_list_macros.h>
+#include <pluginlib/class_list_macros.hpp>
 #include <robot_calibration/capture/scan_finder.h>
 #include <sensor_msgs/point_cloud2_iterator.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
