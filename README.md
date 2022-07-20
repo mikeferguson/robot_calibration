@@ -209,9 +209,6 @@ second_calibration_step:
 The capture poses can now be specified as YAML. The `convert_ros1_bag_to_yaml` script
 can be run in ROS1 to export your ROS1 bagfile as a YAML file that can be loaded in ROS2.
 
-
-
-
 #### Example Configuration
 
 The UBR-1 robot uses this package to calibrate in ROS2. Start with the ``calibrate_launch.py``
