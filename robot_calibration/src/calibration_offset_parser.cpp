@@ -244,7 +244,8 @@ std::string CalibrationOffsetParser::updateURDF(const std::string &urdf)
       TiXmlElement *calibration_xml = joint_xml->FirstChildElement("calibration");
       if (calibration_xml)
       {
-        // Existing calibration, update rising attribute
+        // Existing calibration, update rising/falling attributes
+
         const char * rising_position_str = calibration_xml->Attribute("rising");
         if (rising_position_str != NULL)
         {
@@ -258,9 +259,19 @@ std::string CalibrationOffsetParser::updateURDF(const std::string &urdf)
             // TODO: error
           }
         }
-        else
+
+        const char * falling_position_str = calibration_xml->Attribute("falling");
+        if (falling_position_str != NULL)
         {
-          // TODO: error
+          try
+          {
+            offset += double(boost::lexical_cast<double>(falling_position_str));
+            calibration_xml->SetDoubleAttribute("falling", offset);
+          }
+          catch (boost::bad_lexical_cast &e)
+          {
+            // TODO: error
+          }
         }
       }
       else
