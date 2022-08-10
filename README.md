@@ -34,7 +34,7 @@ point of the checkerboard corners.
 
 The second step of calibration involves optimization of the robot parameters
 to minimize the errors. Errors are defined as the difference in the pose
-of the points based on reprojection throuhg each sensor. In the case of our
+of the points based on reprojection through each sensor. In the case of our
 checkerboard above, the transform between the virtual frame and the end
 effector becomes additional free parameters. By estimating these parameters
 alongside the robot parameters, we can find a set of parameters such that
