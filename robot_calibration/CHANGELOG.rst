@@ -2,6 +2,16 @@
 Changelog for package robot_calibration
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* calibrate falling attributes as well if they exist (`#144 <https://github.com/mikeferguson/robot_calibration/issues/144>`_)
+  For continuous joints actually both flags could be specified.
+* Changes for Ubuntu 22.04 (`#141 <https://github.com/mikeferguson/robot_calibration/issues/141>`_)
+  * no longer use c++11
+  * Add missing boost header
+  * Switch to non deprecated pluginlib header
+* Contributors: Jochen Sprickerhof, Michael Görner
+
 0.7.1 (2022-06-15)
 ------------------
 * enhance alignment (`#130 <https://github.com/mikeferguson/robot_calibration/issues/130>`_)
