@@ -2,8 +2,8 @@
 Changelog for package robot_calibration
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.7.2 (2022-12-23)
+------------------
 * calibrate falling attributes as well if they exist (`#144 <https://github.com/mikeferguson/robot_calibration/issues/144>`_)
   For continuous joints actually both flags could be specified.
 * Changes for Ubuntu 22.04 (`#141 <https://github.com/mikeferguson/robot_calibration/issues/141>`_)
