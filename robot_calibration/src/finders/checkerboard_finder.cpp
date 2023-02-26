@@ -54,6 +54,10 @@ bool CheckerboardFinder::init(const std::string& name,
   nh.param<int>("points_x", points_x_, 5);
   nh.param<int>("points_y", points_y_, 4);
   nh.param<double>("size", square_size_, 0.0245);
+  if (points_x_ % 2 == 1 && points_y_ % 2 == 1)
+  {
+    ROS_ERROR("Checkerboard is symmetric - orientation estimate can be wrong");
+  }
 
   // Should we include debug image/cloud in observations
   nh.param<bool>("debug", output_debug_, false);
