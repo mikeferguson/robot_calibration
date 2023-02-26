@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Michael Ferguson
+ * Copyright (C) 2022-2023 Michael Ferguson
  * Copyright (C) 2015 Fetch Robotics Inc.
  * Copyright (C) 2013-2014 Unbounded Robotics Inc.
  *
@@ -59,6 +59,10 @@ bool CheckerboardFinder::init(const std::string& name,
   points_x_ = node->declare_parameter<int>("points_x", 5);
   points_y_ = node->declare_parameter<int>("points_y", 4);
   square_size_ = node->declare_parameter<double>("size", 0.0245);
+  if (points_x_ % 2 == 1 && points_y_ % 2 == 1)
+  {
+    RCLCPP_WARN(LOGGER, "Checkerboard is symmetric - orientation estimate can be wrong");
+  }
 
   // Should we include debug image/cloud in observations
   output_debug_ = node->declare_parameter<bool>("debug", false);
