@@ -170,7 +170,6 @@ models:
  - name: camera
    type: camera3d
    frame: head_camera_rgb_optical_frame
-   topic: /head_camera/depth_registered/points
 ```
 
 In ROS2, this becomes:
@@ -184,7 +183,6 @@ arm:
 camera:
   type: camera3d
   frame: head_camera_rgb_optical_frame
-  topic: /head_camera/depth_registered/points
 ```
 
 NOTE: the "chain" type has been renamed "chain3d" in ROS2 for consistency (and to allow
