@@ -57,28 +57,28 @@ bool ScanFinder::init(const std::string& name,
     std::bind(&ScanFinder::scanCallback, this, std::placeholders::_1));
 
   // Name of the sensor model that will be used during optimization
-  laser_sensor_name_ = node->declare_parameter<std::string>("sensor_name", "laser");
+  laser_sensor_name_ = node->declare_parameter<std::string>(name + ".sensor_name", "laser");
 
   // Frame to transform point cloud into before applying limits below
   //   if specified as "none", cloud will be processed in sensor frame
-  transform_frame_ = node->declare_parameter<std::string>("transform_frame", "base_link");
+  transform_frame_ = node->declare_parameter<std::string>(name + ".transform_frame", "base_link");
 
   // It is assumed that the laser scanner operates in the X,Y plane
   // Valid points must lie within this box, in the laser frame
-  min_x_ = node->declare_parameter<double>("min_x", -2.0);
-  max_x_ = node->declare_parameter<double>("max_x", 2.0);
-  min_y_ = node->declare_parameter<double>("min_y", -2.0);
-  max_y_ = node->declare_parameter<double>("max_y", 2.0);
+  min_x_ = node->declare_parameter<double>(name + ".min_x", -2.0);
+  max_x_ = node->declare_parameter<double>(name + ".max_x", 2.0);
+  min_y_ = node->declare_parameter<double>(name + ".min_y", -2.0);
+  max_y_ = node->declare_parameter<double>(name + ".max_y", 2.0);
 
   // Repeat points in the Z plane a number of times at fixed distance
-  z_repeats_ = node->declare_parameter<int>("z_repeats", 10);
-  z_offset_ = node->declare_parameter<double>("z_offset", 0.1);
+  z_repeats_ = node->declare_parameter<int>(name + ".z_repeats", 10);
+  z_offset_ = node->declare_parameter<double>(name + ".z_offset", 0.1);
 
   // Should we include debug image/cloud in observations
-  output_debug_ = node->declare_parameter<bool>("debug", false);
+  output_debug_ = node->declare_parameter<bool>(name + ".debug", false);
 
   // Publish the observation as a PointCloud2
-  publisher_ = node->create_publisher<sensor_msgs::msg::PointCloud2>(getName() + "_points", 10);
+  publisher_ = node->create_publisher<sensor_msgs::msg::PointCloud2>(name + "_points", 10);
 
   return true;
 }

@@ -56,26 +56,26 @@ bool CheckerboardFinder::init(const std::string& name,
     std::bind(&CheckerboardFinder::cameraCallback, this, std::placeholders::_1));
 
   // Size of checkerboard
-  points_x_ = node->declare_parameter<int>("points_x", 5);
-  points_y_ = node->declare_parameter<int>("points_y", 4);
-  square_size_ = node->declare_parameter<double>("size", 0.0245);
+  points_x_ = node->declare_parameter<int>(name + ".points_x", 5);
+  points_y_ = node->declare_parameter<int>(name + ".points_y", 4);
+  square_size_ = node->declare_parameter<double>(name + ".size", 0.0245);
   if (points_x_ % 2 == 1 && points_y_ % 2 == 1)
   {
     RCLCPP_WARN(LOGGER, "Checkerboard is symmetric - orientation estimate can be wrong");
   }
 
   // Should we include debug image/cloud in observations
-  output_debug_ = node->declare_parameter<bool>("debug", false);
+  output_debug_ = node->declare_parameter<bool>(name + ".debug", false);
 
   // Name of checkerboard frame that will be used during optimization
-  frame_id_ = node->declare_parameter<std::string>("frame_id", "checkerboard");
+  frame_id_ = node->declare_parameter<std::string>(name + ".frame_id", "checkerboard");
 
   // Name of the sensor model that will be used during optimization
-  camera_sensor_name_ = node->declare_parameter<std::string>("camera_sensor_name", "camera");
-  chain_sensor_name_ = node->declare_parameter<std::string>("framchain_sensor_namee_id", "arm");
+  camera_sensor_name_ = node->declare_parameter<std::string>(name + ".camera_sensor_name", "camera");
+  chain_sensor_name_ = node->declare_parameter<std::string>(name + ".chain_sensor_name_id", "arm");
 
   // Publish where checkerboard points were seen
-  publisher_ = node->create_publisher<sensor_msgs::msg::PointCloud2>(getName() + "_points", 10);
+  publisher_ = node->create_publisher<sensor_msgs::msg::PointCloud2>(name + "_points", 10);
 
   // Setup to get camera depth info
   if (!depth_camera_manager_.init(name, node, LOGGER))
