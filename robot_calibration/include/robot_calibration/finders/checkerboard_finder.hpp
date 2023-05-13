@@ -47,7 +47,7 @@ public:
 
 private:
   bool findInternal(robot_calibration_msgs::msg::CalibrationData * msg);
-  bool findCheckerboardPoints(sensor_msgs::msg::Image::SharedPtr image,
+  bool findCheckerboardPoints(sensor_msgs::msg::Image::ConstSharedPtr image,
                               std::vector<cv::Point2f>& points);
 
   void cameraCallback(typename T::ConstSharedPtr cloud);
@@ -58,7 +58,7 @@ private:
   rclcpp::Clock::SharedPtr clock_;
 
   bool waiting_;
-  T msg_;
+  typename T::ConstSharedPtr msg_;
   DepthCameraInfoManager depth_camera_manager_;
 
   /*

@@ -3,7 +3,13 @@
   <class name="robot_calibration::CheckerboardFinder"
          type="robot_calibration::CheckerboardFinder<sensor_msgs::msg::PointCloud2>"
          base_class_type="robot_calibration::FeatureFinder">
-    <description>Feature finder that detect checkerboards.</description>
+    <description>Feature finder that detect checkerboards in point clouds.</description>
+  </class>
+
+  <class name="robot_calibration::CheckerboardFinder2d"
+         type="robot_calibration::CheckerboardFinder<sensor_msgs::msg::Image>"
+         base_class_type="robot_calibration::FeatureFinder">
+    <description>Feature finder that detect checkerboards in 2d images.</description>
   </class>
 
   <class type="robot_calibration::LedFinder"

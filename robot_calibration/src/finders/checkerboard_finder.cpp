@@ -94,7 +94,7 @@ void CheckerboardFinder<T>::cameraCallback(typename T::ConstSharedPtr msg)
 {
   if (waiting_)
   {
-    msg_ = *msg;
+    msg_ = msg;
     waiting_ = false;
   }
 }
@@ -160,7 +160,7 @@ bool CheckerboardFinder<sensor_msgs::msg::PointCloud2>::findInternal(robot_calib
     return false;
   }
 
-  if (msg_.height == 1)
+  if (msg_->height == 1)
   {
     RCLCPP_ERROR(LOGGER, "OpenCV does not support unorganized cloud/image.");
     return false;
@@ -168,15 +168,15 @@ bool CheckerboardFinder<sensor_msgs::msg::PointCloud2>::findInternal(robot_calib
 
   // Get an image message from point cloud
   sensor_msgs::msg::Image::SharedPtr image_msg(new sensor_msgs::msg::Image);
-  sensor_msgs::PointCloud2ConstIterator<uint8_t> rgb(msg_, "rgb");
+  sensor_msgs::PointCloud2ConstIterator<uint8_t> rgb(*msg_, "rgb");
   image_msg->encoding = "bgr8";
-  image_msg->height = msg_.height;
-  image_msg->width = msg_.width;
+  image_msg->height = msg_->height;
+  image_msg->width = msg_->width;
   image_msg->step = image_msg->width * sizeof (uint8_t) * 3;
   image_msg->data.resize(image_msg->step * image_msg->height);
-  for (size_t y = 0; y < msg_.height; y++)
+  for (size_t y = 0; y < msg_->height; y++)
   {
-    for (size_t x = 0; x < msg_.width; x++)
+    for (size_t x = 0; x < msg_->width; x++)
     {
       uint8_t* pixel = &(image_msg->data[y * image_msg->step + x * 3]);
       pixel[0] = rgb[0];
@@ -196,7 +196,7 @@ bool CheckerboardFinder<sensor_msgs::msg::PointCloud2>::findInternal(robot_calib
     cloud.width = 0;
     cloud.height = 0;
     cloud.header.stamp = clock_->now();
-    cloud.header.frame_id = msg_.header.frame_id;
+    cloud.header.frame_id = msg_->header.frame_id;
     sensor_msgs::PointCloud2Modifier cloud_mod(cloud);
     cloud_mod.setPointCloud2FieldsByString(1, "xyz");
     cloud_mod.resize(points_x_ * points_y_);
@@ -213,7 +213,97 @@ bool CheckerboardFinder<sensor_msgs::msg::PointCloud2>::findInternal(robot_calib
     msg->observations[idx_chain].features.resize(points_x_ * points_y_);
 
     // Fill in the headers
-    rgbd.header = msg_.header;
+    rgbd.header = msg_->header;
+    world.header.frame_id = frame_id_;
+
+    // Fill in message
+    sensor_msgs::PointCloud2ConstIterator<float> xyz(*msg_, "x");
+    for (size_t i = 0; i < points.size(); ++i)
+    {
+      world.point.x = (i % points_x_) * square_size_;
+      world.point.y = (i / points_x_) * square_size_;
+
+      // Get 3d point
+      int index = (int)(points[i].y) * msg_->width + (int)(points[i].x);
+      rgbd.point.x = (xyz + index)[X];
+      rgbd.point.y = (xyz + index)[Y];
+      rgbd.point.z = (xyz + index)[Z];
+
+      // Do not accept NANs
+      if (std::isnan(rgbd.point.x) ||
+          std::isnan(rgbd.point.y) ||
+          std::isnan(rgbd.point.z))
+      {
+        RCLCPP_ERROR_STREAM(LOGGER, "NAN point on " << i);
+        return false;
+      }
+
+      msg->observations[idx_cam].features[i] = rgbd;
+      msg->observations[idx_cam].ext_camera_info = depth_camera_manager_.getDepthCameraInfo();
+      msg->observations[idx_chain].features[i] = world;
+
+      // Visualize
+      iter_cloud[0] = rgbd.point.x;
+      iter_cloud[1] = rgbd.point.y;
+      iter_cloud[2] = rgbd.point.z;
+      ++iter_cloud;
+    }
+
+    // Add debug cloud to message
+    if (output_debug_)
+    {
+      msg->observations[idx_cam].cloud = *msg_;
+    }
+
+    // Publish results
+    publisher_->publish(cloud);
+
+    // Found all points
+    return true;
+  }
+
+  return false;
+}
+
+template <>
+bool CheckerboardFinder<sensor_msgs::msg::Image>::findInternal(robot_calibration_msgs::msg::CalibrationData * msg)
+{
+  // Get image
+  if (!waitForMsg())
+  {
+    RCLCPP_ERROR(LOGGER, "No image data");
+    return false;
+  }
+
+  std::vector<cv::Point2f> points;
+  if (findCheckerboardPoints(msg_, points))
+  {
+    RCLCPP_INFO(LOGGER, "Found the checkboard");
+
+/*
+    // Create PointCloud2 to publish
+    sensor_msgs::msg::PointCloud2 cloud;
+    cloud.width = 0;
+    cloud.height = 0;
+    cloud.header.stamp = clock_->now();
+    cloud.header.frame_id = msg_->header.frame_id;
+    sensor_msgs::PointCloud2Modifier cloud_mod(cloud);
+    cloud_mod.setPointCloud2FieldsByString(1, "xyz");
+    cloud_mod.resize(points_x_ * points_y_);
+    sensor_msgs::PointCloud2Iterator<float> iter_cloud(cloud, "x");
+
+    // Set msg size
+    int idx_cam = msg->observations.size() + 0;
+    int idx_chain = msg->observations.size() + 1;
+    msg->observations.resize(msg->observations.size() + 2);
+    msg->observations[idx_cam].sensor_name = camera_sensor_name_;
+    msg->observations[idx_chain].sensor_name = chain_sensor_name_;
+         
+    msg->observations[idx_cam].features.resize(points_x_ * points_y_);
+    msg->observations[idx_chain].features.resize(points_x_ * points_y_);
+
+    // Fill in the headers
+    rgbd.header = msg_->header;
     world.header.frame_id = frame_id_;
 
     // Fill in message
@@ -224,7 +314,7 @@ bool CheckerboardFinder<sensor_msgs::msg::PointCloud2>::findInternal(robot_calib
       world.point.y = (i / points_x_) * square_size_;
 
       // Get 3d point
-      int index = (int)(points[i].y) * msg_.width + (int)(points[i].x);
+      int index = (int)(points[i].y) * msg_->width + (int)(points[i].x);
       rgbd.point.x = (xyz + index)[X];
       rgbd.point.y = (xyz + index)[Y];
       rgbd.point.z = (xyz + index)[Z];
@@ -257,7 +347,7 @@ bool CheckerboardFinder<sensor_msgs::msg::PointCloud2>::findInternal(robot_calib
 
     // Publish results
     publisher_->publish(cloud);
-
+*/
     // Found all points
     return true;
   }
@@ -266,7 +356,7 @@ bool CheckerboardFinder<sensor_msgs::msg::PointCloud2>::findInternal(robot_calib
 }
 
 template <typename T>
-bool CheckerboardFinder<T>::findCheckerboardPoints(sensor_msgs::msg::Image::SharedPtr image,
+bool CheckerboardFinder<T>::findCheckerboardPoints(sensor_msgs::msg::Image::ConstSharedPtr image,
                                                    std::vector<cv::Point2f>& points)
 {
   // Get an OpenCV image from the cloud
@@ -292,3 +382,4 @@ bool CheckerboardFinder<T>::findCheckerboardPoints(sensor_msgs::msg::Image::Shar
 
 #include <pluginlib/class_list_macros.hpp>
 PLUGINLIB_EXPORT_CLASS(robot_calibration::CheckerboardFinder<sensor_msgs::msg::PointCloud2>, robot_calibration::FeatureFinder)
+PLUGINLIB_EXPORT_CLASS(robot_calibration::CheckerboardFinder<sensor_msgs::msg::Image>, robot_calibration::FeatureFinder)
