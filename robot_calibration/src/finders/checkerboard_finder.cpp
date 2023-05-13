@@ -150,9 +150,6 @@ bool CheckerboardFinder<T>::find(robot_calibration_msgs::msg::CalibrationData * 
 template <>
 bool CheckerboardFinder<sensor_msgs::msg::PointCloud2>::findInternal(robot_calibration_msgs::msg::CalibrationData * msg)
 {
-  geometry_msgs::msg::PointStamped rgbd;
-  geometry_msgs::msg::PointStamped world;
-
   // Get cloud
   if (!waitForMsg())
   {
@@ -212,14 +209,17 @@ bool CheckerboardFinder<sensor_msgs::msg::PointCloud2>::findInternal(robot_calib
     msg->observations[idx_cam].features.resize(points_x_ * points_y_);
     msg->observations[idx_chain].features.resize(points_x_ * points_y_);
 
-    // Fill in the headers
+    // Setup observed points
+    geometry_msgs::msg::PointStamped rgbd;
     rgbd.header = msg_->header;
+    geometry_msgs::msg::PointStamped world;
     world.header.frame_id = frame_id_;
 
     // Fill in message
     sensor_msgs::PointCloud2ConstIterator<float> xyz(*msg_, "x");
     for (size_t i = 0; i < points.size(); ++i)
     {
+      // Create 3d position of corner (in checkerboard frame)
       world.point.x = (i % points_x_) * square_size_;
       world.point.y = (i / points_x_) * square_size_;
 
@@ -280,74 +280,45 @@ bool CheckerboardFinder<sensor_msgs::msg::Image>::findInternal(robot_calibration
   {
     RCLCPP_INFO(LOGGER, "Found the checkboard");
 
-/*
-    // Create PointCloud2 to publish
-    sensor_msgs::msg::PointCloud2 cloud;
-    cloud.width = 0;
-    cloud.height = 0;
-    cloud.header.stamp = clock_->now();
-    cloud.header.frame_id = msg_->header.frame_id;
-    sensor_msgs::PointCloud2Modifier cloud_mod(cloud);
-    cloud_mod.setPointCloud2FieldsByString(1, "xyz");
-    cloud_mod.resize(points_x_ * points_y_);
-    sensor_msgs::PointCloud2Iterator<float> iter_cloud(cloud, "x");
-
     // Set msg size
     int idx_cam = msg->observations.size() + 0;
     int idx_chain = msg->observations.size() + 1;
     msg->observations.resize(msg->observations.size() + 2);
     msg->observations[idx_cam].sensor_name = camera_sensor_name_;
     msg->observations[idx_chain].sensor_name = chain_sensor_name_;
-         
+
     msg->observations[idx_cam].features.resize(points_x_ * points_y_);
     msg->observations[idx_chain].features.resize(points_x_ * points_y_);
 
-    // Fill in the headers
+    // Setup observed points
+    geometry_msgs::msg::PointStamped rgbd;
     rgbd.header = msg_->header;
+    geometry_msgs::msg::PointStamped world;
     world.header.frame_id = frame_id_;
 
     // Fill in message
-    sensor_msgs::PointCloud2ConstIterator<float> xyz(msg_, "x");
     for (size_t i = 0; i < points.size(); ++i)
     {
+      // Create 3d position of corner (in checkerboard frame)
       world.point.x = (i % points_x_) * square_size_;
       world.point.y = (i / points_x_) * square_size_;
 
-      // Get 3d point
-      int index = (int)(points[i].y) * msg_->width + (int)(points[i].x);
-      rgbd.point.x = (xyz + index)[X];
-      rgbd.point.y = (xyz + index)[Y];
-      rgbd.point.z = (xyz + index)[Z];
-
-      // Do not accept NANs
-      if (std::isnan(rgbd.point.x) ||
-          std::isnan(rgbd.point.y) ||
-          std::isnan(rgbd.point.z))
-      {
-        RCLCPP_ERROR_STREAM(LOGGER, "NAN point on " << i);
-        return false;
-      }
+      // Save 2d pixel
+      rgbd.point.x = points[i].x;
+      rgbd.point.y = points[i].y;
+      rgbd.point.z = 0.0;  // No Z information
 
       msg->observations[idx_cam].features[i] = rgbd;
       msg->observations[idx_cam].ext_camera_info = depth_camera_manager_.getDepthCameraInfo();
       msg->observations[idx_chain].features[i] = world;
-
-      // Visualize
-      iter_cloud[0] = rgbd.point.x;
-      iter_cloud[1] = rgbd.point.y;
-      iter_cloud[2] = rgbd.point.z;
-      ++iter_cloud;
     }
 
     // Add debug cloud to message
     if (output_debug_)
     {
-      msg->observations[idx_cam].cloud = msg_;
+      msg->observations[idx_cam].image = *msg_;
     }
 
-    // Publish results
-    publisher_->publish(cloud);
-*/
     // Found all points
     return true;
   }
