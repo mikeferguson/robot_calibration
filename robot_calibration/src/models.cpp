@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Michael Ferguson
+ * Copyright (C) 2022-2023 Michael Ferguson
  * Copyright (C) 2015 Fetch Robotics Inc.
  * Copyright (C) 2013-2014 Unbounded Robotics Inc.
  *
@@ -20,7 +20,9 @@
 
 #include <iostream>
 #include <robot_calibration/models/chain3d.hpp>
+#include <robot_calibration/models/camera2d.hpp>
 #include <robot_calibration/models/camera3d.hpp>
+#include <robot_calibration/util/calibration_data.hpp>
 
 namespace robot_calibration
 {
@@ -59,16 +61,7 @@ std::vector<geometry_msgs::msg::PointStamped> Chain3dModel::project(
   std::vector<geometry_msgs::msg::PointStamped> points;
 
   // Determine which observation to use
-  int sensor_idx = -1;
-  for (size_t obs = 0; obs < data.observations.size(); obs++)
-  {
-    if (data.observations[obs].sensor_name == name_)
-    {
-      sensor_idx = obs;
-      break;
-    }
-  }
-
+  int sensor_idx = getSensorIndex(data, name_);
   if (sensor_idx < 0)
   {
     // TODO: any sort of error message?
@@ -116,7 +109,7 @@ std::vector<geometry_msgs::msg::PointStamped> Chain3dModel::project(
 }
 
 KDL::Frame Chain3dModel::getChainFK(const OptimizationOffsets& offsets,
-                                  const sensor_msgs::msg::JointState& state)
+                                    const sensor_msgs::msg::JointState& state)
 {
   // FK from root to tip
   KDL::Frame p_out = KDL::Frame::Identity();
@@ -174,16 +167,7 @@ std::vector<geometry_msgs::msg::PointStamped> Camera3dModel::project(
   std::vector<geometry_msgs::msg::PointStamped> points;
 
   // Determine which observation to use
-  int sensor_idx = -1;
-  for (size_t obs = 0; obs < data.observations.size(); obs++)
-  {
-    if (data.observations[obs].sensor_name == name_)
-    {
-      sensor_idx = obs;
-      break;
-    }
-  }
-
+  int sensor_idx = getSensorIndex(data, name_);
   if (sensor_idx < 0)
   {
     // TODO: any sort of error message?
@@ -265,6 +249,97 @@ std::vector<geometry_msgs::msg::PointStamped> Camera3dModel::project(
 std::string Camera3dModel::getType() const
 {
   return "Camera3dModel";
+}
+
+Camera2dModel::Camera2dModel(const std::string& name, const std::string& param_name, KDL::Tree model, std::string root, std::string tip) :
+    Chain3dModel(name, model, root, tip),
+    param_name_(param_name)
+{
+  // TODO add additional parameters for unprojecting observations using initial parameters
+}
+
+std::vector<geometry_msgs::msg::PointStamped> Camera2dModel::project(
+    const robot_calibration_msgs::msg::CalibrationData&,
+    const OptimizationOffsets&)
+{
+  // TODO: just toss error?
+  std::vector<geometry_msgs::msg::PointStamped> points;
+  return points;
+}
+
+std::vector<geometry_msgs::msg::PointStamped> Camera2dModel::project_pixel_error(
+    const robot_calibration_msgs::msg::CalibrationData& data,
+    const std::vector<geometry_msgs::msg::PointStamped>& points,
+    const OptimizationOffsets& offsets)
+{
+  std::vector<geometry_msgs::msg::PointStamped> pixels;
+
+  // Determine which observation to use
+  int sensor_idx = getSensorIndex(data, name_);
+  if (sensor_idx < 0)
+  {
+    // TODO: any sort of error message?
+    return pixels;
+  }
+
+  // Make sure point count matches
+  if (points.size() != data.observations[sensor_idx].features.size())
+  {
+    // TODO: error message?
+    return pixels;
+  }
+
+  // Get existing camera info
+  if (data.observations[sensor_idx].ext_camera_info.camera_info.p.size() != 12)
+    std::cerr << "Unexpected CameraInfo projection matrix size" << std::endl;
+
+  double camera_fx = data.observations[sensor_idx].ext_camera_info.camera_info.p[CAMERA_INFO_P_FX_INDEX];
+  double camera_fy = data.observations[sensor_idx].ext_camera_info.camera_info.p[CAMERA_INFO_P_FY_INDEX];
+  double camera_cx = data.observations[sensor_idx].ext_camera_info.camera_info.p[CAMERA_INFO_P_CX_INDEX];
+  double camera_cy = data.observations[sensor_idx].ext_camera_info.camera_info.p[CAMERA_INFO_P_CY_INDEX];
+
+  // Get calibrated camera info
+  camera_fx *= (1.0 + offsets.get(param_name_ + "_fx"));
+  camera_fy *= (1.0 + offsets.get(param_name_ + "_fy"));
+  camera_cx *= (1.0 + offsets.get(param_name_ + "_cx"));
+  camera_cy *= (1.0 + offsets.get(param_name_ + "_cy"));
+
+  // Get position of camera frame
+  KDL::Frame fk = getChainFK(offsets, data.joint_states);
+
+  // Project world points into camera pixels
+  pixels.resize(data.observations[sensor_idx].features.size());
+  for (size_t i = 0; i < pixels.size(); ++i)
+  {
+    // Project point into camera frame, still in 3d
+    KDL::Frame pt(KDL::Frame::Identity());
+    pt.p.x(points[i].point.x);
+    pt.p.y(points[i].point.y);
+    pt.p.z(points[i].point.z);
+    pt = fk.Inverse() * pt;
+
+    // Project point into pixel space
+    double px = camera_fx * (pt.p.x() / pt.p.z());
+    double py = camera_fy * (pt.p.y() / pt.p.z());
+
+    // Add lens correction
+    pixels[i].point.x = px + camera_cx;
+    pixels[i].point.y = py + camera_cy;
+  }
+
+  // Subtract observed pixel value to get error
+  for (size_t i = 0; i < pixels.size(); ++i)
+  {
+    pixels[i].point.x -= data.observations[sensor_idx].features[i].point.x;
+    pixels[i].point.y -= data.observations[sensor_idx].features[i].point.y;
+  }
+
+  return pixels;
+}
+
+std::string Camera2dModel::getType() const
+{
+  return "Camera2dModel";
 }
 
 KDL::Rotation rotation_from_axis_magnitude(const double x, const double y, const double z)

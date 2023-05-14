@@ -30,7 +30,7 @@ namespace robot_calibration
 /**
  *  @brief Determine which observation index corresponds to a particular sensor name
  */
-int getSensorIndex(
+inline int getSensorIndex(
   const robot_calibration_msgs::msg::CalibrationData& msg,
   const std::string& sensor)
 {
@@ -47,7 +47,7 @@ int getSensorIndex(
 /**
  *  @brief Determine if a sample of data has an observation from the desired sensor
  */
-bool hasSensor(
+inline bool hasSensor(
   const robot_calibration_msgs::msg::CalibrationData& msg,
   const std::string& sensor)
 {
@@ -60,9 +60,9 @@ bool hasSensor(
  *  \param description_msg This will be loaded with the URDF string.
  *  \param data This will be loaded with the calibration data.
  */
-bool load_bag(const std::string& file_name,
-              std_msgs::msg::String& description_msg,
-              std::vector<robot_calibration_msgs::msg::CalibrationData>& data)
+inline bool load_bag(const std::string& file_name,
+                     std_msgs::msg::String& description_msg,
+                     std::vector<robot_calibration_msgs::msg::CalibrationData>& data)
 {
   rosbag2_cpp::Reader reader;
   
