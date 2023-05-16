@@ -2,10 +2,17 @@ feature_finder_loader_tests:
   ros__parameters:
     features:
     - checkerboard_finder
+    - checkerboard_finder_2d
     - ground_plane_finder
     checkerboard_finder:
       type: robot_calibration::CheckerboardFinder
       topic: /head_camera/depth_registered/points
+      camera_sensor_name: camera
+      chain_sensor_name: arm
+      camera_driver: /camera_info_publisher
+    checkerboard_finder_2d:
+      type: robot_calibration::CheckerboardFinder2d
+      topic: /head_camera/depth_registered/rgb
       camera_sensor_name: camera
       chain_sensor_name: arm
       camera_driver: /camera_info_publisher
