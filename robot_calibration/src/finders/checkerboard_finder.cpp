@@ -74,7 +74,7 @@ bool CheckerboardFinder<T>::init(const std::string& name,
 
   // Name of the sensor model that will be used during optimization
   camera_sensor_name_ = node->declare_parameter<std::string>(name + ".camera_sensor_name", "camera");
-  chain_sensor_name_ = node->declare_parameter<std::string>(name + ".chain_sensor_name_id", "arm");
+  chain_sensor_name_ = node->declare_parameter<std::string>(name + ".chain_sensor_name", "arm");
 
   // Publish where checkerboard points were seen
   publisher_ = node->create_publisher<sensor_msgs::msg::PointCloud2>(name + "_points", 10);
