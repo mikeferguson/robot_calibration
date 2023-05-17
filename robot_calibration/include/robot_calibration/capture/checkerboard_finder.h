@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Michael Ferguson
+ * Copyright (C) 2018-2023 Michael Ferguson
  * Copyright (C) 2015 Fetch Robotics Inc.
  * Copyright (C) 2013-2014 Unbounded Robotics Inc.
  *
@@ -33,8 +33,9 @@ namespace robot_calibration
 {
 
 /**
- *  \brief This class processes the point cloud input to find a checkerboard
+ *  \brief Finds checkerboards in images or point clouds
  */
+template <typename T>
 class CheckerboardFinder : public FeatureFinder
 {
 public:
@@ -44,15 +45,17 @@ public:
 
 private:
   bool findInternal(robot_calibration_msgs::CalibrationData * msg);
+  bool findCheckerboardPoints(const sensor_msgs::ImagePtr& msg,
+                              std::vector<cv::Point2f>& points);
 
-  void cameraCallback(const sensor_msgs::PointCloud2& cloud);
-  bool waitForCloud();
+  void cameraCallback(const T& msg);
+  bool waitForMsg();
 
-  ros::Subscriber subscriber_;  /// Incoming sensor_msgs::PointCloud2
+  ros::Subscriber subscriber_;  /// Incoming message
   ros::Publisher publisher_;   /// Outgoing sensor_msgs::PointCloud2
 
   bool waiting_;
-  sensor_msgs::PointCloud2 cloud_;
+  T msg_;
   DepthCameraInfoManager depth_camera_manager_;
 
   /*

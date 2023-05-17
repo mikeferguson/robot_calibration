@@ -1,4 +1,5 @@
 /*
+ * Copyright (C) 2023 Michael Ferguson
  * Copyright (C) 2015 Fetch Robotics Inc.
  * Copyright (C) 2013-2014 Unbounded Robotics Inc.
  *
@@ -21,7 +22,8 @@
 #include <robot_calibration/capture/checkerboard_finder.h>
 #include <sensor_msgs/point_cloud2_iterator.h>
 
-PLUGINLIB_EXPORT_CLASS(robot_calibration::CheckerboardFinder, robot_calibration::FeatureFinder)
+PLUGINLIB_EXPORT_CLASS(robot_calibration::CheckerboardFinder<sensor_msgs::PointCloud2>, robot_calibration::FeatureFinder)
+PLUGINLIB_EXPORT_CLASS(robot_calibration::CheckerboardFinder<sensor_msgs::ImagePtr>, robot_calibration::FeatureFinder)
 
 namespace robot_calibration
 {
@@ -31,13 +33,15 @@ const unsigned X = 0;
 const unsigned Y = 1;
 const unsigned Z = 2;
 
-CheckerboardFinder::CheckerboardFinder() :
+template <typename T>
+CheckerboardFinder<T>::CheckerboardFinder() :
   waiting_(false)
 {
 }
 
-bool CheckerboardFinder::init(const std::string& name,
-                              ros::NodeHandle & nh)
+template <typename T>
+bool CheckerboardFinder<T>::init(const std::string& name,
+                                 ros::NodeHandle & nh)
 {
   if (!FeatureFinder::init(name, nh))
     return false;
@@ -82,17 +86,19 @@ bool CheckerboardFinder::init(const std::string& name,
   return true;
 }
 
-void CheckerboardFinder::cameraCallback(const sensor_msgs::PointCloud2& cloud)
+template <typename T>
+void CheckerboardFinder<T>::cameraCallback(const T& msg)
 {
   if (waiting_)
   {
-    cloud_ = cloud;
+    msg_ = msg;
     waiting_ = false;
   }
 }
 
 // Returns true if we got a message, false if we timeout
-bool CheckerboardFinder::waitForCloud()
+template <typename T>
+bool CheckerboardFinder<T>::waitForMsg()
 {
   // Initial wait cycle so that camera is definitely up to date.
   ros::Duration(1/10.0).sleep();
@@ -109,11 +115,12 @@ bool CheckerboardFinder::waitForCloud()
     ros::Duration(0.01).sleep();
     ros::spinOnce();
   }
-  ROS_ERROR("Failed to get cloud");
+  ROS_ERROR("Failed to get message");
   return !waiting_;
 }
 
-bool CheckerboardFinder::find(robot_calibration_msgs::CalibrationData * msg)
+template <typename T>
+bool CheckerboardFinder<T>::find(robot_calibration_msgs::CalibrationData * msg)
 {
   // Try up to 50 frames
   for (int i = 0; i < 50; ++i)
@@ -129,19 +136,17 @@ bool CheckerboardFinder::find(robot_calibration_msgs::CalibrationData * msg)
   return false;
 }
 
-bool CheckerboardFinder::findInternal(robot_calibration_msgs::CalibrationData * msg)
+template <>
+bool CheckerboardFinder<sensor_msgs::PointCloud2>::findInternal(robot_calibration_msgs::CalibrationData * msg)
 {
-  geometry_msgs::PointStamped rgbd;
-  geometry_msgs::PointStamped world;
-
   // Get cloud
-  if (!waitForCloud())
+  if (!waitForMsg())
   {
     ROS_ERROR("No point cloud data");
     return false;
   }
 
-  if (cloud_.height == 1)
+  if (msg_.height == 1)
   {
     ROS_ERROR("OpenCV does not support unorganized cloud/image.");
     return false;
@@ -149,15 +154,15 @@ bool CheckerboardFinder::findInternal(robot_calibration_msgs::CalibrationData * 
 
   // Get an image message from point cloud
   sensor_msgs::ImagePtr image_msg(new sensor_msgs::Image);
-  sensor_msgs::PointCloud2ConstIterator<uint8_t> rgb(cloud_, "rgb");
+  sensor_msgs::PointCloud2ConstIterator<uint8_t> rgb(msg_, "rgb");
   image_msg->encoding = "bgr8";
-  image_msg->height = cloud_.height;
-  image_msg->width = cloud_.width;
+  image_msg->height = msg_.height;
+  image_msg->width = msg_.width;
   image_msg->step = image_msg->width * sizeof (uint8_t) * 3;
   image_msg->data.resize(image_msg->step * image_msg->height);
-  for (size_t y = 0; y < cloud_.height; y++)
+  for (size_t y = 0; y < msg_.height; y++)
   {
-    for (size_t x = 0; x < cloud_.width; x++)
+    for (size_t x = 0; x < msg_.width; x++)
     {
       uint8_t* pixel = &(image_msg->data[y * image_msg->step + x * 3]);
       pixel[0] = rgb[0];
@@ -167,26 +172,8 @@ bool CheckerboardFinder::findInternal(robot_calibration_msgs::CalibrationData * 
     }
   }
 
-  // Get an OpenCV image from the cloud
-  cv_bridge::CvImagePtr bridge;
-  try
-  {
-    bridge = cv_bridge::toCvCopy(image_msg, "mono8");  // TODO: was rgb8? does this work?
-  }
-  catch(cv_bridge::Exception& e)
-  {
-    ROS_ERROR("Conversion failed");
-    return false;
-  }
-
-  // Find checkerboard
   std::vector<cv::Point2f> points;
-  points.resize(points_x_ * points_y_);
-  cv::Size checkerboard_size(points_x_, points_y_);
-  int found = cv::findChessboardCorners(bridge->image, checkerboard_size,
-                                        points, cv::CALIB_CB_ADAPTIVE_THRESH);
-
-  if (found)
+  if (findCheckerboardPoints(image_msg, points))
   {
     ROS_INFO("Found the checkboard");
 
@@ -195,7 +182,7 @@ bool CheckerboardFinder::findInternal(robot_calibration_msgs::CalibrationData * 
     cloud.width = 0;
     cloud.height = 0;
     cloud.header.stamp = ros::Time::now();
-    cloud.header.frame_id = cloud_.header.frame_id;
+    cloud.header.frame_id = msg_.header.frame_id;
     sensor_msgs::PointCloud2Modifier cloud_mod(cloud);
     cloud_mod.setPointCloud2FieldsByString(1, "xyz");
     cloud_mod.resize(points_x_ * points_y_);
@@ -211,20 +198,21 @@ bool CheckerboardFinder::findInternal(robot_calibration_msgs::CalibrationData * 
     msg->observations[idx_cam].features.resize(points_x_ * points_y_);
     msg->observations[idx_chain].features.resize(points_x_ * points_y_);
 
-
-    // Fill in the headers
-    rgbd.header = cloud_.header;
+    // Setup observed points
+    geometry_msgs::PointStamped rgbd;
+    rgbd.header = msg_.header;
+    geometry_msgs::PointStamped world;
     world.header.frame_id = frame_id_;
 
     // Fill in message
-    sensor_msgs::PointCloud2ConstIterator<float> xyz(cloud_, "x");
+    sensor_msgs::PointCloud2ConstIterator<float> xyz(msg_, "x");
     for (size_t i = 0; i < points.size(); ++i)
     {
       world.point.x = (i % points_x_) * square_size_;
       world.point.y = (i / points_x_) * square_size_;
 
       // Get 3d point
-      int index = (int)(points[i].y) * cloud_.width + (int)(points[i].x);
+      int index = (int)(points[i].y) * msg_.width + (int)(points[i].x);
       rgbd.point.x = (xyz + index)[X];
       rgbd.point.y = (xyz + index)[Y];
       rgbd.point.z = (xyz + index)[Z];
@@ -252,7 +240,7 @@ bool CheckerboardFinder::findInternal(robot_calibration_msgs::CalibrationData * 
     // Add debug cloud to message
     if (output_debug_)
     {
-      msg->observations[idx_cam].cloud = cloud_;
+      msg->observations[idx_cam].cloud = msg_;
     }
 
     // Publish results
@@ -263,6 +251,90 @@ bool CheckerboardFinder::findInternal(robot_calibration_msgs::CalibrationData * 
   }
 
   return false;
+}
+
+template <>
+bool CheckerboardFinder<sensor_msgs::ImagePtr>::findInternal(robot_calibration_msgs::CalibrationData * msg)
+{
+  // Get image
+  if (!waitForMsg())
+  {
+    ROS_ERROR("No image data");
+    return false;
+  }
+
+  std::vector<cv::Point2f> points;
+  if (findCheckerboardPoints(msg_, points))
+  {
+    ROS_INFO("Found the checkboard");
+
+    // Set msg size
+    int idx_cam = msg->observations.size() + 0;
+    int idx_chain = msg->observations.size() + 1;
+    msg->observations.resize(msg->observations.size() + 2);
+    msg->observations[idx_cam].sensor_name = camera_sensor_name_;
+    msg->observations[idx_chain].sensor_name = chain_sensor_name_;
+
+    msg->observations[idx_cam].features.resize(points_x_ * points_y_);
+    msg->observations[idx_chain].features.resize(points_x_ * points_y_);
+
+    // Setup observed points
+    geometry_msgs::PointStamped rgbd;
+    rgbd.header = msg_->header;
+    geometry_msgs::PointStamped world;
+    world.header.frame_id = frame_id_;
+
+    // Fill in message
+    for (size_t i = 0; i < points.size(); ++i)
+    {
+      // Create 3d position of corner (in checkerboard_frame)
+      world.point.x = (i % points_x_) * square_size_;
+      world.point.y = (i / points_x_) * square_size_;
+
+      // Save 2d pixel
+      rgbd.point.x = points[i].x;
+      rgbd.point.y = points[i].y;
+      rgbd.point.z = 0.0;  // No Z information
+
+      msg->observations[idx_cam].features[i] = rgbd;
+      msg->observations[idx_cam].ext_camera_info = depth_camera_manager_.getDepthCameraInfo();
+      msg->observations[idx_chain].features[i] = world;
+    }
+
+    // Add debug cloud to message
+    if (output_debug_)
+    {
+      msg->observations[idx_cam].image = *msg_;
+    }
+
+    // Found all points
+    return true;
+  }
+
+  return false;
+}
+
+template <typename T>
+bool CheckerboardFinder<T>::findCheckerboardPoints(const sensor_msgs::ImagePtr& image,
+                                                   std::vector<cv::Point2f>& points)
+{
+  // Get an OpenCV image from the cloud
+  cv_bridge::CvImagePtr bridge;
+  try
+  {
+    bridge = cv_bridge::toCvCopy(image, "mono8");  // TODO: was rgb8? does this work?
+  }
+  catch(cv_bridge::Exception& e)
+  {
+    ROS_ERROR("Conversion failed");
+    return false;
+  }
+
+  // Find checkerboard
+  points.resize(points_x_ * points_y_);
+  cv::Size checkerboard_size(points_x_, points_y_);
+  return cv::findChessboardCorners(bridge->image, checkerboard_size,
+                                   points, cv::CALIB_CB_ADAPTIVE_THRESH);
 }
 
 }  // namespace robot_calibration
