@@ -1,0 +1,73 @@
+/*
+ * Copyright (C) 2023 Michael Ferguson
+ * Copyright (C) 2013-2014 Unbounded Robotics Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+// Author: Michael Ferguson
+
+#ifndef ROBOT_CALIBRATION_MODELS_CAMERA2D_H
+#define ROBOT_CALIBRATION_MODELS_CAMERA2D_H
+
+#include <robot_calibration/models/chain3d.hpp>
+#include <robot_calibration/util/camera_info.hpp>
+
+namespace robot_calibration
+{
+
+/**
+ *  @brief Model of a camera on a kinematic chain.
+ */
+class Camera2dModel : public Chain3dModel
+{
+public:
+  /**
+   *  @brief Create a new camera 2d model.
+   *  @param name The name for this sensor, will be be used to select observations
+   *  @param param_name The name to use when finding camera parameters, often the same as name
+   *  @param model The KDL model of the robot's kinematics.
+   *  @param root The name of the root link, must be consistent across all
+   *         models used for error modeling. Usually 'base_link'.
+   *  @param tip The tip of the chain.
+   */
+  Camera2dModel(const std::string& name, const std::string& param_name, KDL::Tree model, std::string root, std::string tip);
+  virtual ~Camera2dModel() {}
+
+  /**
+   *  @brief Compute the updated positions of the observed points
+   */
+  virtual std::vector<geometry_msgs::msg::PointStamped> project(
+    const robot_calibration_msgs::msg::CalibrationData& data,
+    const OptimizationOffsets& offsets);
+
+  /**
+   *  @brief Compute the pixel coordinates of 3d coordinates, using camera model
+   */
+  virtual std::vector<geometry_msgs::msg::PointStamped> project_pixel_error(
+    const robot_calibration_msgs::msg::CalibrationData& data,
+    const std::vector<geometry_msgs::msg::PointStamped>& points,
+    const OptimizationOffsets& offsets);
+
+  /**
+   * @brief Get the type for this model.
+   */
+  virtual std::string getType() const;
+
+protected:
+  std::string param_name_;
+};
+
+}  // namespace robot_calibration
+
+#endif  // ROBOT_CALIBRATION_MODELS_CAMERA2D_H

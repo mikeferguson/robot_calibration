@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2022 Michael Ferguson
+ * Copyright (C) 2018-2023 Michael Ferguson
  * Copyright (C) 2014-2015 Fetch Robotics Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -107,6 +107,16 @@ bool OptimizationParams::LoadFromROS(rclcpp::Node::SharedPtr node,
       params->type = type;
       params->model_a = node->declare_parameter<std::string>(prefix + ".model_a", std::string());
       params->model_b = node->declare_parameter<std::string>(prefix + ".model_b", std::string());
+      error_blocks.push_back(params);
+    }
+    else if (type == "chain3d_to_camera2d")
+    {
+      std::shared_ptr<Chain3dToCamera2dParams> params = std::make_shared<Chain3dToCamera2dParams>();
+      params->name = name;
+      params->type = type;
+      params->model_2d = node->declare_parameter<std::string>(prefix + ".model_2d", std::string());
+      params->model_3d = node->declare_parameter<std::string>(prefix + ".model_3d", std::string());
+      params->scale = node->declare_parameter<double>(prefix + ".scale", 1.0);
       error_blocks.push_back(params);
     }
     else if (type == "chain3d_to_plane")

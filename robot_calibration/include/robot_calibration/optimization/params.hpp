@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2022 Michael Ferguson
+ * Copyright (C) 2018-2023 Michael Ferguson
  * Copyright (C) 2014 Fetch Robotics Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -73,6 +73,15 @@ struct OptimizationParams
     // Chain3d or Camera3d models to use
     std::string model_a;
     std::string model_b;
+  };
+
+  struct Chain3dToCamera2dParams : Params
+  {
+    // Chain3d and Camera2d models to use
+    std::string model_3d;
+    std::string model_2d;
+    // Scalar applied to residual
+    double scale;
   };
 
   struct Chain3dToPlaneParams : Params
