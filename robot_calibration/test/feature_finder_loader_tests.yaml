@@ -4,6 +4,11 @@ features:
     topic: /head_camera/depth_registered/points
     camera_sensor_name: camera
     chain_sensor_name: arm
+  checkerboard_finder_2d:
+    type: robot_calibration/CheckerboardFinder2d
+    topic: /head_camera/depth_registered/rgb
+    camera_sensor_name: camera
+    chain_sensor_name: arm
   ground_plane_finder:
     type: robot_calibration/PlaneFinder
     topic: /head_camera/depth_registered/points
