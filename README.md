@@ -142,7 +142,7 @@ insert the values in the calibration.yaml:
 ```yaml
 free_frames_initial_values:
 - checkerboard
-checkerboard_initial_valus:
+checkerboard_initial_values:
   x: 0.0
   y: 0.225
   z: 0
