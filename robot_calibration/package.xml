@@ -33,6 +33,8 @@
   <depend>std_msgs</depend>
   <depend>tf2_geometry_msgs</depend>
   <depend>tf2_ros</depend>
+  <depend>tinyxml2</depend>
+  <depend>tinyxml2_vendor</depend>
   <depend>visualization_msgs</depend>
   <depend>libceres-dev</depend>
   <depend>libgflags-dev</depend>

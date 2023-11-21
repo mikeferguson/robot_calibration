@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2022 Michael Ferguson
+ * Copyright (C) 2018-2023 Michael Ferguson
  * Copyright (C) 2013-2014 Unbounded Robotics Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,9 +18,10 @@
 // Author: Michael Ferguson
 
 #include <fstream>
+#include <iostream>
 #include <string>
 #include <map>
-#include <tinyxml.h>
+#include <tinyxml2.h>
 #include <boost/algorithm/string.hpp>
 #include <boost/lexical_cast.hpp>
 #include <robot_calibration/optimization/offsets.hpp>
@@ -221,10 +222,10 @@ std::string OptimizationOffsets::updateURDF(const std::string &urdf)
 {
   const double precision = 8;
 
-  TiXmlDocument xml_doc;
+  tinyxml2::XMLDocument xml_doc;
   xml_doc.Parse(urdf.c_str());
 
-  TiXmlElement *robot_xml = xml_doc.FirstChildElement("robot");
+  tinyxml2::XMLElement *robot_xml = xml_doc.FirstChildElement("robot");
   if (!robot_xml)
   {
     // TODO: error notification? We should never get here since URDF parse
@@ -233,7 +234,8 @@ std::string OptimizationOffsets::updateURDF(const std::string &urdf)
   }
 
   // Update each joint
-  for (TiXmlElement* joint_xml = robot_xml->FirstChildElement("joint"); joint_xml; joint_xml = joint_xml->NextSiblingElement("joint"))
+  for (tinyxml2::XMLElement* joint_xml = robot_xml->FirstChildElement("joint"); joint_xml;
+       joint_xml = joint_xml->NextSiblingElement("joint"))
   {
     const char * name = joint_xml->Attribute("name");
 
@@ -241,7 +243,7 @@ std::string OptimizationOffsets::updateURDF(const std::string &urdf)
     double offset = get(std::string(name));
     if (offset != 0.0)
     {
-      TiXmlElement *calibration_xml = joint_xml->FirstChildElement("calibration");
+      tinyxml2::XMLElement *calibration_xml = joint_xml->FirstChildElement("calibration");
       if (calibration_xml)
       {
         // Existing calibration, update rising attribute
@@ -251,7 +253,7 @@ std::string OptimizationOffsets::updateURDF(const std::string &urdf)
           try
           {
             offset += double(boost::lexical_cast<double>(rising_position_str));
-            calibration_xml->SetDoubleAttribute("rising", offset);
+            calibration_xml->SetAttribute("rising", offset);
           }
           catch (boost::bad_lexical_cast &e)
           {
@@ -266,10 +268,8 @@ std::string OptimizationOffsets::updateURDF(const std::string &urdf)
       else
       {
         // No calibration previously, add an element + attribute
-        calibration_xml = new TiXmlElement("calibration");
-        calibration_xml->SetDoubleAttribute("rising", offset);
-        TiXmlNode * calibration = calibration_xml->Clone();
-        joint_xml->InsertEndChild(*calibration);
+        calibration_xml = joint_xml->InsertNewChildElement("calibration");
+        calibration_xml->SetAttribute("rising", offset);
       }
     }
 
@@ -283,7 +283,7 @@ std::string OptimizationOffsets::updateURDF(const std::string &urdf)
       // String streams for output
       std::stringstream xyz_ss, rpy_ss;
 
-      TiXmlElement *origin_xml = joint_xml->FirstChildElement("origin");
+      tinyxml2::XMLElement *origin_xml = joint_xml->FirstChildElement("origin");
       if (origin_xml)
       {
         // Update existing origin
@@ -336,8 +336,8 @@ std::string OptimizationOffsets::updateURDF(const std::string &urdf)
         }
 
         // Update xml
-        origin_xml->SetAttribute("xyz", xyz_ss.str());
-        origin_xml->SetAttribute("rpy", rpy_ss.str());
+        origin_xml->SetAttribute("xyz", xyz_ss.str().c_str());
+        origin_xml->SetAttribute("rpy", rpy_ss.str().c_str());
       }
       else
       {
@@ -349,7 +349,7 @@ std::string OptimizationOffsets::updateURDF(const std::string &urdf)
         frame_offset.M.GetRPY(rpy[0], rpy[1], rpy[2]);
 
         // No existing origin, create an element with attributes
-        origin_xml = new TiXmlElement("origin");
+        origin_xml = joint_xml->InsertNewChildElement("origin");
 
         // Create xyz
         for (int i = 0; i < 3; ++i)
@@ -358,7 +358,7 @@ std::string OptimizationOffsets::updateURDF(const std::string &urdf)
             xyz_ss << " ";
           xyz_ss << std::fixed << std::setprecision(precision) << xyz[i];
         }
-        origin_xml->SetAttribute("xyz", xyz_ss.str());
+        origin_xml->SetAttribute("xyz", xyz_ss.str().c_str());
 
         // Create rpy
         for (int i = 0; i < 3; ++i)
@@ -367,18 +367,14 @@ std::string OptimizationOffsets::updateURDF(const std::string &urdf)
             rpy_ss << " ";
           rpy_ss << std::fixed << std::setprecision(precision) << rpy[i];
         }
-        origin_xml->SetAttribute("rpy", rpy_ss.str());
-
-        TiXmlNode * origin = origin_xml->Clone();
-        joint_xml->InsertEndChild(*origin);
+        origin_xml->SetAttribute("rpy", rpy_ss.str().c_str());
       }
     }
   }
 
   // Print to a string
-  TiXmlPrinter printer;
-  printer.SetIndent("  ");
-  xml_doc.Accept(&printer);
+  tinyxml2::XMLPrinter printer;
+  xml_doc.Print(&printer);
   std::string new_urdf = printer.CStr();
 
   return new_urdf;

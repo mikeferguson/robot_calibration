@@ -15,6 +15,9 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
+find_package(tinyxml2_vendor QUIET)
+find_package(TinyXML2)
+
 find_package(orocos_kdl REQUIRED)
 find_package(ament_cmake REQUIRED)
 find_package(camera_calibration_parsers REQUIRED)
@@ -46,6 +49,7 @@ include_directories(include
                     ${EIGEN3_INCLUDE_DIRS}
                     ${orocos_kdl_INCLUDE_DIRS})
 link_directories(${orocos_kdl_LIBRARY_DIRS}) # this is a hack, will eventually be unneeded once orocos-kdl is fixed
+link_libraries(tinyxml2::tinyxml2)
 
 set(dependencies
   camera_calibration_parsers
@@ -84,7 +88,6 @@ add_library(robot_calibration SHARED
 target_link_libraries(robot_calibration
   ${Boost_LIBRARIES}
   ${CERES_LIBRARIES}
-  ${tinyxml_LIBRARIES}
   ${orocos_kdl_LIBRARIES}
 )
 ament_target_dependencies(robot_calibration
@@ -101,7 +104,6 @@ add_library(robot_calibration_feature_finders SHARED
 target_link_libraries(robot_calibration_feature_finders
   robot_calibration
   ${Boost_LIBRARIES}
-  ${tinyxml_LIBRARIES}
   ${orocos_kdl_LIBRARIES}
   ${OpenCV_LIBS}
 )
@@ -114,7 +116,6 @@ target_link_libraries(calibrate
   robot_calibration
   ${Boost_LIBRARIES}
   ${CERES_LIBRARIES}
-  ${tinyxml_LIBRARIES}
   ${orocos_kdl_LIBRARIES}
   ${OpenCV_LIBS}
 )
