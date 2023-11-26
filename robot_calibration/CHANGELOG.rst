@@ -2,6 +2,28 @@
 Changelog for package robot_calibration
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* update to tinyxml2 (`#159 <https://github.com/mikeferguson/robot_calibration/issues/159>`_)
+  * proper depends, rather than hijacking urdfdom
+  * less control over formatting, had to update tests
+* fix checkerboard parameter name (`#154 <https://github.com/mikeferguson/robot_calibration/issues/154>`_)
+  recently fixed this parameter to actually work, but the
+  name is still different from ROS1.
+* implement chain3d_to_camera2d error block (`#153 <https://github.com/mikeferguson/robot_calibration/issues/153>`_)
+  Second part of `#41 <https://github.com/mikeferguson/robot_calibration/issues/41>`_, adds error block to use data from `#152 <https://github.com/mikeferguson/robot_calibration/issues/152>`_
+* Add finder for 2d checkerboard (`#152 <https://github.com/mikeferguson/robot_calibration/issues/152>`_)
+  This is the first step towards completing `#41 <https://github.com/mikeferguson/robot_calibration/issues/41>`_
+  * Refactors checkerboard finder to be templated on data type.
+  * Uses template specialization to make 2d and 3d variants.
+  * Updates test to load both variants.
+* properly namespace parameters (`#151 <https://github.com/mikeferguson/robot_calibration/issues/151>`_)
+  These issues were apparently an oversight during the ROS2 port.
+* better messages for error_block errors (`#150 <https://github.com/mikeferguson/robot_calibration/issues/150>`_)
+* add warning if checkerboard is symmetric (`#147 <https://github.com/mikeferguson/robot_calibration/issues/147>`_)
+* fixes for base_calibration based on testing (`#138 <https://github.com/mikeferguson/robot_calibration/issues/138>`_)
+* Contributors: Michael Ferguson
+
 0.8.0 (2022-06-25)
 ------------------
 * various fixes from on-robot testing (`#136 <https://github.com/mikeferguson/robot_calibration/issues/136>`_)

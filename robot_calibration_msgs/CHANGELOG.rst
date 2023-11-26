@@ -2,6 +2,9 @@
 Changelog for package robot_calibration_msgs
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 0.8.0 (2022-06-25)
 ------------------
 * port robot_calibration_msgs to ROS2, update CI (`#131 <https://github.com/mikeferguson/robot_calibration/issues/131>`_)
