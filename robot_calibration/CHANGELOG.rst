@@ -2,8 +2,8 @@
 Changelog for package robot_calibration
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.8.1 (2023-11-25)
+------------------
 * update to tinyxml2 (`#159 <https://github.com/mikeferguson/robot_calibration/issues/159>`_)
   * proper depends, rather than hijacking urdfdom
   * less control over formatting, had to update tests
