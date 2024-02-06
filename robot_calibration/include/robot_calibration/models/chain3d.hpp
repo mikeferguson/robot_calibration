@@ -85,10 +85,10 @@ namespace robot_calibration
  *    |    11##   ###   ###   ###  |
  *    |  ##11  ###   ###   ###     |
  *    |  ###   ###   ###   ###     |   gripper_link
- *    |  ###   ###   ###   ###     |      X-axis (increasing row)
+ *    |  ###   ###   ###   ###     |      X-axis
  *    |                            |     ^
  *    |           _____            |     |     gripper_link
- *    |          |     |           |     |  ----> Z-axis (increasing col)
+ *    |          |     |           |     |  ----> Y-axis
  *    |          |     |
  *    |          |  0<----- gripper_link frame origin
  *    |__________|     |___________
@@ -98,12 +98,6 @@ namespace robot_calibration
  *           |   Gripper   |
  *           |             |
  *  </PRE>
- *  For the ideal checkboard:
- *   - All the checkerboard points should fall on or near Y=0 plane.
- *   - The intersection points are spread appart by 25mm
- *   - The X-offset from the gripper frame to the first observation point is 100mm
- *   - The Z-offset from the gripper frame to the first observation point is -50mm
- *  The checkboard points are numberered so that the lowest Z value are the first points
  */
 class Chain3dModel
 {
