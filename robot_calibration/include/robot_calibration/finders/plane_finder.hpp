@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Michael Ferguson
+ * Copyright (C) 2022-2024 Michael Ferguson
  * Copyright (C) 2014-2017 Fetch Robotics Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,15 +15,15 @@
  * limitations under the License.
  */
 
-#ifndef ROBOT_CALIBRATION_CAPTURE_PLANE_FINDER_H
-#define ROBOT_CALIBRATION_CAPTURE_PLANE_FINDER_H
+#ifndef ROBOT_CALIBRATION_CAPTURE_PLANE_FINDER_HPP
+#define ROBOT_CALIBRATION_CAPTURE_PLANE_FINDER_HPP
 
 #include <rclcpp/rclcpp.hpp>
 #include <robot_calibration/finders/feature_finder.hpp>
 #include <robot_calibration/util/depth_camera_info.hpp>
 #include <robot_calibration/util/eigen_geometry.hpp>
 #include <robot_calibration_msgs/msg/calibration_data.hpp>
-#include <cv_bridge/cv_bridge.h>
+#include <cv_bridge/cv_bridge.hpp>
 
 namespace robot_calibration
 {
@@ -110,4 +110,4 @@ protected:
 
 }  // namespace robot_calibration
 
-#endif  // ROBOT_CALIBRATION_CAPTURE_PLANE_FINDER_H
+#endif  // ROBOT_CALIBRATION_CAPTURE_PLANE_FINDER_HPP

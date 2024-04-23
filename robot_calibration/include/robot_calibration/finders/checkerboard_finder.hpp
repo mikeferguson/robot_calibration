@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2023 Michael Ferguson
+ * Copyright (C) 2018-2024 Michael Ferguson
  * Copyright (C) 2015 Fetch Robotics Inc.
  * Copyright (C) 2013-2014 Unbounded Robotics Inc.
  *
@@ -27,7 +27,7 @@
 #include <robot_calibration_msgs/msg/calibration_data.hpp>
 
 #include <opencv2/calib3d/calib3d.hpp>
-#include <cv_bridge/cv_bridge.h>
+#include <cv_bridge/cv_bridge.hpp>
 
 namespace robot_calibration
 {
