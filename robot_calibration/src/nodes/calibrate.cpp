@@ -87,7 +87,11 @@ int main(int argc, char** argv)
   {
     // No name provided for a calibration bag file, must do capture
     robot_calibration::CaptureManager capture_manager;
-    capture_manager.init(node);
+    if (!capture_manager.init(node))
+    {
+      // Error will be printed in function
+      return -1;
+    }
 
     // Save URDF for calibration/export step
     description_msg.data = capture_manager.getUrdf();

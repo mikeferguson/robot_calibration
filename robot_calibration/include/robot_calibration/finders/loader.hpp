@@ -90,6 +90,17 @@ public:
       {
         features[name] = finder;
       }
+      else
+      {
+        RCLCPP_ERROR(logger, "Feature finder %s failed to initialize", name.c_str());
+      }
+    }
+
+    // Make sure at least one finder loaded correctly
+    if (features.empty())
+    {
+      RCLCPP_FATAL(logger, "No feature finders loaded");
+      return false;
     }
 
     return true;
