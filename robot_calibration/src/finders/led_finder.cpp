@@ -69,10 +69,13 @@ bool LedFinder::init(const std::string& name,
 
   // Setup subscriber
   topic_name = node->declare_parameter<std::string>(name + ".topic", name + "/points");
+  rclcpp::SubscriptionOptions options;
+  options.qos_overriding_options = rclcpp::QosOverridingOptions::with_default_policies();
   subscriber_ = node->create_subscription<sensor_msgs::msg::PointCloud2>(
     topic_name,
     rclcpp::QoS(1).best_effort(),
-    std::bind(&LedFinder::cameraCallback, this, std::placeholders::_1));
+    std::bind(&LedFinder::cameraCallback, this, std::placeholders::_1),
+    options);
 
   // Publish where LEDs were seen
   publisher_ = node->create_publisher<sensor_msgs::msg::PointCloud2>(name + "_points", 10);

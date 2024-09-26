@@ -51,10 +51,13 @@ bool ScanFinder::init(const std::string& name,
   // We subscribe to a LaserScan
   std::string topic_name;
   topic_name = node->declare_parameter<std::string>(name + ".topic", name + "/scan");
+  rclcpp::SubscriptionOptions options;
+  options.qos_overriding_options = rclcpp::QosOverridingOptions::with_default_policies();
   subscriber_ = node->create_subscription<sensor_msgs::msg::LaserScan>(
     topic_name,
     rclcpp::QoS(1).best_effort(),
-    std::bind(&ScanFinder::scanCallback, this, std::placeholders::_1));
+    std::bind(&ScanFinder::scanCallback, this, std::placeholders::_1),
+    options);
 
   // Name of the sensor model that will be used during optimization
   laser_sensor_name_ = node->declare_parameter<std::string>(name + ".sensor_name", "laser");

@@ -106,10 +106,13 @@ bool PlaneFinder::init(const std::string& name,
   // We subscribe to a PointCloud2
   std::string topic_name =
     node->declare_parameter<std::string>(name + ".topic", name + "/points");
+  rclcpp::SubscriptionOptions options;
+  options.qos_overriding_options = rclcpp::QosOverridingOptions::with_default_policies();
   subscriber_ = node->create_subscription<sensor_msgs::msg::PointCloud2>(
     topic_name,
     rclcpp::QoS(1).best_effort(),
-    std::bind(&PlaneFinder::cameraCallback, this, std::placeholders::_1));
+    std::bind(&PlaneFinder::cameraCallback, this, std::placeholders::_1),
+    options);
 
   // Name of the sensor model that will be used during optimization
   plane_sensor_name_ = node->declare_parameter<std::string>(name + ".camera_sensor_name", "camera");
