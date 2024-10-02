@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Michael Ferguson
+ * Copyright (C) 2022-2024 Michael Ferguson
  * Copyright (C) 2015 Fetch Robotics Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,7 +15,11 @@
  * limitations under the License.
  */
 
+#if __has_include(<urdf/model.hpp>)
+#include <urdf/model.hpp>
+#else
 #include <urdf/model.h>
+#endif
 #include <robot_calibration/cost_functions/chain3d_to_mesh_error.hpp>
 #include <robot_calibration/optimization/ceres_optimizer.hpp>
 #include <robot_calibration/util/calibration_data.hpp>
