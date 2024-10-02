@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2022 Michael Ferguson
+ * Copyright (C) 2018-2024 Michael Ferguson
  * Copyright (C) 2014 Fetch Robotics Inc.
  * Copyright (C) 2013-2014 Unbounded Robotics Inc.
  *
@@ -24,7 +24,11 @@
 #include <memory>
 #include <ceres/ceres.h>
 
+#if __has_include(<urdf/model.hpp>)
+#include <urdf/model.hpp>
+#else
 #include <urdf/model.h>
+#endif
 #include <kdl_parser/kdl_parser.hpp>
 #include <rclcpp/logger.hpp>
 #include <robot_calibration_msgs/msg/calibration_data.hpp>

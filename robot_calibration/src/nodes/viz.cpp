@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2022 Michael Ferguson
+ * Copyright (C) 2018-2024 Michael Ferguson
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,11 @@
 #include <sensor_msgs/msg/point_cloud2.hpp>
 #include <visualization_msgs/msg/marker_array.hpp>
 
+#if __has_include(<urdf/model.hpp>)
+#include <urdf/model.hpp>
+#else
 #include <urdf/model.h>
+#endif
 #include <kdl_parser/kdl_parser.hpp>
 
 #include <robot_calibration/optimization/offsets.hpp>

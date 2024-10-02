@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Michael Ferguson
+ * Copyright (C) 2022-2024 Michael Ferguson
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,11 @@
 #include <vector>
 
 #include <geometric_shapes/shape_operations.h>
+#if __has_include(<urdf/model.hpp>)
+#include <urdf/model.hpp>
+#else
 #include <urdf/model.h>
+#endif
 
 namespace robot_calibration
 {
