@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2023 Michael Ferguson
+ * Copyright (C) 2018-2024 Michael Ferguson
  * Copyright (C) 2013-2014 Unbounded Robotics Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -290,13 +290,18 @@ std::string OptimizationOffsets::updateURDF(const std::string &urdf)
         const char * xyz_str = origin_xml->Attribute("xyz");
         const char * rpy_str = origin_xml->Attribute("rpy");
 
+        // Helper to remove empty strings in case there are extra spaces in xyz/rpy fields
+        auto is_empty = [](const std::string &s) { return s.empty(); };
+
         // Split out xyz of origin, break into 3 strings
         std::vector<std::string> xyz_pieces;
-        boost::split(xyz_pieces, xyz_str, boost::is_any_of(" "));
+        if (xyz_str) boost::split(xyz_pieces, xyz_str, boost::is_any_of(" "));
+        xyz_pieces.erase(std::remove_if(std::begin(xyz_pieces), std::end(xyz_pieces), is_empty), std::end(xyz_pieces));
 
         // Split out rpy of origin, break into 3 strings
         std::vector<std::string> rpy_pieces;
-        boost::split(rpy_pieces, rpy_str, boost::is_any_of(" "));
+        if (rpy_str) boost::split(rpy_pieces, rpy_str, boost::is_any_of(" "));
+        rpy_pieces.erase(std::remove_if(std::begin(rpy_pieces), std::end(rpy_pieces), is_empty), std::end(rpy_pieces));
 
         KDL::Frame origin(KDL::Rotation::Identity(), KDL::Vector::Zero());
         if (xyz_pieces.size() == 3)
