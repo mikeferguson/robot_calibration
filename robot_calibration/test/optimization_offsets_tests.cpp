@@ -61,6 +61,32 @@ std::string robot_description_updated =
 "    <link name=\"link_3\"/>\n"
 "</robot>";
 
+// Test with 1) missing RPY, 2) extra space in xyz
+std::string garbled_robot_description =
+"<?xml version='1.0' ?>"
+"<robot name='test'>"
+"  <link name='link_0'/>"
+"  <joint name='first_joint' type='fixed'>"
+"    <origin xyz='1  1 1'/>"
+"    <parent link='link_0'/>"
+"    <child link='link_1'/>"
+"  </joint>"
+"  <link name='link_1'/>"
+"</robot>";
+
+std::string garbled_robot_description_updated =
+"<?xml version='1.0' ?>\n"
+"<robot name=\"test\">\n"
+"    <link name=\"link_0\"/>\n"
+"    <joint name=\"first_joint\" type=\"fixed\">\n"
+"        <origin xyz=\"1.00000000 1.00000000 1.00000000\" rpy=\"0.00000000 1.57000000 0.00000000\"/>\n"
+"        <parent link=\"link_0\"/>\n"
+"        <child link=\"link_1\"/>\n"
+"    </joint>\n"
+"    <link name=\"link_1\"/>\n"
+"</robot>";
+
+
 TEST(OptimizationOffsetTests, test_urdf_update)
 {
   robot_calibration::OptimizationOffsets offsets;
@@ -77,13 +103,42 @@ TEST(OptimizationOffsetTests, test_urdf_update)
   offsets.update(params);
 
   std::string s = offsets.updateURDF(robot_description);
-  
+
   // google test fails if we give it all of robot_description_updated, so break this up
   std::vector<std::string> s_pieces;
   std::vector<std::string> robot_pieces;
 
   boost::split(s_pieces, s, boost::is_any_of("\n"));
   boost::split(robot_pieces, robot_description_updated, boost::is_any_of("\n"));
+
+  for (size_t i = 0; i < robot_pieces.size(); ++i)
+  {
+    ASSERT_STREQ(robot_pieces[i].c_str(), s_pieces[i].c_str());
+  }
+}
+
+TEST(OptimizationOffsetTests, test_with_garbled_xyzrpy)
+{
+  robot_calibration::OptimizationOffsets offsets;
+
+  offsets.addFrame("first_joint", true, true, true, true, true, true);
+
+  double params[6] = {0, 0, 0, 0, 0, 0};
+
+  // set angles
+  KDL::Rotation r = KDL::Rotation::RPY(1.57, 0, 0);
+  robot_calibration::axis_magnitude_from_rotation(r, params[4], params[5], params[6]);
+
+  offsets.update(params);
+
+  std::string s = offsets.updateURDF(garbled_robot_description);
+
+  // google test fails if we give it all of robot_description_updated, so break this up
+  std::vector<std::string> s_pieces;
+  std::vector<std::string> robot_pieces;
+
+  boost::split(s_pieces, s, boost::is_any_of("\n"));
+  boost::split(robot_pieces, garbled_robot_description_updated, boost::is_any_of("\n"));
 
   for (size_t i = 0; i < robot_pieces.size(); ++i)
   {
