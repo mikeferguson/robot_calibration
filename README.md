@@ -28,9 +28,10 @@ use a camera and an arm to "detect" the pose of corners on a checkerboard.
 In the case of the camera sensor, the collection of points is simply the
 detected positions of each corner of the checkerboard, relative to the pose
 of the camera reference frame. For the arm, it is assumed that the checkerboard
-is fixed relative to a virtual frame which is fixed relative to the end
-effector of the arm. Within the virtual frame, we know the position of each
-point of the checkerboard corners.
+is fixed relative to a virtual ``checkerboard`` frame which is fixed relative
+to the end effector of the arm. Within the virtual frame, we know the ideal
+position of each point of the checkerboard corners since the checkerboard
+is of known size.
 
 The second step of calibration involves optimization of the robot parameters
 to minimize the errors. Errors are defined as the difference in the pose
@@ -44,6 +45,14 @@ kinematic chain, for instance, a pan/tilt head).
 
 Configuration is typically handled through two sets of YAML files: usually
 called ``capture.yaml`` and ``calibrate.yaml``.
+
+### Example Configuration
+
+All of the parameters that can be defined in the capture and calibrate steps
+are documented below, but sometimes it is just nice to have a full example.
+The UBR-1 robot uses this package to calibrate in ROS2. Start with
+the ``calibrate_launch.py`` in
+[ubr1_calibration](https://github.com/mikeferguson/ubr_reloaded/tree/ros2/ubr1_calibration).
 
 ### Capture Configuration
 
@@ -176,76 +185,136 @@ Additionally, any finder that subscribes to a depth camera has the following par
 The ``calibrate.yaml`` configuration file specifies the configuration for
 optimization. This specifies several items:
 
- * base_link - Frame used for internal calculations. Typically, the root of the
+ * ``base_link`` - Frame used for internal calculations. Typically, the root of the
    URDF is used. Often `base_link`.
- * calibration_steps - In ROS2, multistep calibration is fully supported. The
-   parameter "calibration_steps" should be a list of step names. A majority of
+ * ``calibration_steps`` - In ROS 2, multistep calibration is fully supported. The
+   parameter ``calibration_steps`` should be a list of step names. A majority of
    calibrations probably only use a single step, but the step name must still
    be in a YAML list format.
 
+```yaml
+robot_calibration:
+  ros__parameters:
+    base_link: torso_lift_link
+    calibration_steps:
+    - single_calibration_step
+    single_calibration_step:
+      models:
+      - first_model
+      first_model:
+        type: first_model_type
+```
+
 For each calibration step, there are several parameters:
 
- * models - Models define how to reproject points. The basic model is a
+ * ``models`` - List of model names. Each model will then be defined in a
+   parameter block defined by the name. Models define how to reproject
+   observation points into the fixed frame. The basic model is a
    kinematic chain. Additional models can reproject through a kinematic
-   chain and then a sensor, such as a 3d camera. For IK chains, `frame` parameter
-   is the tip of the IK chain. The "models" parameter is a list of model names.
- * free_params - Defines the names of single-value free parameters. These
+   chain and then a sensor, such as a 3d camera. Once loaded, models
+   will be used by the error blocks to compute the reprojection errors
+   between different sensor observations.
+ * ``free_params`` - Defines the names of single-value free parameters. These
    can be the names of a joint for which the joint offset should be calculated,
    camera parameters such as focal lengths or the driver offsets for
    Primesense devices. If attempting to calibrate the length of a robot
    link, use `free_frames` to define the axis that is being calibrated.
- * free_frames - Defines the names of multi-valued free parameters that
+ * ``free_frames`` - Defines the names of multi-valued free parameters that
    are 6-d transforms. Also defines which axis are free. X, Y, and Z can all
    be independently set to free parameters. Roll, pitch and yaw can also be
    set free, however it is important to note that because calibration
    internally uses an angle-axis representation, either all 3 should be set
    free, or only one should be free. You should never set two out of three
    to be free parameters.
- * free_frames_initial_values - Defines the initial values for free_frames.
-   X, Y, Z offsets are in meters. ROLL, PITCH, YAW are in radians. This is most
-   frequently used for setting the initial estimate of the checkerboard position,
-   see details below.
- * error_blocks - List of error block names, which are then defined under their
-   own namespaces.
+ * ``free_frames_initial_values`` - Defines the initial offset values for
+   ``free_frames``. X, Y, Z offsets are in meters. ROLL, PITCH, YAW are in
+   radians. This is most frequently used for setting the initial estimate
+   of the checkerboard position, see details below.
+ * ``error_blocks`` - List of error block names, which are then defined
+   under their own namespaces.
 
-For each model, the type must be specified. The type should be one of:
+For each model, the `type` must be specified. The type should be one of:
 
- * chain3d - Represents a kinematic chain from the `base_link` to the `frame`
+ * ``chain3d`` - Represents a kinematic chain from the `base_link` to the `frame`
    parameter (which in MoveIt/KDL terms is usually referred to as the `tip`).
- * camera3d - Represents a kinematic chain from the `base_link` to the `frame`
+ * ``camera3d`` - Represents a kinematic chain from the `base_link` to the `frame`
    parameter, and includes the pinhole camera model parameters (cx, cy, fx, fy)
    when doing projection of the points. This model only works if your sensor
    publishes CameraInfo. Further, the calibration obtained when this model is
    used and any of the pinhole parameters are free parameters is only valid if
    the physical sensor actually uses the CameraInfo for 3d projection (this
    is generally true for the Primesense/Astra sensors).
+ * ``camera2d`` - Similar to `camera3d`, but for a 2d finder. Currently only
+   works with the output of the ``CheckerboardFinder2d``.
 
-For each error block, the type must be specified. The type should be one of:
+For each error block, the ``type`` must be specified. In addition to the
+``type`` parameter, each block will have additional parameters:
 
- * chain3d_to_chain3d - This error block can compute the difference in
-   reprojection between two 3D "sensors" which tell us the position of
+ * ``chain3d_to_chain3d`` - The most commonly used error block type.
+   This error block can compute the difference in reprojection
+   between two 3D "sensors" which tell us the position of
    certain features of interest. Sensors might be a 3D camera or an arm
-   which is holding a checkerboard. Was previously called "camera3d_to_arm".
- * chain3d_to_mesh - This error block can compute the closeness between
+   which is holding a checkerboard. Was previously called "camera3d_to_arm":
+    * `model_a` - First `chain3d` or `camera3d` model to use in computing
+      reprojection error.
+    * `model_b` - Second `chain3d` or `camera3d` model to use in computing
+      reprojection error.
+ * ``chain3d_to_camera2d``- Currently only used for the `CheckerboardFinder2d`:
+    * `model_2d` - `camera2d` model to use in computing reprojection error.
+    * `model_3d` - `chain3d` or `camera3d` model to use in computing
+      reprojection error.
+    * `scale` - Scalar to multiply summed error by - note that error computed
+      in this block is in *pixel* space, rather than *metric* space like most
+      other error blocks.
+ * ``chain3d_to_mesh`` - This error block type can compute the closeness between
    projected 3d points and a mesh. The mesh must be part of the robot body.
-   This is commonly used to align the robot sensor with the base of the robot.
- * chain3d_to_plane - This error block can compute the difference between
-   projected 3d points and a desired plane. The most common use case is making
-   sure that the ground plane a robot sees is really on the ground.
- * plane_to_plane - This error block is able to compute the difference
+   This is commonly used to align the robot sensor with the base of the robot,
+   using points that were found by the `RobotFinder` plugin:
+    * `model` - `chain3d` or `camera3d` model to use in computing reprojection
+      error.
+    * `link_name` -Name of the link in the URDF for which mesh to use.
+ * ``chain3d_to_plane`` - This error block can be used to compare projected
+   points to a plane. Each observation point is reprojected, then the sum
+   of distance to plane for each point is computed. The most common use case
+   is making sure that the ground plane a robot sees is really on the ground:
+    * `model` - The `camera3d` model for reprojection.
+    * `a`, `b`, `c`, `d` - Parameters for the desired plane equation, in the
+      form `ax + by + cz + d = 0`.
+    * `scale` - Since the error computed is a distance from the plane over
+      many points, scaling the error relative to other error blocks is often
+      required.
+ * ``plane_to_plane`` - This error block is able to compute the difference
    between two planes. For instance, 3d cameras may not have the resolution
    to actually see a checkerboard, but we can align important axis by
-   making sure that a wall seen by both cameras is aligned.
- * outrageous - Sometimes, the calibration is ill-defined in certain dimensions,
+   making sure that a wall seen by both cameras is aligned. For each observation,
+   the points are assumed to form a plane:
+    * `model_a` - First `chain3d` or `camera3d` model to use in computing
+      reprojection error.
+    * `model_b` - Second `chain3d` or `camera3d` model to use in computing
+      reprojection error.
+    * `normal_scale` - The normal error is computed as the difference between
+      the two plane normals and then multiplied by this scalar.
+    * `offset_scale` - The offset error is computed as the distance from
+      the centroid of the first plane to the second plane and then
+      multiplied by this scalar.
+ * ``outrageous`` - Sometimes, the calibration is ill-defined in certain dimensions,
    and we would like to avoid one of the free parameters from becoming
    absurd. An outrageous error block can be used to limit a particular
-   parameter.
+   parameter:
+    * `param` - Free parameter to monitor.
+    * `joint_scale` - If `param` is a joint name, multiply the free param value
+      by this scalar.
+    * `position_scale` - If `param` is a free frame, multiply the metric distance
+      in X, Y, Z by this scalar.
+    * `rotation_scale` - If `param` is a free frame, multiply the angular distance
+      of the free parameter value by this scalar.
 
 #### Checkerboard Configuration
 
 When using a checkerboard, we need to estimate the transformation from the
-the kinematic chain to the checkerboard. Calibration will be faster and more
-accurate if the initial estimate of this transformation is close to the actual
+the tip of the kinematic chain to the virtual ``checkerboard`` frame.
+Calibration will be faster and more accurate if the initial estimate of
+this transformation is close to the actual
 value, especially with regards to rotation.
 
 The simplest way to check your initial estimate is to run the calibration with
@@ -273,68 +342,6 @@ checkerboard_initial_values:
 
 [This tool](https://markhedleyjones.com/projects/calibration-checkerboard-collection)
 can be helfpul for creating checkerboards.
-
-#### Migrating from ROS1
-
-There are a number of changes in migrating from ROS1 to ROS2. Some of these are
-due to differences in the ROS2 system, others are to finally cleanup mistakes
-made in earlier version of robot_calibration.
-
-The `chains`, `models`, `free_frames` and `features` parameters used to be lists of YAML
-dictionaries. That format is not easily supported in ROS2 and so they are now
-lists of string names and the actual dictionaries of information appear under
-the associated name. For instance, in ROS1, you might have:
-
-```yaml
-models:
- - name: arm
-   type: chain
-   frame: wrist_roll_link
- - name: camera
-   type: camera3d
-   frame: head_camera_rgb_optical_frame
-```
-
-In ROS2, this becomes:
-```yaml
-models:
-- arm
-- camera
-arm:
-  type: chain3d
-  frame: wrist_roll_link
-camera:
-  type: camera3d
-  frame: head_camera_rgb_optical_frame
-```
-
-NOTE: the "chain" type has been renamed "chain3d" in ROS2 for consistency (and to allow
-a future chain2d).
-
-Multi-step calibration is now fully supported. A new parameter, `calibration_steps` must
-be declared as a list of step names. The `models` and free parameters are then specified
-for each step. As an example:
-
-```yaml
-calibration_steps:
-- first_calibration_step
-- second_calibration_step
-first_calibration_step:
-  models: ...
-  free_params: ...
-second_calibration_step:
-  models: ...
-  free_params: ...
-```
-
-The capture poses can now be specified as YAML. The `convert_ros1_bag_to_yaml` script
-can be run in ROS1 to export your ROS1 bagfile as a YAML file that can be loaded in ROS2.
-
-#### Example Configuration
-
-The UBR-1 robot uses this package to calibrate in ROS2. Start with the ``calibrate_launch.py``
-in [ubr1_calibration](https://github.com/mikeferguson/ubr_reloaded/tree/ros2/ubr1_calibration)
-package.
 
 ### Exported Results
 
@@ -419,3 +426,58 @@ Node topics:
 The output of the calibration is three parameters, _mag_bias_x_, _mag_bias_y_,
 and _mag_bias_z_, which can be used with the <code>imu_filter_madgwick</code> package.
 
+### Migrating from ROS1
+
+There are a number of changes in migrating from ROS1 to ROS2. Some of these are
+due to differences in the ROS2 system, others are to finally cleanup mistakes
+made in earlier version of robot_calibration.
+
+The `chains`, `models`, `free_frames` and `features` parameters used to be lists of YAML
+dictionaries. That format is not easily supported in ROS2 and so they are now
+lists of string names and the actual dictionaries of information appear under
+the associated name. For instance, in ROS1, you might have:
+
+```yaml
+models:
+ - name: arm
+   type: chain
+   frame: wrist_roll_link
+ - name: camera
+   type: camera3d
+   frame: head_camera_rgb_optical_frame
+```
+
+In ROS2, this becomes:
+```yaml
+models:
+- arm
+- camera
+arm:
+  type: chain3d
+  frame: wrist_roll_link
+camera:
+  type: camera3d
+  frame: head_camera_rgb_optical_frame
+```
+
+NOTE: the "chain" type has been renamed "chain3d" in ROS2 for consistency (and to allow
+a future chain2d).
+
+Multi-step calibration is now fully supported. A new parameter, `calibration_steps` must
+be declared as a list of step names. The `models` and free parameters are then specified
+for each step. As an example:
+
+```yaml
+calibration_steps:
+- first_calibration_step
+- second_calibration_step
+first_calibration_step:
+  models: ...
+  free_params: ...
+second_calibration_step:
+  models: ...
+  free_params: ...
+```
+
+The capture poses can now be specified as YAML. The `convert_ros1_bag_to_yaml` script
+can be run in ROS1 to export your ROS1 bagfile as a YAML file that can be loaded in ROS2.
