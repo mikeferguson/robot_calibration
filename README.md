@@ -42,21 +42,139 @@ the reprojection of the checkerboard corners through the arm is as closely
 aligned with the reprojection through the camera (and any associated
 kinematic chain, for instance, a pan/tilt head).
 
-### Configuration
+Configuration is typically handled through two sets of YAML files: usually
+called ``capture.yaml`` and ``calibrate.yaml``.
 
-Configuration is typically handled through two sets of YAML files. The first
-YAML file specifies the details needed for data capture:
+### Capture Configuration
 
- * chains - The kinematic chains of the robot which should be controlled,
-   and how to control them so that we can move the robot to each desired pose
-   for sampling.
- * features - The configuration for the various "feature finders" that
-   will be making our observations at each sample pose. Current finders include
-   an LED detector, checkerboard finder, and plane finder. Feature finders
-   are plugin-based, so you can create your own.
+The ``capture.yaml`` file specifies the details needed for data capture:
 
-The second configuration file specifies the configuration for optimization.
-This specifies several items:
+ * ``chains`` - A parameter listing the names of the kinematic chains of the
+   robot which should be controlled.
+ * ``features`` - A parameter listing the names of the various "feature finders"
+   that will be making our observations at each sample pose.
+
+Each of these chains and features is then defined by a parameter block of the
+same name, for example:
+
+```yaml
+robot_calibration:
+  ros_parameters:
+    # List of chains
+    chains:
+    - arm
+    # List of features
+    features:
+    - checkerboard_finder
+    # Parameter block to define the arm chain
+    arm:
+      topic: /arm_controller/follow_joint_trajectory
+      joints:
+      - first_joint
+      - second_joint
+    # Parameter block to define the feature finder:
+    checkerboard_finder:
+      type: robot_calibration::CheckerboardFinder
+      topic: /head_camera/depth_registered/points
+      camera_sensor_name: camera
+      chain_sensor_name: arm
+```
+
+#### Chain Parameters
+
+For each chain, the following parameters can be defined:
+
+ * ``topic`` - The namespace of the ``control_msgs::FollowJointTrajectory``
+   server used to control this chain.
+ * ``planning_group`` - Optional parameter, when set to a non-empty string
+   ``robot_calibration`` will call MoveIt to plan a collision free path from
+   the current robot pose to the next capture pose. When this parameter is
+   not set, the trajectory simply interpolates from the current pose to the
+   next capture pose without collision awareness - so you need to be careful
+   when defining your series of capture poses.
+ * ``joints`` - A list of joints that this group comprises.
+
+#### Finder Parameters
+
+At a minimum, the following parameters must be set for all finders:
+
+ * ``type`` - Name of the plugin to load.
+ * ``camera_sensor_name`` - Every finder outputs observations from some
+   sensor - this name must match the name used later in ``calibrate.yaml``.
+ * ``chain_sensor_name`` - Every finder outputs observations from some
+   chain - this name must match the name used later in ``calibrate.yaml``.
+ * ``debug`` - Most finders have a debug parameter which will insert the
+   raw image or point cloud into the observation. This makes the capture
+   bagfile larger but aids in debugging.
+
+The following types are currently included with ``robot_calibration``
+although you can create your own plugins. Each finder has it's own
+additional parameters:
+
+ * ``robot_calibration::CheckerboardFinder`` - Detects checkerboards in
+   a point cloud.
+    * ``topic`` - Name of topic of type ``sensor_msgs::PointCloud2``.
+    * ``points_x`` - Number of corners in the X direction of the checkerboard.
+    * ``points_y`` - Number of corners in the Y direction of the checkerboard.
+    * ``size`` - Size of checkerboard squares, in meters.
+ * ``robot_calibration::CheckerboardFinder2d`` - Detects checkerboards in
+   an image:
+    * ``topic`` - Name of topic of type ``sensor_msgs::Image``.
+    * ``points_x`` - Number of corners in the X direction of the checkerboard.
+    * ``points_y`` - Number of corners in the Y direction of the checkerboard.
+    * ``size`` - Size of checkerboard squares, in meters.
+ * ``robot_calibration::LedFinder`` - controls and detects a series of LEDs,
+   which can be a built-in alternative to having a robot hold the checkerboard.
+    * ``gripper_led_action`` - Namespace of the gripper LED action server.
+    * ``topic`` - Name of topic of type ``sensor_msgs::PointCloud2``.
+    * ``max_error`` - Maximum distance detected LED can be from expected pose,
+      in meters.
+    * ``max_inconsistency`` - Maximum relative difference between two LEDs in
+      the same capture pose, in meters.
+    * ``max_iterations`` - Maximum number of times to toggle the LEDs for a given
+      capture pose.
+    * ``gripper_led_frame`` - The robot link which the ``leds`` are defined in.
+    * ``leds`` - Definition of the LED poses. For each LED, you need to specify
+      a ``code`` which is sent to the action server to turn that LED on, as well
+      as ``x``, ``y``, and ``z`` offsets relative to ``gripper_led_frame`` for
+      the expected pose of that LED. These values will be used to generate
+      the chain observation.
+ * ``robot_calibration::PlaneFinder`` - Detects planes in a point cloud. This
+   will filter out points outside the limits, and then iteratively find the
+   largest plane until a desired one is found. This is commonly used to align
+   a sensor with the ground.
+    * ``topic`` - Name of topic of type ``sensor_msgs::PointCloud2``.
+    * ``points_max`` - Maximum number of points to use in the observation
+    * The cloud can be pre-filtered using the ``min_x``, ``max_x``, ``min_y``,
+      ``max_y``, ``min_z``, and ``max_z`` parameters.
+    * The desired orientation of the plane can be used by setting ``normal_a``,
+      ``normal_b``, ``normal_c`` parameters - if all are 0, the biggest plane
+      will be selected regardless of orientation. This is particularly useful
+      if the robot might be looking partially at the wall as well as the desired
+      floor surface.
+    * ``normal_angle`` - If a desired orientation vector is set, the candidate
+      plane normal must be within this angle of the desired normal, in radians.
+ * ``robot_calibration::ScanFinder`` - Detects points in a laser scan, and then
+   repeats them vertically. This can be used to align a laser scanner against
+   a plane detected by a 3d camera.
+    * ``topic`` - Name of topic of type ``sensor_msgs::LaserScan``.
+    * ``transform_frame`` -- Frame to transform the laser scan into, usually
+      ``base_link``.
+    * ``min_x``, ``max_x``, ``min_y``, and ``max_y`` are used to limit the
+      laser scan points that are used. They are defined in the ``transform_frame``.
+    * ``z_repeats`` - How many times to copy the points vertically.
+    * ``z_offset`` - Distance between repeated points.
+
+Additionally, any finder that subscribes to a depth camera has the following parameters:
+
+ * ``camera_info_topic``: The topic name for the camera info.
+ * ``camera_driver``: Namespace of the camera driver, only used for Primesense-like
+   devices which have ``z_offset_mm`` and ``z_scaling`` parameters.
+
+### Calibration Configuration
+
+The ``calibrate.yaml`` configuration file specifies the configuration for
+optimization. This specifies several items:
 
  * base_link - Frame used for internal calculations. Typically, the root of the
    URDF is used. Often `base_link`.
