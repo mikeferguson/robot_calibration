@@ -28,9 +28,10 @@ use a camera and an arm to "detect" the pose of corners on a checkerboard.
 In the case of the camera sensor, the collection of points is simply the
 detected positions of each corner of the checkerboard, relative to the pose
 of the camera reference frame. For the arm, it is assumed that the checkerboard
-is fixed relative to a virtual frame which is fixed relative to the end
-effector of the arm. Within the virtual frame, we know the position of each
-point of the checkerboard corners.
+is fixed relative to a virtual ``checkerboard`` frame which is fixed relative
+to the end effector of the arm. Within the virtual frame, we know the ideal
+position of each point of the checkerboard corners since the checkerboard
+is of known size.
 
 The second step of calibration involves optimization of the robot parameters
 to minimize the errors. Errors are defined as the difference in the pose
@@ -184,43 +185,56 @@ Additionally, any finder that subscribes to a depth camera has the following par
 The ``calibrate.yaml`` configuration file specifies the configuration for
 optimization. This specifies several items:
 
- * base_link - Frame used for internal calculations. Typically, the root of the
+ * ``base_link`` - Frame used for internal calculations. Typically, the root of the
    URDF is used. Often `base_link`.
- * calibration_steps - In ROS2, multistep calibration is fully supported. The
-   parameter "calibration_steps" should be a list of step names. A majority of
+ * ``calibration_steps`` - In ROS 2, multistep calibration is fully supported. The
+   parameter ``calibration_steps`` should be a list of step names. A majority of
    calibrations probably only use a single step, but the step name must still
    be in a YAML list format.
 
+```yaml
+robot_calibration:
+  ros__parameters:
+    base_link: torso_lift_link
+    calibration_steps:
+    - single_calibration_step
+    single_calibration_step:
+      models:
+      - first_model
+      first_model:
+        type: first_model_type
+```
+
 For each calibration step, there are several parameters:
 
- * models - Models define how to reproject points. The basic model is a
+ * ``models`` - Models define how to reproject points. The basic model is a
    kinematic chain. Additional models can reproject through a kinematic
-   chain and then a sensor, such as a 3d camera. For IK chains, `frame` parameter
+   chain and then a sensor, such as a 3d camera. For IK chains, ``frame`` parameter
    is the tip of the IK chain. The "models" parameter is a list of model names.
- * free_params - Defines the names of single-value free parameters. These
+ * ``free_params`` - Defines the names of single-value free parameters. These
    can be the names of a joint for which the joint offset should be calculated,
    camera parameters such as focal lengths or the driver offsets for
    Primesense devices. If attempting to calibrate the length of a robot
    link, use `free_frames` to define the axis that is being calibrated.
- * free_frames - Defines the names of multi-valued free parameters that
+ * ``free_frames`` - Defines the names of multi-valued free parameters that
    are 6-d transforms. Also defines which axis are free. X, Y, and Z can all
    be independently set to free parameters. Roll, pitch and yaw can also be
    set free, however it is important to note that because calibration
    internally uses an angle-axis representation, either all 3 should be set
    free, or only one should be free. You should never set two out of three
    to be free parameters.
- * free_frames_initial_values - Defines the initial values for free_frames.
-   X, Y, Z offsets are in meters. ROLL, PITCH, YAW are in radians. This is most
-   frequently used for setting the initial estimate of the checkerboard position,
-   see details below.
- * error_blocks - List of error block names, which are then defined under their
+ * ``free_frames_initial_values`` - Defines the initial offset values for
+   ``free_frames``. X, Y, Z offsets are in meters. ROLL, PITCH, YAW are in
+   radians. This is most frequently used for setting the initial estimate
+   of the checkerboard position, see details below.
+ * ``error_blocks`` - List of error block names, which are then defined under their
    own namespaces.
 
 For each model, the type must be specified. The type should be one of:
 
- * chain3d - Represents a kinematic chain from the `base_link` to the `frame`
+ * ``chain3d`` - Represents a kinematic chain from the `base_link` to the `frame`
    parameter (which in MoveIt/KDL terms is usually referred to as the `tip`).
- * camera3d - Represents a kinematic chain from the `base_link` to the `frame`
+ * ``camera3d`` - Represents a kinematic chain from the `base_link` to the `frame`
    parameter, and includes the pinhole camera model parameters (cx, cy, fx, fy)
    when doing projection of the points. This model only works if your sensor
    publishes CameraInfo. Further, the calibration obtained when this model is
@@ -252,8 +266,9 @@ For each error block, the type must be specified. The type should be one of:
 #### Checkerboard Configuration
 
 When using a checkerboard, we need to estimate the transformation from the
-the kinematic chain to the checkerboard. Calibration will be faster and more
-accurate if the initial estimate of this transformation is close to the actual
+the tip of the kinematic chain to the virtual ``checkerboard`` frame.
+Calibration will be faster and more accurate if the initial estimate of
+this transformation is close to the actual
 value, especially with regards to rotation.
 
 The simplest way to check your initial estimate is to run the calibration with
