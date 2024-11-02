@@ -207,10 +207,13 @@ robot_calibration:
 
 For each calibration step, there are several parameters:
 
- * ``models`` - Models define how to reproject points. The basic model is a
+ * ``models`` - List of model names. Each model will then be defined in a
+   parameter block defined by the name. Models define how to reproject
+   observation points into the fixed frame. The basic model is a
    kinematic chain. Additional models can reproject through a kinematic
-   chain and then a sensor, such as a 3d camera. For IK chains, ``frame`` parameter
-   is the tip of the IK chain. The "models" parameter is a list of model names.
+   chain and then a sensor, such as a 3d camera. Once loaded, models
+   will be used by the error blocks to compute the reprojection errors
+   between different sensor observations.
  * ``free_params`` - Defines the names of single-value free parameters. These
    can be the names of a joint for which the joint offset should be calculated,
    camera parameters such as focal lengths or the driver offsets for
@@ -227,10 +230,10 @@ For each calibration step, there are several parameters:
    ``free_frames``. X, Y, Z offsets are in meters. ROLL, PITCH, YAW are in
    radians. This is most frequently used for setting the initial estimate
    of the checkerboard position, see details below.
- * ``error_blocks`` - List of error block names, which are then defined under their
-   own namespaces.
+ * ``error_blocks`` - List of error block names, which are then defined
+   under their own namespaces.
 
-For each model, the type must be specified. The type should be one of:
+For each model, the `type` must be specified. The type should be one of:
 
  * ``chain3d`` - Represents a kinematic chain from the `base_link` to the `frame`
    parameter (which in MoveIt/KDL terms is usually referred to as the `tip`).
@@ -241,27 +244,70 @@ For each model, the type must be specified. The type should be one of:
    used and any of the pinhole parameters are free parameters is only valid if
    the physical sensor actually uses the CameraInfo for 3d projection (this
    is generally true for the Primesense/Astra sensors).
+ * ``camera2d`` - Similar to `camera3d`, but for a 2d finder. Currently only
+   works with the output of the ``CheckerboardFinder2d``.
 
-For each error block, the type must be specified. The type should be one of:
+For each error block, the ``type`` must be specified. In addition to the
+``type`` parameter, each block will have additional parameters:
 
- * chain3d_to_chain3d - This error block can compute the difference in
-   reprojection between two 3D "sensors" which tell us the position of
+ * ``chain3d_to_chain3d`` - The most commonly used error block type.
+   This error block can compute the difference in reprojection
+   between two 3D "sensors" which tell us the position of
    certain features of interest. Sensors might be a 3D camera or an arm
-   which is holding a checkerboard. Was previously called "camera3d_to_arm".
- * chain3d_to_mesh - This error block can compute the closeness between
+   which is holding a checkerboard. Was previously called "camera3d_to_arm":
+    * `model_a` - First `chain3d` or `camera3d` model to use in computing
+      reprojection error.
+    * `model_b` - Second `chain3d` or `camera3d` model to use in computing
+      reprojection error.
+ * ``chain3d_to_camera2d``- Currently only used for the `CheckerboardFinder2d`:
+    * `model_2d` - `camera2d` model to use in computing reprojection error.
+    * `model_3d` - `chain3d` or `camera3d` model to use in computing
+      reprojection error.
+    * `scale` - Scalar to multiply summed error by - note that error computed
+      in this block is in *pixel* space, rather than *metric* space like most
+      other error blocks.
+ * ``chain3d_to_mesh`` - This error block type can compute the closeness between
    projected 3d points and a mesh. The mesh must be part of the robot body.
-   This is commonly used to align the robot sensor with the base of the robot.
- * chain3d_to_plane - This error block can compute the difference between
-   projected 3d points and a desired plane. The most common use case is making
-   sure that the ground plane a robot sees is really on the ground.
- * plane_to_plane - This error block is able to compute the difference
+   This is commonly used to align the robot sensor with the base of the robot,
+   using points that were found by the `RobotFinder` plugin:
+    * `model` - `chain3d` or `camera3d` model to use in computing reprojection
+      error.
+    * `link_name` -Name of the link in the URDF for which mesh to use.
+ * ``chain3d_to_plane`` - This error block can be used to compare projected
+   points to a plane. Each observation point is reprojected, then the sum
+   of distance to plane for each point is computed. The most common use case
+   is making sure that the ground plane a robot sees is really on the ground:
+    * `model` - The `camera3d` model for reprojection.
+    * `a`, `b`, `c`, `d` - Parameters for the desired plane equation, in the
+      form `ax + by + cz + d = 0`.
+    * `scale` - Since the error computed is a distance from the plane over
+      many points, scaling the error relative to other error blocks is often
+      required.
+ * ``plane_to_plane`` - This error block is able to compute the difference
    between two planes. For instance, 3d cameras may not have the resolution
    to actually see a checkerboard, but we can align important axis by
-   making sure that a wall seen by both cameras is aligned.
- * outrageous - Sometimes, the calibration is ill-defined in certain dimensions,
+   making sure that a wall seen by both cameras is aligned. For each observation,
+   the points are assumed to form a plane:
+    * `model_a` - First `chain3d` or `camera3d` model to use in computing
+      reprojection error.
+    * `model_b` - Second `chain3d` or `camera3d` model to use in computing
+      reprojection error.
+    * `normal_scale` - The normal error is computed as the difference between
+      the two plane normals and then multiplied by this scalar.
+    * `offset_scale` - The offset error is computed as the distance from
+      the centroid of the first plane to the second plane and then
+      multiplied by this scalar.
+ * ``outrageous`` - Sometimes, the calibration is ill-defined in certain dimensions,
    and we would like to avoid one of the free parameters from becoming
    absurd. An outrageous error block can be used to limit a particular
-   parameter.
+   parameter:
+    * `param` - Free parameter to monitor.
+    * `joint_scale` - If `param` is a joint name, multiply the free param value
+      by this scalar.
+    * `position_scale` - If `param` is a free frame, multiply the metric distance
+      in X, Y, Z by this scalar.
+    * `rotation_scale` - If `param` is a free frame, multiply the angular distance
+      of the free parameter value by this scalar.
 
 #### Checkerboard Configuration
 
