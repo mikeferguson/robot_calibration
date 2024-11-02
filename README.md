@@ -45,6 +45,14 @@ kinematic chain, for instance, a pan/tilt head).
 Configuration is typically handled through two sets of YAML files: usually
 called ``capture.yaml`` and ``calibrate.yaml``.
 
+### Example Configuration
+
+All of the parameters that can be defined in the capture and calibrate steps
+are documented below, but sometimes it is just nice to have a full example.
+The UBR-1 robot uses this package to calibrate in ROS2. Start with
+the ``calibrate_launch.py`` in
+[ubr1_calibration](https://github.com/mikeferguson/ubr_reloaded/tree/ros2/ubr1_calibration).
+
 ### Capture Configuration
 
 The ``capture.yaml`` file specifies the details needed for data capture:
@@ -274,68 +282,6 @@ checkerboard_initial_values:
 [This tool](https://markhedleyjones.com/projects/calibration-checkerboard-collection)
 can be helfpul for creating checkerboards.
 
-#### Migrating from ROS1
-
-There are a number of changes in migrating from ROS1 to ROS2. Some of these are
-due to differences in the ROS2 system, others are to finally cleanup mistakes
-made in earlier version of robot_calibration.
-
-The `chains`, `models`, `free_frames` and `features` parameters used to be lists of YAML
-dictionaries. That format is not easily supported in ROS2 and so they are now
-lists of string names and the actual dictionaries of information appear under
-the associated name. For instance, in ROS1, you might have:
-
-```yaml
-models:
- - name: arm
-   type: chain
-   frame: wrist_roll_link
- - name: camera
-   type: camera3d
-   frame: head_camera_rgb_optical_frame
-```
-
-In ROS2, this becomes:
-```yaml
-models:
-- arm
-- camera
-arm:
-  type: chain3d
-  frame: wrist_roll_link
-camera:
-  type: camera3d
-  frame: head_camera_rgb_optical_frame
-```
-
-NOTE: the "chain" type has been renamed "chain3d" in ROS2 for consistency (and to allow
-a future chain2d).
-
-Multi-step calibration is now fully supported. A new parameter, `calibration_steps` must
-be declared as a list of step names. The `models` and free parameters are then specified
-for each step. As an example:
-
-```yaml
-calibration_steps:
-- first_calibration_step
-- second_calibration_step
-first_calibration_step:
-  models: ...
-  free_params: ...
-second_calibration_step:
-  models: ...
-  free_params: ...
-```
-
-The capture poses can now be specified as YAML. The `convert_ros1_bag_to_yaml` script
-can be run in ROS1 to export your ROS1 bagfile as a YAML file that can be loaded in ROS2.
-
-#### Example Configuration
-
-The UBR-1 robot uses this package to calibrate in ROS2. Start with the ``calibrate_launch.py``
-in [ubr1_calibration](https://github.com/mikeferguson/ubr_reloaded/tree/ros2/ubr1_calibration)
-package.
-
 ### Exported Results
 
 The exported results consist of an updated URDF file, and one or more updated
@@ -419,3 +365,58 @@ Node topics:
 The output of the calibration is three parameters, _mag_bias_x_, _mag_bias_y_,
 and _mag_bias_z_, which can be used with the <code>imu_filter_madgwick</code> package.
 
+### Migrating from ROS1
+
+There are a number of changes in migrating from ROS1 to ROS2. Some of these are
+due to differences in the ROS2 system, others are to finally cleanup mistakes
+made in earlier version of robot_calibration.
+
+The `chains`, `models`, `free_frames` and `features` parameters used to be lists of YAML
+dictionaries. That format is not easily supported in ROS2 and so they are now
+lists of string names and the actual dictionaries of information appear under
+the associated name. For instance, in ROS1, you might have:
+
+```yaml
+models:
+ - name: arm
+   type: chain
+   frame: wrist_roll_link
+ - name: camera
+   type: camera3d
+   frame: head_camera_rgb_optical_frame
+```
+
+In ROS2, this becomes:
+```yaml
+models:
+- arm
+- camera
+arm:
+  type: chain3d
+  frame: wrist_roll_link
+camera:
+  type: camera3d
+  frame: head_camera_rgb_optical_frame
+```
+
+NOTE: the "chain" type has been renamed "chain3d" in ROS2 for consistency (and to allow
+a future chain2d).
+
+Multi-step calibration is now fully supported. A new parameter, `calibration_steps` must
+be declared as a list of step names. The `models` and free parameters are then specified
+for each step. As an example:
+
+```yaml
+calibration_steps:
+- first_calibration_step
+- second_calibration_step
+first_calibration_step:
+  models: ...
+  free_params: ...
+second_calibration_step:
+  models: ...
+  free_params: ...
+```
+
+The capture poses can now be specified as YAML. The `convert_ros1_bag_to_yaml` script
+can be run in ROS1 to export your ROS1 bagfile as a YAML file that can be loaded in ROS2.
