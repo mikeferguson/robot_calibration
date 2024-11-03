@@ -1,5 +1,6 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
+# Copyright (C) 2024 Michael Ferguson
 # Copyright (C) 2015 Fetch Robotics Inc.
 # Copyright (C) 2013-2014 Unbounded Robotics Inc.
 #
@@ -17,46 +18,51 @@
 
 # Author: Michael Ferguson
 
-from __future__ import print_function
+import threading
+import yaml
 
-import string
-
-import rospy
-import rosbag
+import rclpy
+from rclpy.node import Node
 
 from sensor_msgs.msg import JointState
 from robot_calibration_msgs.msg import CaptureConfig
 
 
-class CapturePoses:
+class CapturePoses(Node):
     last_state_ = None # last joint states
 
     def __init__(self):
+        super().__init__('capture_calibration_poses')
         self.last_state_ = CaptureConfig()
+        self.poses = list()
 
-        rospy.init_node('capture_calibration_poses')
-        rospy.Subscriber("joint_states", JointState, self.stateCb)
+        self.state_sub = self.create_subscription(JointState, "joint_states", self.stateCb, 1)
 
-        # bag to write data to
-        bag = rosbag.Bag('calibration_poses.bag', 'w')
-
-        # put samples in
+    def collect(self):
+        # Collect samples
         count = 0
-        while not rospy.is_shutdown():
-            print('Move arm/head to a new sample position:  (type "exit" to quit and save data)')
-            resp = raw_input('press <enter>')
-            if string.upper(resp) == 'EXIT':
-                break
+        while rclpy.ok():
+            print('Move robot to a new sample position:  (type "exit" to quit and save data)')
+            resp = input('press <enter>')
+            if resp.upper() == 'EXIT':
+                print('Exiting...')
+                return
             else:
                 if self.last_state_ == None:
                     print('Cannot save state')
                     continue
-                # save a pose
-                print(self.last_state_)
-                bag.write('calibration_joint_states', self.last_state_)
+                # Save a pose
+                pose = {'features': list(self.last_state_.features),
+                        'joints': list(self.last_state_.joint_states.name),
+                        'positions': list(self.last_state_.joint_states.position)}
+                self.poses.append(pose)
                 print("Saving pose %d" % count)
                 count += 1
-        bag.close()
+
+    def save(self):
+        # Write data to YAML
+        with open('calibration_poses.yaml', 'w') as f:
+            yaml.dump(self.poses, f)
 
     def stateCb(self, msg):
         """ Callback for joint_states messages """
@@ -69,4 +75,13 @@ class CapturePoses:
                 self.last_state_.joint_states.position.append(position)
 
 if __name__=='__main__':
-    CapturePoses()
+    rclpy.init()
+    try:
+        node = CapturePoses()
+        thread = threading.Thread(target=rclpy.spin, args=(node, ), daemon=True)
+        thread.start()
+        node.collect()
+    finally:
+        node.save()
+        node.destroy_node()
+        rclpy.shutdown()

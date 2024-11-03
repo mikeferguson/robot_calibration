@@ -178,6 +178,12 @@ install(TARGETS
   RUNTIME DESTINATION lib/robot_calibration
 )
 
+install(
+  PROGRAMS
+    scripts/capture_poses
+  DESTINATION lib/${PROJECT_NAME}
+)
+
 pluginlib_export_plugin_description_file(robot_calibration robot_calibration.xml)
 
 ament_export_include_directories(include)

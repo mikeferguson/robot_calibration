@@ -46,6 +46,25 @@ kinematic chain, for instance, a pan/tilt head).
 Configuration is typically handled through two sets of YAML files: usually
 called ``capture.yaml`` and ``calibrate.yaml``.
 
+If you want to manually move the robot to poses and capture each time you
+hit ENTER on the keyboard, you can run robot calibration with:
+
+```
+ros2 run robot_calibration calibrate --manual --ros-args --params-file path-to-capture.yaml --params-file path-to-calibrate.yaml
+```
+
+More commonly, you will generate a third YAML file with the capture pose
+configuration (as documented below in the section "Calibration Poses"):
+
+```
+ros2 run robot_calibration calibrate path-to-calibration-poses.yaml --ros-args --params-file path-to-capture.yaml --params-file path-to-calibrate.yaml
+```
+
+This is often wrapped into a ROS 2 launch file, which often records
+a bagfile of the observations allowing to re-run just the calibration part
+instead of needing to run capture each time. For an example, see the
+UBR-1 example in the next section.
+
 ### Example Configuration
 
 All of the parameters that can be defined in the capture and calibrate steps
@@ -308,6 +327,54 @@ For each error block, the ``type`` must be specified. In addition to the
       in X, Y, Z by this scalar.
     * `rotation_scale` - If `param` is a free frame, multiply the angular distance
       of the free parameter value by this scalar.
+
+### Calibration Poses
+
+The final piece of configuration is the actual poses from which the robot should
+capture data. This YAML file can be created by running the `capture_poses` script.
+You will be prompted to move the robot to the desired pose and press ENTER, when
+done collecting all of your poses, you can type EXIT.
+This will create `calibration_poses.yaml` which is an array of capture poses:
+
+```yaml
+- features: []
+  joints:
+  - first_joint
+  - second_joint
+  positions:
+  - -0.09211555123329163
+  - 0.013307283632457256
+- features: []
+  joints:
+  - first_joint
+  - second_joint
+  positions:
+  - -1.747204065322876
+  - -0.07186950743198395
+```
+
+By default, every finder is used for every capture pose. In some cases, you might
+want to specify specific finders by editing the `features`:
+
+```yaml
+# This sample pose uses only the `ground_plane_finder` feature finder
+- features:
+  - ground_plane_finder
+  joints:
+  - first_joint
+  - second_joint
+  positions:
+  - -0.09211555123329163
+  - 0.013307283632457256
+# This sample pose will use all features
+- features: []
+  joints:
+  - first_joint
+  - second_joint
+  positions:
+  - -1.747204065322876
+  - -0.07186950743198395
+```
 
 #### Checkerboard Configuration
 
