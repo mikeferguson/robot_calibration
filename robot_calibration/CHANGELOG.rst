@@ -2,6 +2,16 @@
 Changelog for package robot_calibration
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* include tf2_geometry_msgs earlier to avoid missing symbols (`#182 <https://github.com/mikeferguson/robot_calibration/issues/182>`_)
+* port capture_poses script to ROS 2, document (`#181 <https://github.com/mikeferguson/robot_calibration/issues/181>`_)
+* improve parsing of xyz and rpy fields (`#177 <https://github.com/mikeferguson/robot_calibration/issues/177>`_)
+  * don't segfault if xyz or rpy missing
+  * remove extra spaces in xyz/rpy fields
+* urdf/model.h -> urdf/model.hpp (`#175 <https://github.com/mikeferguson/robot_calibration/issues/175>`_)
+* Contributors: Michael Ferguson
+
 0.9.1 (2024-09-26)
 ------------------
 * add qos overrides for finders (`#174 <https://github.com/mikeferguson/robot_calibration/issues/174>`_)
