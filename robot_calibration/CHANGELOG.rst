@@ -2,8 +2,8 @@
 Changelog for package robot_calibration
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.9.2 (2024-11-08)
+------------------
 * include tf2_geometry_msgs earlier to avoid missing symbols (`#182 <https://github.com/mikeferguson/robot_calibration/issues/182>`_)
 * port capture_poses script to ROS 2, document (`#181 <https://github.com/mikeferguson/robot_calibration/issues/181>`_)
 * improve parsing of xyz and rpy fields (`#177 <https://github.com/mikeferguson/robot_calibration/issues/177>`_)
