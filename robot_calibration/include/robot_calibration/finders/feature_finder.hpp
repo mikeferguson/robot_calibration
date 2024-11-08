@@ -23,6 +23,8 @@
 
 #include <rclcpp/rclcpp.hpp>
 #include <robot_calibration_msgs/msg/calibration_data.hpp>
+// Including this before buffer.h as a workaround for missing symbols
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #include <tf2_ros/buffer.h>
 
 namespace robot_calibration
