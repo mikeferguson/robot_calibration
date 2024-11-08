@@ -2,8 +2,8 @@
 Changelog for package robot_calibration
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.8.2 (2024-11-08)
+------------------
 * include tf2_geometry_msgs earlier to avoid missing symbols (backport `#182 <https://github.com/mikeferguson/robot_calibration/issues/182>`_) (`#183 <https://github.com/mikeferguson/robot_calibration/issues/183>`_)
 * do not run calibration if no feature finders (`#167 <https://github.com/mikeferguson/robot_calibration/issues/167>`_)
   due to misconfiguration (for instance, camera_info topic
