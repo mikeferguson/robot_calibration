@@ -2,8 +2,8 @@
 Changelog for package robot_calibration
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.9.3 (2024-12-03)
+------------------
 * temporarily depend on libfcl-dev (`#185 <https://github.com/mikeferguson/robot_calibration/issues/185>`_)
 * Contributors: Michael Ferguson
 
