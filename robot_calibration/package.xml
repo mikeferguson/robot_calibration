@@ -23,6 +23,7 @@
   <depend>kdl_parser</depend>
   <depend>moveit_msgs</depend>
   <depend>nav_msgs</depend>
+  <depend>libfcl-dev</depend>
   <depend>liborocos-kdl-dev</depend>
   <depend>pluginlib</depend>
   <depend>rclcpp</depend>
