@@ -2,6 +2,12 @@
 Changelog for package robot_calibration
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* temporarily depend on libfcl-dev (`#187 <https://github.com/mikeferguson/robot_calibration/issues/187>`_)
+  The new release of geometric_shapes only exec_depends on libfcl, which appears to cause linking issues in building the Debians.
+* Contributors: Michael Ferguson
+
 0.8.2 (2024-11-08)
 ------------------
 * include tf2_geometry_msgs earlier to avoid missing symbols (backport `#182 <https://github.com/mikeferguson/robot_calibration/issues/182>`_) (`#183 <https://github.com/mikeferguson/robot_calibration/issues/183>`_)
