@@ -2,8 +2,8 @@
 Changelog for package robot_calibration
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.8.3 (2024-12-05)
+------------------
 * temporarily depend on libfcl-dev (`#187 <https://github.com/mikeferguson/robot_calibration/issues/187>`_)
   The new release of geometric_shapes only exec_depends on libfcl, which appears to cause linking issues in building the Debians.
 * Contributors: Michael Ferguson
