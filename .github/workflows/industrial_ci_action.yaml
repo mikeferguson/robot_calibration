@@ -12,6 +12,7 @@ jobs:
       matrix:
         env:
           - {ROS_DISTRO: jazzy, ROS_REPO: main}
+          - {ROS_DISTRO: jazzy, ROS_REPO: testing}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
