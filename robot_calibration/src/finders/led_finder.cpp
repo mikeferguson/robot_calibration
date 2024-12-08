@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Michael Ferguson
+ * Copyright (C) 2022-2024 Michael Ferguson
  * Copyright (C) 2015 Fetch Robotics Inc.
  * Copyright (C) 2013-2014 Unbounded Robotics Inc.
  *
@@ -504,13 +504,9 @@ bool LedFinder::CloudDifferenceTracker::getRefinedCentroid(
   centroid.point.y = (iter + max_idx_)[Y];
   centroid.point.z = (iter + max_idx_)[Z];
 
-  // Do not accept NANs
-  if (std::isnan(centroid.point.x) ||
-      std::isnan(centroid.point.y) ||
-      std::isnan(centroid.point.z))
-  {
-    return false;
-  }
+  // Only check distance from centroid if centroid is valid
+  bool invalid_centroid = std::isnan(centroid.point.x) || std::isnan(centroid.point.y) ||
+                          std::isnan(centroid.point.z);
 
   // Get a better centroid
   int points = 0;
@@ -534,7 +530,7 @@ bool LedFinder::CloudDifferenceTracker::getRefinedCentroid(
       double dz = point[Z] - centroid.point.z;
 
       // That are less than 1cm from the max point
-      if ((dx*dx) + (dy*dy) + (dz*dz) < (0.05*0.05))
+      if (invalid_centroid || (dx * dx) + (dy * dy) + (dz * dz) < (0.05 * 0.05))
       {
         sum_x += point[X];
         sum_y += point[Y];
@@ -546,12 +542,13 @@ bool LedFinder::CloudDifferenceTracker::getRefinedCentroid(
 
   if (points > 0)
   {
-    centroid.point.x = (centroid.point.x + sum_x)/(points+1);
-    centroid.point.y = (centroid.point.y + sum_y)/(points+1);
-    centroid.point.z = (centroid.point.z + sum_z)/(points+1);
+    centroid.point.x = sum_x / points;
+    centroid.point.y = sum_y / points;
+    centroid.point.z = sum_z / points;
+    return true;
   }
 
-  return true;
+  return false;
 }
 
 sensor_msgs::msg::Image LedFinder::CloudDifferenceTracker::getImage()
