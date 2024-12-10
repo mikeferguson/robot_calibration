@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Michael Ferguson
+ * Copyright (C) 2022-2024 Michael Ferguson
  * Copyright (C) 2015 Fetch Robotics Inc.
  * Copyright (C) 2013-2014 Unbounded Robotics Inc.
  *
@@ -287,7 +287,7 @@ bool LedFinder::find(robot_calibration_msgs::msg::CalibrationData * msg)
     // Get point
     if (!trackers_[t].getRefinedCentroid(cloud_, rgbd_pt))
     {
-      RCLCPP_ERROR_STREAM(LOGGER, "No centroid for feature " << t);
+      RCLCPP_ERROR(LOGGER, "No centroid for feature %lu", t);
       return false;
     }
 
@@ -298,13 +298,14 @@ bool LedFinder::find(robot_calibration_msgs::msg::CalibrationData * msg)
     }
     catch (tf2::TransformException& ex)
     {
-      RCLCPP_ERROR_STREAM(LOGGER, "Failed to transform feature to " << trackers_[t].frame_);
+      RCLCPP_ERROR(LOGGER, "Failed to transform feature to %s", trackers_[t].frame_.c_str());
       return false;
     }
     double distance = distancePoints(world_pt.point, trackers_[t].point_);
     if (distance > max_error_)
     {
-      RCLCPP_ERROR_STREAM(LOGGER, "Feature was too far away from expected pose in " << trackers_[t].frame_ << ": " << distance);
+      RCLCPP_ERROR(LOGGER, "Feature was too far away from expected pose in %s: %f",
+                   trackers_[t].frame_.c_str(), distance);
       return false;
     }
 
@@ -315,7 +316,7 @@ bool LedFinder::find(robot_calibration_msgs::msg::CalibrationData * msg)
       double actual = distancePoints(observations[CAMERA].features[t2].point, rgbd_pt.point);
       if (fabs(expected-actual) > max_inconsistency_)
       {
-        RCLCPP_ERROR_STREAM(LOGGER, "Features not internally consistent: " << expected << " " << actual);
+        RCLCPP_ERROR(LOGGER, "Features not internally consistent: %f vs %f", expected, actual);
         return false;
       }
     }
@@ -504,13 +505,9 @@ bool LedFinder::CloudDifferenceTracker::getRefinedCentroid(
   centroid.point.y = (iter + max_idx_)[Y];
   centroid.point.z = (iter + max_idx_)[Z];
 
-  // Do not accept NANs
-  if (std::isnan(centroid.point.x) ||
-      std::isnan(centroid.point.y) ||
-      std::isnan(centroid.point.z))
-  {
-    return false;
-  }
+  // Only check distance from centroid if centroid is valid
+  bool invalid_centroid = std::isnan(centroid.point.x) || std::isnan(centroid.point.y) ||
+                          std::isnan(centroid.point.z);
 
   // Get a better centroid
   int points = 0;
@@ -534,7 +531,7 @@ bool LedFinder::CloudDifferenceTracker::getRefinedCentroid(
       double dz = point[Z] - centroid.point.z;
 
       // That are less than 1cm from the max point
-      if ((dx*dx) + (dy*dy) + (dz*dz) < (0.05*0.05))
+      if (invalid_centroid || (dx * dx) + (dy * dy) + (dz * dz) < (0.05 * 0.05))
       {
         sum_x += point[X];
         sum_y += point[Y];
@@ -546,12 +543,13 @@ bool LedFinder::CloudDifferenceTracker::getRefinedCentroid(
 
   if (points > 0)
   {
-    centroid.point.x = (centroid.point.x + sum_x)/(points+1);
-    centroid.point.y = (centroid.point.y + sum_y)/(points+1);
-    centroid.point.z = (centroid.point.z + sum_z)/(points+1);
+    centroid.point.x = sum_x / points;
+    centroid.point.y = sum_y / points;
+    centroid.point.z = sum_z / points;
+    return true;
   }
 
-  return true;
+  return false;
 }
 
 sensor_msgs::msg::Image LedFinder::CloudDifferenceTracker::getImage()
