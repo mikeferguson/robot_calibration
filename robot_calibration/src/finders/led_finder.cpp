@@ -287,7 +287,7 @@ bool LedFinder::find(robot_calibration_msgs::msg::CalibrationData * msg)
     // Get point
     if (!trackers_[t].getRefinedCentroid(cloud_, rgbd_pt))
     {
-      RCLCPP_ERROR_STREAM(LOGGER, "No centroid for feature " << t);
+      RCLCPP_ERROR(LOGGER, "No centroid for feature %lu", t);
       return false;
     }
 
@@ -298,13 +298,14 @@ bool LedFinder::find(robot_calibration_msgs::msg::CalibrationData * msg)
     }
     catch (tf2::TransformException& ex)
     {
-      RCLCPP_ERROR_STREAM(LOGGER, "Failed to transform feature to " << trackers_[t].frame_);
+      RCLCPP_ERROR(LOGGER, "Failed to transform feature to %s", trackers_[t].frame_.c_str());
       return false;
     }
     double distance = distancePoints(world_pt.point, trackers_[t].point_);
     if (distance > max_error_)
     {
-      RCLCPP_ERROR_STREAM(LOGGER, "Feature was too far away from expected pose in " << trackers_[t].frame_ << ": " << distance);
+      RCLCPP_ERROR(LOGGER, "Feature was too far away from expected pose in %s: %f",
+                   trackers_[t].frame_.c_str(), distance);
       return false;
     }
 
@@ -315,7 +316,7 @@ bool LedFinder::find(robot_calibration_msgs::msg::CalibrationData * msg)
       double actual = distancePoints(observations[CAMERA].features[t2].point, rgbd_pt.point);
       if (fabs(expected-actual) > max_inconsistency_)
       {
-        RCLCPP_ERROR_STREAM(LOGGER, "Features not internally consistent: " << expected << " " << actual);
+        RCLCPP_ERROR(LOGGER, "Features not internally consistent: %f vs %f", expected, actual);
         return false;
       }
     }
