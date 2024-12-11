@@ -12,9 +12,9 @@ configuration YAML in the case of camera intrinsics.
 
 Two additional ROS nodes are used for mobile-base related parameter tuning:
 
- * _base_calibration_node_ - can determine scaling factors for gyro and track
-   width parameters by rotating the robot in place and tracking the actual
-   rotation based on the laser scanner view of a wall.
+ * _base_calibration_node_ - can determine scaling factors for wheel diameter,
+   track width and gyro gain by moving and rotating the robot while tracking
+   the actual movement based on the laser scanner view of a wall.
  * _magnetometer_calibration_ - can be used to do hard iron calibration
    of a magnetometer.
 
@@ -437,21 +437,28 @@ free.
 ## The _base_calibration_node_
 
 To run the _base_calibration_node_ node, you need a somewhat open space with a large
-(~3 meters wide) wall that you can point the robot at. The robot should be
-pointed at the wall and it will then spin around at several different speeds.
-On each rotation it will stop and capture the laser data. Afterwards, the
-node uses the angle of the wall as measured by the laser scanner to determine
-how far the robot has actually rotated versus the measurements from the gyro
-and odometry. We then compute scalar corrections for both the gyro and the
-odometry.
+(~3 meters wide) wall that you can point the robot at.
 
-Node parameters:
+Starting with the `0.10` release of `robot_calibration`, the actual movements the
+robot does can be programmed via the `calibration_steps` parameter:
 
- * <code>/base_controller/track_width</code> - this is the default track width.
- * <code>/imu/gyro/scale</code> - this is the initial gyro scale.
- * <code>~min_angle/~max_angle</code> how much of the laser scan to use when
+ * <code>calibration_steps</code> - should be a list of string names of calibration
+   steps to run.
+ * <code>step_name/type</code> - should be either `spin` or `rollout`.
+ * <code>step_name/velocity</code> - velocity to move the robot. This will be
+   interpreted as angular velocity for `spin` steps and linear velocity for `rollout`
+   steps.
+ * <code>step_name/rotations</code> - only valid for `spin` steps. Number of
+   rotations to complete at given `velocity`.
+ * <code>step_name/distance</code> - only valid for `rollout` steps. Distance
+   in meters, to rollout the robot.
+
+Additional parameters:
+
+ * <code>accel_limit</code> - acceleration limit for `spin` steps (radians/second^2).
+ * <code>linear_accel_limit</code> - acceleration limit for `rollout` steps (meters/second^2).
+ * <code>min_angle/max_angle</code> how much of the laser scan to use when
    measuring the wall angle (radians).
- * <code>~accel_limit</code> - acceleration limit for rotation (radians/second^2).
 
 Node topics:
 
@@ -464,10 +471,22 @@ Node topics:
  * <code>/cmd_vel</code> - the node publishes rotation commands to this topic, unless
    manual mode is enabled. Message type is <code>geometry_msgs/Twist</code>.
 
-The output of the node is a new scale for the gyro and the odometry. The application
-of these values is largely dependent on the drivers being used for the robot. For
-robots using _ros_control_ or _robot_control_ there is a track_width parameter
-typically supplied as a ROS parameter in your launch file.
+The output of the node is a series of scalars to apply (where a value of 1.0 means
+there is currently no error):
+
+```
+[base_calibration_node-1] track_width_scale: 0.986743
+[base_calibration_node-1] imu_scale: 0.984465
+[base_calibration_node-1] rollout_scale: 0.981911
+```
+
+The application of these values is largely dependent on the drivers being used
+for the robot. For robots using _ros_control_ or _robot_control_ there is a
+`track_width` parameter typically supplied as a ROS parameter in your launch file.
+
+Note: in ROS 1, these scalars were pre-multiplied by the existing `track_width`
+or `imu_scale` - however, with the lack of a unified parameter server in ROS 2,
+this is no longer done.
 
 ## The _magnetometer_calibration_ node
 
