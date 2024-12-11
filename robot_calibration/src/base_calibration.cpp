@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Michael Ferguson
+ * Copyright (C) 2022-2024 Michael Ferguson
  * Copyright (C) 2015 Fetch Robotics Inc.
  * Copyright (C) 2014 Unbounded Robotics Inc.
  *
@@ -42,6 +42,7 @@ BaseCalibration::BaseCalibration()
 
   // How fast to accelerate
   accel_limit_ = this->declare_parameter<double>("accel_limit", 2.0);
+  linear_accel_limit_ = this->declare_parameter<double>("linear_accel_limit", 0.5);
   // Maximum velocity to command base during alignment
   align_velocity_ = this->declare_parameter<double>("align_velocity", 0.2);
   // Gain to turn alignment error into velocity
@@ -70,6 +71,9 @@ void BaseCalibration::clearMessages()
   scan_.clear();
   odom_.clear();
   imu_.clear();
+
+  rollout_odom_.clear();
+  rollout_scan_.clear();
 }
 
 std::string BaseCalibration::print()
@@ -81,27 +85,45 @@ std::string BaseCalibration::print()
 
 std::string BaseCalibration::printCalibrationData()
 {
-  double odom, imu;
-  odom = this->declare_parameter<double>("base_controller/track_width", 0.37476);
-  imu = this->declare_parameter<double>("imu_gyro_scale", 0.001221729);
-
-  // Scaling to be computed
-  double odom_scale = 0.0;
-  double imu_scale = 0.0;
-
-  // Get sum
-  for (size_t i = 0; i < scan_.size(); ++i)
-  {
-    odom_scale += (scan_[i] - odom_[i]) / odom_[i];
-    imu_scale += (scan_[i] - imu_[i]) / imu_[i];
-  }
-  // Divide sum by size
-  odom_scale /= scan_.size();
-  imu_scale /= scan_.size();
-  // Output odom/imu values
+  // Output calibrated values
   std::stringstream ss;
-  ss << "odom: " << odom * (1.0 + odom_scale) << std::endl;
-  ss << "imu: " << imu * (1.0 + imu_scale) << std::endl;
+
+  // Compute track width and gyro scale
+  if (!scan_.empty())
+  {
+    double odom_scale = 0.0;
+    double imu_scale = 0.0;
+
+    // Get sum
+    for (size_t i = 0; i < scan_.size(); ++i)
+    {
+      odom_scale += (scan_[i] - odom_[i]) / odom_[i];
+      imu_scale += (scan_[i] - imu_[i]) / imu_[i];
+    }
+    // Divide sum by size
+    odom_scale /= scan_.size();
+    imu_scale /= scan_.size();
+
+    ss << "track_width_scale: " << (1.0 + odom_scale) << std::endl;
+    ss << "imu_scale: " << (1.0 + imu_scale) << std::endl;
+  }
+
+  // Compute rollout scale
+  if (!rollout_odom_.empty())
+  {
+    double scale = 0.0;
+
+    // Get sums
+    for (size_t i = 0; i < rollout_odom_.size(); ++i)
+    {
+      scale += (rollout_scan_[i] - rollout_odom_[i]) / rollout_odom_[i];
+    }
+    // Divide sum by size
+    scale /= rollout_odom_.size();
+
+    ss << "rollout_scale: " << (1.0 + scale) << std::endl;
+  }
+
   return ss.str();
 }
 
@@ -125,8 +147,8 @@ bool BaseCalibration::align(double angle, bool verbose)
     }
 
     // Send command
-    double velocity = std::min(std::max(-error * align_gain_, -align_velocity_), align_velocity_);
-    sendVelocityCommand(velocity);
+    double velocity = std::min(std::max(error * align_gain_, -align_velocity_), align_velocity_);
+    sendVelocityCommand(0.0, velocity);
 
     // Sleep a moment
     rclcpp::sleep_for(std::chrono::milliseconds(20));
@@ -138,13 +160,13 @@ bool BaseCalibration::align(double angle, bool verbose)
     // Exit if shutting down
     if (!rclcpp::ok())
     {
-      sendVelocityCommand(0.0);
+      sendVelocityCommand(0.0, 0.0);
       return false;
     }
   }
 
   // Done - stop the robot
-  sendVelocityCommand(0.0);
+  sendVelocityCommand(0.0, 0.0);
   std::cout << "...done" << std::endl;
   rclcpp::sleep_for(std::chrono::milliseconds(250));
 
@@ -169,20 +191,20 @@ bool BaseCalibration::spin(double velocity, int rotations, bool verbose)
     {
       std::cout << scan_angle_ << " " << odom_angle_ << " " << imu_angle_ << std::endl;
     }
-    sendVelocityCommand(velocity);
+    sendVelocityCommand(0.0, velocity);
     rclcpp::sleep_for(std::chrono::milliseconds(20));
     rclcpp::spin_some(this->shared_from_this());
 
     // Exit if shutting down
     if (!rclcpp::ok())
     {
-      sendVelocityCommand(0.0);
+      sendVelocityCommand(0.0, 0.0);
       return false;
     }
   }
 
   // Stop the robot
-  sendVelocityCommand(0.0);
+  sendVelocityCommand(0.0, 0.0);
   std::cout << "...done" << std::endl;
 
   // Wait to stop
@@ -203,12 +225,56 @@ bool BaseCalibration::spin(double velocity, int rotations, bool verbose)
   return true;
 }
 
+bool BaseCalibration::rollout(double velocity, double distance, bool verbose)
+{
+  // Align straight at the wall
+  align(0.0, verbose);
+  resetInternal();
+  std::cout << "rollout..." << std::endl;
+
+  double scan_start = scan_dist_;
+
+  // Need to account for de-acceleration time (v^2/2a)
+  double d = fabs(distance) - (0.5 * velocity * velocity / linear_accel_limit_);
+
+  while (fabs(odom_dist_) < d)
+  {
+    if (verbose)
+    {
+      std::cout << odom_dist_ << " " << scan_dist_ << std::endl;
+    }
+    sendVelocityCommand(velocity, 0.0);
+    rclcpp::sleep_for(std::chrono::milliseconds(20));
+    rclcpp::spin_some(this->shared_from_this());
+
+    // Exit if shutting down
+    if (!rclcpp::ok())
+    {
+      sendVelocityCommand(0.0, 0.0);
+      return false;
+    }
+  }
+
+  // Stop the robot
+  sendVelocityCommand(0.0, 0.0);
+  std::cout << "...done" << std::endl;
+
+  // Wait to stop
+  rclcpp::sleep_for(std::chrono::seconds(1));
+
+  // Save measurements
+  rollout_odom_.push_back(odom_dist_);
+  rollout_scan_.push_back(scan_start - scan_dist_);
+  return true;
+}
+
 void BaseCalibration::odometryCallback(const nav_msgs::msg::Odometry::ConstSharedPtr& odom)
 {
   std::lock_guard<std::recursive_mutex> lock(data_mutex_);
 
   double dt = rclcpp::Time(odom->header.stamp).seconds() - last_odom_stamp_.seconds();
   odom_angle_ += odom->twist.twist.angular.z * dt;
+  odom_dist_ += odom->twist.twist.linear.x * dt;
 
   last_odom_stamp_ = odom->header.stamp;
 }
@@ -294,23 +360,24 @@ void BaseCalibration::laserCallback(const sensor_msgs::msg::LaserScan::ConstShar
   }
 
   scan_dist_ = mean_y;
-  scan_angle_ = atan2((n*xy-x*y)/(n*xx-x*x), 1.0);
+  scan_angle_ = atan2((n * xy - x * y)/(n * xx - x * x), 1.0);
   scan_r2_ = fabs(xy)/(xx * yy);
   last_scan_stamp_ = scan->header.stamp;
   ready_ = true;
 }
 
-void BaseCalibration::sendVelocityCommand(double vel)
+void BaseCalibration::sendVelocityCommand(double linear, double angular)
 {
   geometry_msgs::msg::Twist twist;
-  twist.angular.z = vel;
+  twist.linear.x = linear;
+  twist.angular.z = angular;
   cmd_pub_->publish(twist);
 }
 
 void BaseCalibration::resetInternal()
 {
   std::lock_guard<std::recursive_mutex> lock(data_mutex_);
-  odom_angle_ = imu_angle_ = scan_angle_ = scan_r2_ = 0.0;
+  odom_angle_ = odom_dist_ = imu_angle_ = scan_angle_ = scan_r2_ = 0.0;
 }
 
 }  // namespace robot_calibration

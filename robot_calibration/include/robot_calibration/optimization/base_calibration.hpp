@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Michael Ferguson
+ * Copyright (C) 2022-2024 Michael Ferguson
  * Copyright (C) 2015 Fetch Robotics Inc.
  * Copyright (C) 2014 Unbounded Robotics Inc.
  *
@@ -56,13 +56,16 @@ public:
   /** @brief Spin and record imu, odom, scan. */
   bool spin(double velocity, int rotations, bool verbose = false);
 
+  /** @brief Move forward/backward and record odom and scan */
+  bool rollout(double velocity, double distance, bool verbose = false);
+
 private:
   void odometryCallback(const nav_msgs::msg::Odometry::ConstSharedPtr& odom);
   void imuCallback(const sensor_msgs::msg::Imu::ConstSharedPtr& imu);
   void laserCallback(const sensor_msgs::msg::LaserScan::ConstSharedPtr& scan);
 
-  /** @brief Send a rotational velocity command. **/
-  void sendVelocityCommand(double vel);
+  /** @brief Send a velocity command. **/
+  void sendVelocityCommand(double linear, double angular);
 
   /** @brief Reset the odom/imu counters. */
   void resetInternal();
@@ -74,7 +77,8 @@ private:
   rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr scan_subscriber_;
 
   rclcpp::Time last_odom_stamp_;
-  double odom_angle_;
+  // These are actually "accumulated" values since last reset
+  double odom_angle_, odom_dist_;
 
   rclcpp::Time last_imu_stamp_;
   double imu_angle_;
@@ -83,12 +87,15 @@ private:
   double scan_angle_, scan_r2_, scan_dist_, r2_tolerance_;
 
   double min_angle_, max_angle_;
-  double accel_limit_;
+  double accel_limit_, linear_accel_limit_;
   double align_velocity_, align_gain_, align_tolerance_;
 
   std::vector<double> scan_;
   std::vector<double> imu_;
   std::vector<double> odom_;
+
+  std::vector<double> rollout_odom_;
+  std::vector<double> rollout_scan_;
 
   std::recursive_mutex data_mutex_;
   bool ready_;

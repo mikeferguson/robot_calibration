@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Michael Ferguson
+ * Copyright (C) 2022-2024 Michael Ferguson
  * Copyright (C) 2015 Fetch Robotics Inc.
  * Copyright (C) 2014 Unbounded Robotics Inc.
  *
@@ -32,15 +32,44 @@ int main(int argc, char** argv)
 
   bool verbose = b->declare_parameter<bool>("verbose", false);
 
-  // Rotate at several different speeds
-  b->spin(0.5, 1, verbose);
-  b->spin(1.5, 1, verbose);
-  b->spin(3.0, 2, verbose);
-  b->spin(-0.5, 1, verbose);
-  b->spin(-1.5, 1, verbose);
-  b->spin(-3.0, 2, verbose);
+  // Load parameters
+  auto calibration_steps = b->declare_parameter<std::vector<std::string>>(
+    "calibration_steps", std::vector<std::string>());
 
-  // TODO: drive towards wall, to calibrate rollout
+  if (calibration_steps.empty())
+  {
+    RCLCPP_WARN(b->get_logger(), "No calibration_steps defined, using defaults");
+    // Rotate at several different speeds
+    b->spin(0.5, 1, verbose);
+    b->spin(1.5, 1, verbose);
+    b->spin(3.0, 2, verbose);
+    b->spin(-0.5, 1, verbose);
+    b->spin(-1.5, 1, verbose);
+    b->spin(-3.0, 2, verbose);
+  }
+  else
+  {
+    for (auto step : calibration_steps)
+    {
+      std::string step_type = b->declare_parameter<std::string>(step + ".type", "");
+      if (step_type == "spin")
+      {
+        double velocity = b->declare_parameter<double>(step + ".velocity", 1.0);
+        int rotations = b->declare_parameter<int>(step + ".rotations", 1);
+        b->spin(velocity, rotations, verbose);
+      }
+      else if (step_type == "rollout")
+      {
+        double velocity = b->declare_parameter<double>(step + ".velocity", 1.0);
+        double distance = b->declare_parameter<double>(step + ".distance", 0.0);
+        b->rollout(velocity, distance, verbose);
+      }
+      else
+      {
+        RCLCPP_ERROR(b->get_logger(), "Unrecognized step type: %s", step_type.c_str());
+      }
+    }
+  }
 
   // Output yaml file
   {
