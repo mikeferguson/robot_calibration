@@ -227,72 +227,74 @@ bool PlaneFinder::find(robot_calibration_msgs::msg::CalibrationData * msg)
 void PlaneFinder::removeInvalidPoints(sensor_msgs::msg::PointCloud2& cloud,
   double min_x, double max_x, double min_y, double max_y, double min_z, double max_z)
 {
-  //  Remove any point that is invalid or not with our tolerance
   size_t num_points = cloud.width * cloud.height;
   sensor_msgs::PointCloud2ConstIterator<float> xyz(cloud, "x");
   sensor_msgs::PointCloud2Iterator<float> cloud_iter(cloud, "x");
 
-  bool do_transform = transform_frame_ != "none";  // This can go away once the cloud gets transformed outside loop
+  // Optionally transform the point cloud to the transform_frame_
+  KDL::Frame transform = KDL::Frame::Identity();
+  if (transform_frame_ != "none")
+  {
+    try
+    {
+      auto t = tf2_buffer_->lookupTransform(transform_frame_,
+                                            cloud_.header.frame_id,
+                                            tf2::TimePointZero);
+      transform = KDL::Frame(
+        KDL::Rotation::Quaternion(
+          t.transform.rotation.x, t.transform.rotation.y,
+          t.transform.rotation.z, t.transform.rotation.w),
+        KDL::Vector(
+          t.transform.translation.x, t.transform.translation.y,
+          t.transform.translation.z));
+    }
+    catch (tf2::TransformException& ex)
+    {
+      RCLCPP_ERROR(LOGGER, "%s", ex.what());
+      return;
+    }
+  }
+
+  //  Remove any point that is invalid or not with our tolerance
   size_t j = 0;
   for (size_t i = 0; i < num_points; i++)
   {
-    geometry_msgs::msg::PointStamped p;
-    p.point.x = (xyz + i)[X];
-    p.point.y = (xyz + i)[Y];
-    p.point.z = (xyz + i)[Z];
+    // Construct point
+    KDL::Vector p((xyz + i)[X], (xyz + i)[Y], (xyz + i)[Z]);
 
     // Remove the NaNs in the point cloud
-    if (!std::isfinite(p.point.x) || !std::isfinite(p.point.y) || !std::isfinite(p.point.z))
+    if (!std::isfinite(p[X]) || !std::isfinite(p[Y]) || !std::isfinite(p[Z]))
     {
       continue;
     }
 
     // Remove the points immediately in front of the camera in the point cloud
     // NOTE : This is to handle sensors that publish zeros instead of NaNs in the point cloud
-    if (p.point.z == 0)
+    if (p[Z] == 0)
     {
       continue;
     }
 
     // Get transform (if any)
-    geometry_msgs::msg::PointStamped p_out;
-    if (do_transform)
-    {
-      p.header.stamp.sec = 0;
-      p.header.stamp.nanosec = 0;
-      p.header.frame_id = cloud_.header.frame_id;
-      try
-      {
-        tf2_buffer_->transform(p, p_out, transform_frame_);
-      }
-      catch (tf2::TransformException& ex)
-      {
-        RCLCPP_ERROR(LOGGER, "%s", ex.what());
-        rclcpp::sleep_for(std::chrono::seconds(1));
-        continue;
-      }
-    }
-    else
-    {
-      p_out = p;
-    }
+    KDL::Vector p_out = transform * p;
 
-    // Test the transformed point
-    if (p_out.point.x < min_x || p_out.point.x > max_x || p_out.point.y < min_y || p_out.point.y > max_y ||
-        p_out.point.z < min_z || p_out.point.z > max_z)
+    // Test the transformed point against the tolerances
+    if (p_out[X] < min_x || p_out[X] > max_x || p_out[Y] < min_y || p_out[Y] > max_y ||
+        p_out[Z] < min_z || p_out[Z] > max_z)
     {
       continue;
     }
 
     // This is a valid point, move it forward
-    (cloud_iter + j)[X] = (xyz + i)[X];
-    (cloud_iter + j)[Y] = (xyz + i)[Y];
-    (cloud_iter + j)[Z] = (xyz + i)[Z];
+    (cloud_iter + j)[X] = p[X];
+    (cloud_iter + j)[Y] = p[Y];
+    (cloud_iter + j)[Z] = p[Z];
     j++;
   }
   cloud.height = 1;
   cloud.width  = j;
   cloud.data.resize(cloud.width * cloud.point_step);
+  RCLCPP_INFO(LOGGER, "Filtered cloud to %lu valid points", j);
 }
 
 sensor_msgs::msg::PointCloud2 PlaneFinder::extractPlane(sensor_msgs::msg::PointCloud2& cloud)
