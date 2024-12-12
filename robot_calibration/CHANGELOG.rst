@@ -2,6 +2,20 @@
 Changelog for package robot_calibration
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* massive speedup of plane finder (`#191 <https://github.com/mikeferguson/robot_calibration/issues/191>`_)
+  * roughly 30x faster on VGA point cloud filtering
+  * KDL was 3x faster than using Eigen
+* improve base calibration (`#190 <https://github.com/mikeferguson/robot_calibration/issues/190>`_)
+  * add rollout calibration using linear movements
+  * parameterize the calibration_steps
+* improve LED finder (`#189 <https://github.com/mikeferguson/robot_calibration/issues/189>`_)
+  if the single pixel that is most changed has NANs,
+  don't immediately throw out the sample
+* revert dependency on libfcl-dev (`#188 <https://github.com/mikeferguson/robot_calibration/issues/188>`_)
+* Contributors: Michael Ferguson
+
 0.9.3 (2024-12-03)
 ------------------
 * temporarily depend on libfcl-dev (`#185 <https://github.com/mikeferguson/robot_calibration/issues/185>`_)
