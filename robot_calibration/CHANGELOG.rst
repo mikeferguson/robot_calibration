@@ -2,8 +2,8 @@
 Changelog for package robot_calibration
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.10.0 (2024-12-12)
+-------------------
 * massive speedup of plane finder (`#191 <https://github.com/mikeferguson/robot_calibration/issues/191>`_)
   * roughly 30x faster on VGA point cloud filtering
   * KDL was 3x faster than using Eigen
