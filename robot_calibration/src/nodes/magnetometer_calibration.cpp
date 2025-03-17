@@ -199,7 +199,7 @@ int main(int argc, char** argv)
   }
   double* free_params = new double[num_params];
   // Set initial estimate of magnetic field strength
-  free_params[0] = 0.45;
+  free_params[0] = 0.000045;
   // Setup initial estimates of hard iron offsets (bias)
   {
     double bias_x = 0.0;
