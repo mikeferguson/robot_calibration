@@ -131,28 +131,11 @@ target_link_libraries(calibrate
   robot_calibration
   ${Boost_LIBRARIES}
   ${CERES_LIBRARIES}
-  #${control_msgs_TARGETS}
-  #${geometry_msgs_TARGETS}
-  #${moveit_msgs_TARGETS}
-  #${nav_msgs_TARGETS}
-  #${orocos_kdl_LIBRARIES}
-  #${OpenCV_LIBS}
   ${robot_calibration_msgs_TARGETS}
-  #${sensor_msgs_TARGETS}
-  #${visualization_msgs_TARGETS}
-  #camera_calibration_parsers::camera_calibration_parsers
-  #cv_bridge::cv_bridge
-  #geometric_shapes::geometric_shapes
-  #kdl_parser::kdl_parser
   pluginlib::pluginlib
   rclcpp::rclcpp
   #rclcpp_action::rclcpp_action
   rosbag2_cpp::rosbag2_cpp
-  #sensor_msgs::sensor_msgs_library
-  #tf2_geometry_msgs::tf2_geometry_msgs
-  #tf2_ros::static_transform_broadcaster_node
-  #tf2_ros::tf2_ros
-  #urdf::urdf
 )
 
 add_executable(base_calibration_node src/nodes/base_calibration.cpp)
