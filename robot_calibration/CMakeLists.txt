@@ -95,6 +95,7 @@ target_link_libraries(robot_calibration
   ${orocos_kdl_LIBRARIES}
   ${robot_calibration_msgs_TARGETS}
   ${sensor_msgs_TARGETS}
+  camera_calibration_parsers::camera_calibration_parsers
   geometric_shapes::geometric_shapes
   kdl_parser::kdl_parser
   rclcpp::rclcpp
