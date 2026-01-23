@@ -99,9 +99,9 @@ target_link_libraries(robot_calibration
   geometric_shapes::geometric_shapes
   kdl_parser::kdl_parser
   rclcpp::rclcpp
-  #rclcpp_action::rclcpp_action
   rosbag2_cpp::rosbag2_cpp
   sensor_msgs::sensor_msgs_library
+  tf2_geometry_msgs::tf2_geometry_msgs
   urdf::urdf
 )
 
