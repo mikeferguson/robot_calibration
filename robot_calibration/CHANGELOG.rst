@@ -2,8 +2,8 @@
 Changelog for package robot_calibration
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.10.1 (2026-01-26)
+-------------------
 * remove ament_target_dependencies (`#197 <https://github.com/mikeferguson/robot_calibration/issues/197>`_)
 * Fix initial magnetic field strength unit (`#194 <https://github.com/mikeferguson/robot_calibration/issues/194>`_)
 * Contributors: Michael Ferguson, Tatsuro Sakaguchi
