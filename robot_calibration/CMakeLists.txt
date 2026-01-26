@@ -88,10 +88,21 @@ add_library(robot_calibration SHARED
 target_link_libraries(robot_calibration
   ${Boost_LIBRARIES}
   ${CERES_LIBRARIES}
+  ${control_msgs_TARGETS}
+  ${geometry_msgs_TARGETS}
+  ${moveit_msgs_TARGETS}
+  ${nav_msgs_TARGETS}
   ${orocos_kdl_LIBRARIES}
-)
-ament_target_dependencies(robot_calibration
-  ${dependencies}
+  ${robot_calibration_msgs_TARGETS}
+  ${sensor_msgs_TARGETS}
+  camera_calibration_parsers::camera_calibration_parsers
+  geometric_shapes::geometric_shapes
+  kdl_parser::kdl_parser
+  rclcpp::rclcpp
+  rosbag2_cpp::rosbag2_cpp
+  sensor_msgs::sensor_msgs_library
+  tf2_geometry_msgs::tf2_geometry_msgs
+  urdf::urdf
 )
 
 add_library(robot_calibration_feature_finders SHARED
@@ -104,11 +115,15 @@ add_library(robot_calibration_feature_finders SHARED
 target_link_libraries(robot_calibration_feature_finders
   robot_calibration
   ${Boost_LIBRARIES}
-  ${orocos_kdl_LIBRARIES}
+  ${geometry_msgs_TARGETS}
   ${OpenCV_LIBS}
-)
-ament_target_dependencies(robot_calibration_feature_finders
-  ${dependencies}
+  ${robot_calibration_msgs_TARGETS}
+  ${sensor_msgs_TARGETS}
+  cv_bridge::cv_bridge
+  rclcpp::rclcpp
+  sensor_msgs::sensor_msgs_library
+  tf2_geometry_msgs::tf2_geometry_msgs
+  tf2_ros::tf2_ros
 )
 
 add_executable(calibrate src/nodes/calibrate.cpp)
@@ -116,11 +131,11 @@ target_link_libraries(calibrate
   robot_calibration
   ${Boost_LIBRARIES}
   ${CERES_LIBRARIES}
-  ${orocos_kdl_LIBRARIES}
-  ${OpenCV_LIBS}
-)
-ament_target_dependencies(calibrate
-  ${dependencies}
+  ${robot_calibration_msgs_TARGETS}
+  pluginlib::pluginlib
+  rclcpp::rclcpp
+  #rclcpp_action::rclcpp_action
+  rosbag2_cpp::rosbag2_cpp
 )
 
 add_executable(base_calibration_node src/nodes/base_calibration.cpp)
@@ -132,9 +147,11 @@ target_link_libraries(base_calibration_node
 add_executable(magnetometer_calibration src/nodes/magnetometer_calibration.cpp)
 target_link_libraries(magnetometer_calibration
   ${CERES_LIBRARIES}
-)
-ament_target_dependencies(magnetometer_calibration
-  ${dependencies}
+  ${geometry_msgs_TARGETS}
+  ${sensor_msgs_TARGETS}
+  rclcpp::rclcpp
+  rosbag2_cpp::rosbag2_cpp
+  sensor_msgs::sensor_msgs_library
 )
 
 add_executable(to_rpy src/nodes/to_rpy.cpp)
