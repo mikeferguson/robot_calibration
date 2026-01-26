@@ -2,6 +2,12 @@
 Changelog for package robot_calibration
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* remove ament_target_dependencies (`#197 <https://github.com/mikeferguson/robot_calibration/issues/197>`_)
+* Fix initial magnetic field strength unit (`#194 <https://github.com/mikeferguson/robot_calibration/issues/194>`_)
+* Contributors: Michael Ferguson, Tatsuro Sakaguchi
+
 0.10.0 (2024-12-12)
 -------------------
 * massive speedup of plane finder (`#191 <https://github.com/mikeferguson/robot_calibration/issues/191>`_)
