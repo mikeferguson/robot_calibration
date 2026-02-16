@@ -123,6 +123,8 @@ private:
 
   // Maximum time to wait (in seconds) for settling to occur
   double settling_timeout_;
+
+  double velocity_threshold_;
 };
 
 }  // namespace robot_calibration
