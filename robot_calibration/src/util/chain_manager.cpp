@@ -81,6 +81,8 @@ ChainManager::ChainManager(rclcpp::Node::SharedPtr node, long int wait_time) :
   // <= 0.0 disables timeout
   settling_timeout_ = node->declare_parameter<double>("settling_timeout", 0.0);
 
+  velocity_threshold_ = node->declare_parameter<double>("velocity_threshold", 0.001);
+
   subscriber_ = node->create_subscription<sensor_msgs::msg::JointState>(
     "/joint_states", 10, std::bind(&ChainManager::stateCallback, this, std::placeholders::_1));
 }
@@ -270,7 +272,7 @@ bool ChainManager::waitToSettle()
       for (size_t j = 0; j < state.name.size(); ++j)
       {
         // Is this joint even a concern?
-        if (fabs(state.velocity[j]) < 0.001)
+        if (fabs(state.velocity[j]) < velocity_threshold_)
           continue;
 
         for (size_t i = 0; i < controllers_.size(); ++i)
