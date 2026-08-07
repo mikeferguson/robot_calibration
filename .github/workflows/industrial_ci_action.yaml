@@ -7,16 +7,24 @@ on:
     branches: [ ros2 ]
 
 jobs:
-  industrial_ci:
+  industrial_ci_24:
     strategy:
       matrix:
         env:
           - {ROS_DISTRO: jazzy, ROS_REPO: main}
           - {ROS_DISTRO: jazzy, ROS_REPO: testing}
           - {ROS_DISTRO: kilted, ROS_REPO: main}
-          - {ROS_DISTRO: rolling, ROS_REPO: main}
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v1
+      - uses: 'ros-industrial/industrial_ci@master'
+        env: ${{matrix.env}}
+  industrial_ci_26:
+    strategy:
+      matrix:
+        env:
           - {ROS_DISTRO: rolling, ROS_REPO: testing}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@v1
       - uses: 'ros-industrial/industrial_ci@master'
